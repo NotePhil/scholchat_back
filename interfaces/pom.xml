@@ -3,6 +3,8 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
+    <!-- Parent POM -->
     <parent>
         <groupId>cmr.notep</groupId>
         <artifactId>parent</artifactId>
@@ -11,20 +13,26 @@
 
     <groupId>cmr.notep.schochat</groupId>
     <artifactId>interfaces</artifactId>
-    <name>interfaces</name>
     <version>${project.scolchat.version}</version>
+    <name>interfaces</name>
     <description>Projet présentant les interfaces REST disponibles</description>
     <packaging>jar</packaging>
 
+    <!-- Dependencies -->
     <dependencies>
+        <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>
+
+        <!-- Jackson Annotations -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
         </dependency>
+
+        <!-- Spring Web -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
@@ -32,23 +40,19 @@
         </dependency>
     </dependencies>
 
-
+    <!-- Build Plugins -->
     <build>
         <plugins>
+            <!-- Maven Compiler Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <compilerArgs>
-                        <arg>-parameters</arg>
-                    </compilerArgs>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                     <encoding>UTF-8</encoding>
-                    <!--                    <forceJavacCompilerUse>true</forceJavacCompilerUse>-->
                 </configuration>
             </plugin>
         </plugins>
     </build>
-
 </project>
