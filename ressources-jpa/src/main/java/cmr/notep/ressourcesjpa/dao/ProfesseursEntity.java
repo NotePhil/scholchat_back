@@ -8,14 +8,14 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "professeurs")
-public class ProfesseurEntity {
+public class ProfesseursEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "url_cni", nullable = false)
-    private String urlCni; // This field cannot be null
+    private String urlCni; // Champ obligatoire
 
     @Column(name = "url_photo")
     private String urlPhoto;

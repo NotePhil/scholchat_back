@@ -3,8 +3,6 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
-    <!-- Parent POM reference -->
     <parent>
         <groupId>cmr.notep</groupId>
         <artifactId>parent</artifactId>
@@ -15,56 +13,43 @@
     <artifactId>business</artifactId>
     <name>business</name>
     <version>${project.scolchat.version}</version>
-    <description>Projet présentant les implémentations des services REST</description>
+    <description>Projet présentant les implémentations des services rest</description>
     <packaging>jar</packaging>
 
-    <!-- Dependencies -->
     <dependencies>
-        <!-- Spring Boot Starter for Web Applications -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-
-        <!-- H2 Database for testing -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
         </dependency>
-
-        <!-- Lombok for reducing boilerplate code -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>1.18.30</version>
+            <scope>provided</scope>
         </dependency>
-
-        <!-- PostgreSQL Database Driver -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
-
-        <!-- Dozer for object mapping -->
         <dependency>
             <groupId>net.sf.dozer</groupId>
             <artifactId>dozer</artifactId>
         </dependency>
 
-        <!-- Spring Boot Testing Starter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-
-        <!-- Spring Boot Auto-Configuration -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
         </dependency>
-
-        <!-- Internal Modules -->
         <dependency>
             <groupId>cmr.notep.schochat</groupId>
             <artifactId>interfaces</artifactId>
@@ -75,28 +60,27 @@
             <artifactId>ressources-jpa</artifactId>
             <version>${project.scolchat.version}</version>
         </dependency>
-    </dependencies>
 
-    <!-- Build Configuration -->
+    </dependencies>
     <build>
         <plugins>
-            <!-- Spring Boot Maven Plugin -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>3.3.1</version>
-            </plugin>
-
-            <!-- Maven Compiler Plugin -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.10.1</version>
-                <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
-                    <encoding>UTF-8</encoding>
-                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>spring-boot</classifier>
+                            <mainClass>
+                                cmr.notep.schochat.business.BusinessApplication
+                            </mainClass>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

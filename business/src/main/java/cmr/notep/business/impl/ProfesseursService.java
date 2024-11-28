@@ -1,8 +1,8 @@
 package cmr.notep.business.impl;
 
-import cmr.notep.business.business.ProfesseurBusiness;
-import cmr.notep.interfaces.api.ProfesseurApi;
-import cmr.notep.interfaces.modeles.Professeur;
+import cmr.notep.business.business.ProfesseursBusiness;
+import cmr.notep.interfaces.api.ProfesseursApi;
+import cmr.notep.interfaces.modeles.Professeurs;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RestController;
@@ -11,29 +11,29 @@ import java.util.List;
 
 @RestController
 @Slf4j
-public class ProfesseursService implements ProfesseurApi {
+public class ProfesseursService implements ProfesseursApi {
 
-    private final ProfesseurBusiness professeurBusiness;
+    private final ProfesseursBusiness professeursBusiness;
 
-    public ProfesseursService(ProfesseurBusiness professeurBusiness) {
-        this.professeurBusiness = professeurBusiness;
+    public ProfesseursService(ProfesseursBusiness professeursBusiness) {
+        this.professeursBusiness = professeursBusiness;
     }
 
     @Override
-    public Professeur obtenirProfesseurParId(@NonNull Long idProfesseur) {
+    public Professeurs obtenirProfesseurParId(@NonNull Long idProfesseur) {
         log.info("Fetching professor by ID: {}", idProfesseur);
-        return professeurBusiness.obtenirProfesseurParId(idProfesseur);
+        return professeursBusiness.avoirProfesseur(idProfesseur);
     }
 
     @Override
-    public List<Professeur> obtenirTousLesProfesseurs() {
+    public List<Professeurs> obtenirTousLesProfesseurs() {
         log.info("Fetching all professors...");
-        return professeurBusiness.obtenirTousLesProfesseurs();
+        return professeursBusiness.avoirTousProfesseur();
     }
 
     @Override
-    public Professeur creerProfesseur(@NonNull Professeur professeur) {
+    public Professeurs creerProfesseur(@NonNull Professeurs professeur) {
         log.info("Creating professor: {}", professeur);
-        return professeurBusiness.creerProfesseur(professeur);
+        return professeursBusiness.creerProfesseur(professeur);
     }
 }

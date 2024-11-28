@@ -1,29 +1,32 @@
 package cmr.notep.interfaces.api;
 
-import cmr.notep.interfaces.modeles.Professeur;
+import cmr.notep.interfaces.modeles.Repetiteurs;
 import lombok.NonNull;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RequestMapping("/professeurs")
-public interface ProfesseurApi {
+/**
+ * API REST pour les répétiteurs.
+ */
+@RequestMapping("/repetiteurs")
+public interface RepetiteursApi {
 
     @GetMapping(
-            path = "/{idProfesseur}",
+            path = "/{idRepetiteur}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    Professeur obtenirProfesseurParId(@NonNull @PathVariable Long idProfesseur);
+    Repetiteurs obtenirRepetiteurParId(@NonNull @PathVariable Long idRepetiteur);
 
     @GetMapping(
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    List<Professeur> obtenirTousLesProfesseurs();
+    List<Repetiteurs> obtenirTousLesRepetiteurs();
 
     @PostMapping(
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    Professeur creerProfesseur(@NonNull @RequestBody Professeur professeur);
+    Repetiteurs creerRepetiteur(@NonNull @RequestBody Repetiteurs repetiteur);
 }
