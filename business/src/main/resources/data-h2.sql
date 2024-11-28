@@ -21,3 +21,30 @@ INSERT INTO ressources.recevoir (message_id, utilisateur_id) VALUES
 ('550e8400-e29b-41d4-a716-446655440012', '550e8400-e29b-41d4-a716-446655440003'),
 ('550e8400-e29b-41d4-a716-446655440012', '550e8400-e29b-41d4-a716-446655440002'),
 ('550e8400-e29b-41d4-a716-446655440013', '550e8400-e29b-41d4-a716-446655440002');
+
+-- Insert sample data for Etablissements
+INSERT INTO ressources.etablissements (id, nom) VALUES
+('550e8400-e29b-41d4-a716-446655440100', 'Etablissement A'),
+('550e8400-e29b-41d4-a716-446655440101', 'Etablissement B');
+
+-- Insert sample data for Parents
+INSERT INTO ressources.parents (id, nom) VALUES
+('550e8400-e29b-41d4-a716-446655440200', 'Parent A'),
+('550e8400-e29b-41d4-a716-446655440201', 'Parent B');
+
+-- Insert sample data for Eleves
+INSERT INTO ressources.eleves (id, nom) VALUES
+('550e8400-e29b-41d4-a716-446655440300', 'Eleve A'),
+('550e8400-e29b-41d4-a716-446655440301', 'Eleve B');
+
+-- Insert sample data for Classes
+INSERT INTO ressources.classes (id, nom, niveau, date_creation, etat, etablissement_id) VALUES
+('550e8400-e29b-41d4-a716-446655440400', 'Classe A', 'Niveau 1', '2024-11-28 10:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440100');
+
+-- Associate Parents with Classes
+INSERT INTO ressources.classe_parents (classe_id, parent_id) VALUES
+('550e8400-e29b-41d4-a716-446655440400', '550e8400-e29b-41d4-a716-446655440200');
+
+-- Associate Eleves with Classes
+INSERT INTO ressources.classe_eleves (classe_id, eleve_id) VALUES
+('550e8400-e29b-41d4-a716-446655440400', '550e8400-e29b-41d4-a716-446655440300');
