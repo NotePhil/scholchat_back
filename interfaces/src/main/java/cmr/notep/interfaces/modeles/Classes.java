@@ -23,6 +23,7 @@ public class Classes implements Serializable {
     private String nom;
     private String niveau;
     private Date dateCreation;
+    private String codeActivation;
     private EtatClasse etat;
     private Etablissement etablissement;
     private List<Parents> parents;
