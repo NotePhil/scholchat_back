@@ -30,6 +30,9 @@ public class ClassesEntity {
     @Column(name = "date_creation")
     private Date dateCreation;
 
+    @Column(name = "code_activation")
+    private String codeActivation;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "etat")
     private EtatClasse etat;

@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS ressources.classes (
     nom VARCHAR(255) NOT NULL,
     niveau VARCHAR(255) NOT NULL,
     date_creation TIMESTAMP,
+    code_activation VARCHAR(50),
     etat VARCHAR(50),
     etablissement_id UUID,
     CONSTRAINT fk_etablissement FOREIGN KEY (etablissement_id) REFERENCES ressources.etablissements(id)

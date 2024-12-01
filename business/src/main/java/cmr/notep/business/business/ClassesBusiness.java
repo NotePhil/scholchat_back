@@ -33,9 +33,16 @@ public class ClassesBusiness {
     }
 
     public Classes creerClasse(Classes classes) {
+
         try {
+            ClassesEntity classesEntity = dozerMapperBean.map(classes, ClassesEntity.class);
+            // Generate a random activation code if not provided
+            if (classesEntity.getCodeActivation() == null) {
+                classesEntity.setCodeActivation(generateActivationCode());
+            }
+
             ClassesEntity savedEntity = daoAccessorService.getRepository(ClassesRepository.class)
-                    .save(dozerMapperBean.map(classes, ClassesEntity.class));
+                    .save(classesEntity);
             log.info("Classe créée avec succès: {}", savedEntity.getId());
             return dozerMapperBean.map(savedEntity, Classes.class);
         } catch (Exception e) {
@@ -44,25 +51,68 @@ public class ClassesBusiness {
         }
     }
 
+
     public Classes modifierClasse(String idClasse, Classes classeModifiee) {
         try {
             ClassesRepository classesRepository = daoAccessorService.getRepository(ClassesRepository.class);
+
             // First, check if the class exists
             Optional<ClassesEntity> optionalClasse = classesRepository.findById(idClasse);
             if (optionalClasse.isEmpty()) {
                 log.error("Classe non trouvée avec l'ID: {}", idClasse);
                 throw new RuntimeException("Classe non trouvée avec l'ID: " + idClasse);
             }
+
             ClassesEntity classeExistante = optionalClasse.get();
-            // Mise à jour des champs
+
+            // Basic field updates
             classeExistante.setNom(classeModifiee.getNom());
             classeExistante.setNiveau(classeModifiee.getNiveau());
             classeExistante.setEtat(classeModifiee.getEtat());
             classeExistante.setDateCreation(classeModifiee.getDateCreation());
-            // Reste du code de mise à jour...
+            classeExistante.setCodeActivation(classeModifiee.getCodeActivation());
 
-            // (Keep your existing implementation)
 
+            // Etablissement Update
+            if (classeModifiee.getEtablissement() != null) {
+                EtablissementEntity etablissement = daoAccessorService
+                        .getRepository(EtablissementRepository.class)
+                        .findById(classeModifiee.getEtablissement().getId())
+                        .orElseThrow(() -> new RuntimeException("Etablissement non trouvé"));
+                classeExistante.setEtablissement(etablissement);
+            }
+
+            // Parents Update
+            if (classeModifiee.getParents() != null) {
+                // Clear existing parents
+                classeExistante.getParents().clear();
+
+                // Add new parents
+                for (Parents parent : classeModifiee.getParents()) {
+                    ParentsEntity parentEntity = daoAccessorService
+                            .getRepository(ParentsRepository.class)
+                            .findById(parent.getId())
+                            .orElseThrow(() -> new RuntimeException("Parent non trouvé"));
+                    classeExistante.getParents().add(parentEntity);
+                }
+            }
+
+            // Eleves Update
+            if (classeModifiee.getEleves() != null) {
+                // Clear existing eleves
+                classeExistante.getEleves().clear();
+
+                // Add new eleves
+                for (Eleves eleve : classeModifiee.getEleves()) {
+                    ElevesEntity eleveEntity = daoAccessorService
+                            .getRepository(ElevesRepository.class)
+                            .findById(eleve.getId())
+                            .orElseThrow(() -> new RuntimeException("Eleve non trouvé"));
+                    classeExistante.getEleves().add(eleveEntity);
+                }
+            }
+
+            // Sauvegarde de la classe mise à jour
             ClassesEntity classeSauvegardee = classesRepository.save(classeExistante);
             log.info("Classe modifiée avec succès: {}", idClasse);
             return dozerMapperBean.map(classeSauvegardee, Classes.class);
@@ -71,7 +121,6 @@ public class ClassesBusiness {
             throw new RuntimeException("Impossible de modifier la classe", e);
         }
     }
-
 
     public void supprimerClasse(String idClasse) {
         try {
@@ -111,5 +160,10 @@ public class ClassesBusiness {
             log.error("Erreur lors de la récupération de toutes les classes", e);
             throw new RuntimeException("Impossible de récupérer les classes", e);
         }
+    }
+
+    // Method to generate a random activation code
+    private String generateActivationCode() {
+        return String.format("%06d", new java.util.Random().nextInt(999999));
     }
 }
