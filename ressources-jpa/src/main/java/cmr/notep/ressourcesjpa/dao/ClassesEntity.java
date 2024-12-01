@@ -1,8 +1,7 @@
 package cmr.notep.ressourcesjpa.dao;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.dozer.Mapping;
 
 import java.util.Date;
@@ -12,6 +11,8 @@ import java.util.List;
 @Setter
 @Getter
 @Entity
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "classes", schema = "ressources")
 public class ClassesEntity {
 

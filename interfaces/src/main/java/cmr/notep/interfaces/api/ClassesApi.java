@@ -1,24 +1,48 @@
 package cmr.notep.interfaces.api;
 
 import cmr.notep.interfaces.modeles.Classes;
+import lombok.NonNull;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@RequestMapping("/classes")
 public interface ClassesApi {
 
-    @PostMapping("/classes")
-    Classes createClass(@RequestBody Classes classes);
+    @PostMapping(
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.CREATED)
+    Classes creerClasse(@NonNull @RequestBody Classes classes);
 
-    @PutMapping("/classes/{id}")
-    Classes updateClass(@PathVariable String id, @RequestBody Classes updatedClass);
+    @PutMapping(
+            path = "/{idClasse}",
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    Classes modifierClasse(
+            @NonNull @PathVariable("idClasse") String idClasse,
+            @NonNull @RequestBody Classes classeModifiee
+    );
 
-    @DeleteMapping("/classes/{id}")
-    void deleteClass(@PathVariable String id);
+    @DeleteMapping("/{idClasse}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void supprimerClasse(@NonNull @PathVariable("idClasse") String idClasse);
 
-    @GetMapping("/classes/{id}")
-    Classes getClassById(@PathVariable String id);
+    @GetMapping(
+            path = "/{idClasse}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    Classes obtenirClasseParId(@NonNull @PathVariable("idClasse") String idClasse);
 
-    @GetMapping("/classes")
-    List<Classes> getAllClasses();
+    @GetMapping(
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    List<Classes> obtenirToutesLesClasses();
 }
