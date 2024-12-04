@@ -20,7 +20,7 @@ public class ProfesseursService implements ProfesseursApi {
     }
 
     @Override
-    public Professeurs obtenirProfesseurParId(@NonNull Long idProfesseur) {
+    public Professeurs obtenirProfesseurParId(@NonNull String idProfesseur) {
         log.info("Fetching professor by ID: {}", idProfesseur);
         return professeursBusiness.avoirProfesseur(idProfesseur);
     }

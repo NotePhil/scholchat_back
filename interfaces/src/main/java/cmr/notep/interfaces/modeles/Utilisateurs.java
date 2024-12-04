@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 
-import java.io.Serializable;
+        import java.io.Serializable;
 import java.util.List;
 @Data
 @Builder
@@ -25,6 +25,6 @@ public class Utilisateurs implements Serializable {
     private  String etat;
     private  List<Messages> messagesEnvoyer;
     private  List<Messages> messagesRecus;
-    
-    
+
+
 }

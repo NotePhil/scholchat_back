@@ -20,20 +20,20 @@ public class RepetiteursService implements RepetiteursApi {
     }
 
     @Override
-    public Repetiteurs obtenirRepetiteurParId(@NonNull Long idRepetiteur) {
-        log.info("Fetching répétiteur by ID: {}", idRepetiteur);
-        return repetiteursBusiness.obtenirRepetiteurParId(idRepetiteur);
+    public Repetiteurs obtenirRepetiteurParId(@NonNull String idRepetiteur) {
+        log.info("Fetching repetiteur by ID: {}", idRepetiteur);
+        return repetiteursBusiness.avoirRepetiteur(idRepetiteur);
     }
 
     @Override
     public List<Repetiteurs> obtenirTousLesRepetiteurs() {
-        log.info("Fetching all répétiteurs...");
-        return repetiteursBusiness.obtenirTousLesRepetiteurs();
+        log.info("Fetching all repetiteurs...");
+        return repetiteursBusiness.avoirTousRepetiteurs();
     }
 
     @Override
     public Repetiteurs creerRepetiteur(@NonNull Repetiteurs repetiteur) {
-        log.info("Creating répétiteur: {}", repetiteur);
+        log.info("Creating repetiteur: {}", repetiteur);
         return repetiteursBusiness.creerRepetiteur(repetiteur);
     }
 }
