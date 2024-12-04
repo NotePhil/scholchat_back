@@ -22,14 +22,12 @@ public class ProfesseursBusiness {
         this.daoAccessorService = daoAccessorService;
     }
 
-    public Professeurs avoirProfesseur(Long idProfesseur) {
+    public Professeurs avoirProfesseur(String idProfesseur) {
         log.info("Fetching professor by ID: {}", idProfesseur);
-        return dozerMapperBean.map(
-                daoAccessorService.getRepository(ProfesseursRepository.class)
-                        .findById(idProfesseur)
-                        .orElseThrow(() -> new RuntimeException("Professor not found")),
-                Professeurs.class
-        );
+        return daoAccessorService.getRepository(ProfesseursRepository.class)
+                .findById(idProfesseur)
+                .map(entity -> dozerMapperBean.map(entity, Professeurs.class))
+                .orElseThrow(() -> new RuntimeException("Professor not found"));
     }
 
     public List<Professeurs> avoirTousProfesseur() {
@@ -37,19 +35,22 @@ public class ProfesseursBusiness {
         return daoAccessorService.getRepository(ProfesseursRepository.class)
                 .findAll()
                 .stream()
-                .map(professeurEntity -> dozerMapperBean.map(professeurEntity, Professeurs.class))
+                .map(entity -> dozerMapperBean.map(entity, Professeurs.class))
                 .collect(Collectors.toList());
     }
+
     public Professeurs creerProfesseur(Professeurs professeur) {
         log.info("Creating professor: {}", professeur);
 
-        // Vérifie que le champ obligatoire `urlCni` est présent
-        if (professeur.getUrlCni() == null) {
-            throw new RuntimeException("urlCni cannot be null");
+        if (professeur.getCniUrlFront() == null || professeur.getCniUrlBack() == null) {
+            throw new RuntimeException("CNI URLs (front and back) cannot be null");
         }
 
+
+        ProfesseursEntity entity = dozerMapperBean.map(professeur, ProfesseursEntity.class);
         ProfesseursEntity savedEntity = daoAccessorService.getRepository(ProfesseursRepository.class)
-                .save(dozerMapperBean.map(professeur, ProfesseursEntity.class));
+                .save(entity);
+
         return dozerMapperBean.map(savedEntity, Professeurs.class);
     }
 }

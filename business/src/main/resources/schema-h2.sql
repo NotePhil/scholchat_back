@@ -24,7 +24,23 @@ CREATE TABLE IF NOT EXISTS ressources.utilisateurs
     etat        VARCHAR(255),
     CONSTRAINT pk_utilisateurs PRIMARY KEY (id)
 );
-
+CREATE TABLE IF NOT EXISTS ressources.professeurs (
+    professeurs_id VARCHAR(255) NOT NULL,
+    cni_url_front VARCHAR(255) NOT NULL,
+    cni_url_back VARCHAR(255) NOT NULL,
+    nom_etablissement VARCHAR(255) NOT NULL,
+    nom_classe VARCHAR(255) NOT NULL,
+    matricule_professeur VARCHAR(255) NOT NULL UNIQUE,
+    CONSTRAINT pk_professeurs PRIMARY KEY (professeurs_id),
+    CONSTRAINT fk_professeurs_utilisateurs FOREIGN KEY (professeurs_id) REFERENCES ressources.utilisateurs (id)
+);
+CREATE TABLE IF NOT EXISTS ressources.repetiteurs (
+    repetiteurs_id VARCHAR(255) NOT NULL,
+    cni_url_front VARCHAR(255) NOT NULL,
+    cni_url_back VARCHAR(255) NOT NULL,
+    CONSTRAINT pk_repetiteurs PRIMARY KEY (repetiteurs_id),
+    CONSTRAINT fk_repetiteurs_utilisateurs FOREIGN KEY (repetiteurs_id) REFERENCES ressources.utilisateurs (id)
+);
 CREATE TABLE IF NOT EXISTS ressources.recevoir
 (
     message_id     VARCHAR(255) NOT NULL,

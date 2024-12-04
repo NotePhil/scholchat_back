@@ -1,27 +1,18 @@
 package cmr.notep.interfaces.modeles;
 
-import lombok.*;
-
-import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Data
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class Professeurs {
-    private Long id; // ID auto-incrémenté
-
-    @NotNull
-    private String urlCni; // Champ obligatoire pour identification unique
-
-    private String urlPhoto;
-
-    @NotNull
+@SuperBuilder
+public class Professeurs extends Utilisateurs {
+    private String cniUrlFront;
+    private String cniUrlBack;
     private String nomEtablissement;
-
-    @NotNull
     private String nomClasse;
-
-    @NotNull
     private String matriculeProfesseur;
 }

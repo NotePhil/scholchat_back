@@ -22,25 +22,16 @@ public class RepetiteursBusiness {
         this.daoAccessorService = daoAccessorService;
     }
 
-    /**
-     * Fetch a répétiteur by ID.
-     *
-     * @param idRepetiteur ID of the répétiteur to fetch.
-     * @return The répétiteur as a model object.
-     * @throws RuntimeException if the répétiteur is not found.
-     */
-    public Repetiteurs obtenirRepetiteurParId(Long idRepetiteur) {
-        log.info("Fetching répétiteur by ID: {}", idRepetiteur);
-        return dozerMapperBean.map(
-                daoAccessorService.getRepository(RepetiteursRepository.class)
-                        .findById(idRepetiteur)
-                        .orElseThrow(() -> new RuntimeException("Répétiteur not found")),
-                Repetiteurs.class
-        );
+    public Repetiteurs avoirRepetiteur(String idRepetiteur) {
+        log.info("Fetching repetiteur by ID: {}", idRepetiteur);
+        return daoAccessorService.getRepository(RepetiteursRepository.class)
+                .findById(idRepetiteur)
+                .map(entity -> dozerMapperBean.map(entity, Repetiteurs.class))
+                .orElseThrow(() -> new RuntimeException("Repetiteur not found"));
     }
 
-    public List<Repetiteurs> obtenirTousLesRepetiteurs() {
-        log.info("Fetching all répétiteurs...");
+    public List<Repetiteurs> avoirTousRepetiteurs() {
+        log.info("Fetching all repetiteurs...");
         return daoAccessorService.getRepository(RepetiteursRepository.class)
                 .findAll()
                 .stream()
@@ -48,23 +39,18 @@ public class RepetiteursBusiness {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Create a new répétiteur.
-     *
-     * @param repetiteur The répétiteur model to create.
-     * @return The created répétiteur as a model object.
-     * @throws RuntimeException if mandatory fields are missing.
-     */
     public Repetiteurs creerRepetiteur(Repetiteurs repetiteur) {
-        log.info("Creating répétiteur: {}", repetiteur);
+        log.info("Creating repetiteur: {}", repetiteur);
 
-        // Validate mandatory fields
-        if (repetiteur.getPieceIdentite() == null || repetiteur.getPhoto() == null) {
-            throw new RuntimeException("Pièce d'identité and Photo cannot be null");
+        if (repetiteur.getCniUrlFront() == null || repetiteur.getCniUrlBack() == null) {
+            throw new RuntimeException("CNI URLs (front and back) cannot be null");
         }
 
+
+        RepetiteursEntity entity = dozerMapperBean.map(repetiteur, RepetiteursEntity.class);
         RepetiteursEntity savedEntity = daoAccessorService.getRepository(RepetiteursRepository.class)
-                .save(dozerMapperBean.map(repetiteur, RepetiteursEntity.class));
+                .save(entity);
+
         return dozerMapperBean.map(savedEntity, Repetiteurs.class);
     }
 }

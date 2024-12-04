@@ -1,22 +1,17 @@
 package cmr.notep.interfaces.modeles;
-import lombok.*;
 
-import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
-/**
- * Représente le modèle de données pour un répétiteur.
- */
 @Data
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class Repetiteurs {
-
-    private Long id; // ID auto-généré
-
-    @NotNull
-    private String pieceIdentite; // Pièce d'identité obligatoire
-
-    @NotNull
-    private String photo; // Photo obligatoire
+@SuperBuilder
+public class Repetiteurs extends Utilisateurs {
+    private String cniUrlFront; // Front side of the CNI
+    private String cniUrlBack;  // Back side of the CNI
+    private String pieceIdentite; // Identification document
+    private String photo; // Photo of the repetiteur
 }

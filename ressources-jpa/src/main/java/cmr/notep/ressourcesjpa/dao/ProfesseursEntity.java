@@ -1,24 +1,22 @@
 package cmr.notep.ressourcesjpa.dao;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 @Entity
-@Table(name = "professeurs")
-public class ProfesseursEntity {
+@DiscriminatorValue("PROFESSEUR") // Assigns "PROFESSEUR" as the discriminator value
+public class ProfesseursEntity extends UtilisateursEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "cni_url_front", nullable = false)
+    private String cniUrlFront;
 
-    @Column(name = "url_cni", nullable = false)
-    private String urlCni; // Champ obligatoire
-
-    @Column(name = "url_photo")
-    private String urlPhoto;
+    @Column(name = "cni_url_back", nullable = false)
+    private String cniUrlBack;
 
     @Column(name = "nom_etablissement", nullable = false)
     private String nomEtablissement;

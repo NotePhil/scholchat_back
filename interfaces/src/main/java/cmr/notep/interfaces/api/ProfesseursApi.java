@@ -14,7 +14,7 @@ public interface ProfesseursApi {
             path = "/{idProfesseur}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    Professeurs obtenirProfesseurParId(@NonNull @PathVariable Long idProfesseur);
+    Professeurs obtenirProfesseurParId(@NonNull @PathVariable String idProfesseur);
 
     @GetMapping(
             produces = MediaType.APPLICATION_JSON_VALUE
