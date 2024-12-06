@@ -1,15 +1,15 @@
 package cmr.notep.ressourcesjpa.dao;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 @Entity
-@DiscriminatorValue("PROFESSEUR") // Assigns "PROFESSEUR" as the discriminator value
+@Table(name = "professeurs", schema = "ressources")
 public class ProfesseursEntity extends UtilisateursEntity {
 
     @Column(name = "cni_url_front", nullable = false)
