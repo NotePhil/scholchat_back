@@ -1,15 +1,14 @@
 package cmr.notep.interfaces.modeles;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 @SuperBuilder
+@NoArgsConstructor
 public class Professeurs extends Utilisateurs {
+
     private String cniUrlFront;
     private String cniUrlBack;
     private String nomEtablissement;
