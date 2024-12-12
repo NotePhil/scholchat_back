@@ -20,6 +20,6 @@ public class ElevesEntity {
     @Column(name = "nom", nullable = false)
     private String nom;
 
-    @ManyToMany(mappedBy = "eleves")
+    @ManyToMany(mappedBy = "elevesEntities")
     private List<ClassesEntity> classes;
 }

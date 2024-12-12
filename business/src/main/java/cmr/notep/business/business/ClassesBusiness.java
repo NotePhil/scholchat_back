@@ -85,7 +85,7 @@ public class ClassesBusiness {
             // Parents Update
             if (classeModifiee.getParents() != null) {
                 // Clear existing parents
-                classeExistante.getParents().clear();
+                classeExistante.getParentsEntities().clear();
 
                 // Add new parents
                 for (Parents parent : classeModifiee.getParents()) {
@@ -93,14 +93,14 @@ public class ClassesBusiness {
                             .getRepository(ParentsRepository.class)
                             .findById(parent.getId())
                             .orElseThrow(() -> new RuntimeException("Parent non trouvé"));
-                    classeExistante.getParents().add(parentEntity);
+                    classeExistante.getParentsEntities().add(parentEntity);
                 }
             }
 
             // Eleves Update
             if (classeModifiee.getEleves() != null) {
                 // Clear existing eleves
-                classeExistante.getEleves().clear();
+                classeExistante.getElevesEntities().clear();
 
                 // Add new eleves
                 for (Eleves eleve : classeModifiee.getEleves()) {
@@ -108,7 +108,7 @@ public class ClassesBusiness {
                             .getRepository(ElevesRepository.class)
                             .findById(eleve.getId())
                             .orElseThrow(() -> new RuntimeException("Eleve non trouvé"));
-                    classeExistante.getEleves().add(eleveEntity);
+                    classeExistante.getElevesEntities().add(eleveEntity);
                 }
             }
 
