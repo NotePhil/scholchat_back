@@ -1,28 +1,29 @@
 package cmr.notep.interfaces.api;
 
-import cmr.notep.interfaces.modeles.Messages;
+import cmr.notep.interfaces.modeles.Professeurs;
 import lombok.NonNull;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RequestMapping("/messages")
-public interface MessagesApi {
+@RequestMapping("/professeurs")
+public interface ProfesseursApi {
+
     @GetMapping(
-            path = "/{idMessage}",
+            path = "/{idProfesseur}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    Messages avoirMessage(@NonNull @RequestParam String idMessage);
+    Professeurs obtenirProfesseurParId(@NonNull @PathVariable String idProfesseur);
 
     @GetMapping(
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    List<Messages> avoirToutMessages();
+    List<Professeurs> obtenirTousLesProfesseurs();
 
     @PostMapping(
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    Messages posterMessage(@NonNull @RequestBody Messages message);
+    Professeurs creerProfesseur(@NonNull @RequestBody Professeurs professeur);
 }
