@@ -27,7 +27,7 @@
         <file.encoding>UTF-8</file.encoding>
         <lombok.version>1.18.34</lombok.version>
         <postgresql.version>42.5.4</postgresql.version>
-        <spring-web.version>5.3.24</spring-web.version>
+        <spring-web.version>6.1.14</spring-web.version>
         <rest.assured.version>2.3.3</rest.assured.version>
         <dozer.version>5.5.1</dozer.version>
         <spring-context.version>5.3.24</spring-context.version>
