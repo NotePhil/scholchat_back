@@ -1,5 +1,6 @@
 package cmr.notep.ressourcesjpa.dao;
 
+import cmr.notep.modele.EtatClasse;
 import jakarta.persistence.*;
 import lombok.*;
 import org.dozer.Mapping;

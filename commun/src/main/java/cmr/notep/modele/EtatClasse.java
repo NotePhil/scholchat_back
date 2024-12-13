@@ -1,4 +1,4 @@
-package cmr.notep.ressourcesjpa.dao;
+package cmr.notep.modele;
 
 public enum EtatClasse {
     ACTIF,

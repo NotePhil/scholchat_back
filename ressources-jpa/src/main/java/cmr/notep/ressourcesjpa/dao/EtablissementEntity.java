@@ -21,5 +21,5 @@ public class EtablissementEntity {
     private String nom;
 
     @OneToMany(mappedBy = "etablissement", cascade = CascadeType.ALL)
-    private List<ClassesEntity> classes;
+    private List<ClassesEntity> classesEntities;
 }
