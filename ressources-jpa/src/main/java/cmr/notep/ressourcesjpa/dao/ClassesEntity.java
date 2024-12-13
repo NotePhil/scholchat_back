@@ -1,5 +1,6 @@
 package cmr.notep.ressourcesjpa.dao;
 
+import cmr.notep.modele.EtatClasse;
 import jakarta.persistence.*;
 import lombok.*;
 import org.dozer.Mapping;
@@ -47,12 +48,12 @@ public class ClassesEntity {
             joinColumns = @JoinColumn(name = "classe_id"),
             inverseJoinColumns = @JoinColumn(name = "parent_id"))
     @Mapping("parents")
-    private List<ParentsEntity> parents;
+    private List<ParentsEntity> parentsEntities;
 
     @ManyToMany
     @JoinTable(name = "classe_eleves",
             joinColumns = @JoinColumn(name = "classe_id"),
             inverseJoinColumns = @JoinColumn(name = "eleve_id"))
     @Mapping("eleves")
-    private List<ElevesEntity> eleves;
+    private List<ElevesEntity> elevesEntities;
 }

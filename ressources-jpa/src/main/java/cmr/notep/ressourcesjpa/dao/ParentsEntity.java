@@ -20,6 +20,6 @@ public class ParentsEntity {
     @Column(name = "nom", nullable = false)
     private String nom;
 
-    @ManyToMany(mappedBy = "parents")
+    @ManyToMany(mappedBy = "parentsEntities")
     private List<ClassesEntity> classes;
 }

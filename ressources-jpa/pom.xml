@@ -38,6 +38,12 @@
             <groupId>net.sf.dozer</groupId>
             <artifactId>dozer</artifactId>
         </dependency>
+        <dependency>
+            <groupId>cmr.notep.schochat</groupId>
+            <artifactId>commun</artifactId>
+            <version>${project.scolchat.version}</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

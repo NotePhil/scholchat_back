@@ -1,12 +1,10 @@
 package cmr.notep.interfaces.modeles;
 
-import cmr.notep.ressourcesjpa.dao.EtatClasse;
+import cmr.notep.modele.EtatClasse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -16,8 +14,6 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter
-@Setter
 public class Classes implements Serializable {
     private String id;
     private String nom;
