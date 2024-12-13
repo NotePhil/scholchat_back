@@ -88,3 +88,14 @@ CREATE TABLE IF NOT EXISTS ressources.classe_eleves (
     CONSTRAINT fk_classe_eleves_classe FOREIGN KEY (classe_id) REFERENCES ressources.classes(id),
     CONSTRAINT fk_classe_eleves_eleve FOREIGN KEY (eleve_id) REFERENCES ressources.eleves(id)
 );
+-- Professeurs table (for table creation)
+CREATE TABLE IF NOT EXISTS ressources.professeurs (
+    professeurs_id VARCHAR(255) NOT NULL,
+    cni_url_front VARCHAR(255) NOT NULL,
+    cni_url_back VARCHAR(255) NOT NULL,
+    nom_etablissement VARCHAR(255) NOT NULL,
+    nom_classe VARCHAR(255) NOT NULL,
+    matricule_professeur VARCHAR(255) NOT NULL UNIQUE,
+    PRIMARY KEY (professeurs_id),
+    CONSTRAINT fk_professeurs_utilisateurs FOREIGN KEY (professeurs_id) REFERENCES ressources.utilisateurs(id)
+);

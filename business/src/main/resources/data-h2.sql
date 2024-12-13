@@ -48,3 +48,9 @@ INSERT INTO ressources.classe_parents (classe_id, parent_id) VALUES
 -- Associate Eleves with Classes
 INSERT INTO ressources.classe_eleves (classe_id, eleve_id) VALUES
 ('550e8400-e29b-41d4-a716-446655440400', '550e8400-e29b-41d4-a716-446655440300');
+
+-- Then insert corresponding professeurs records
+INSERT INTO ressources.professeurs (professeurs_id, cni_url_front, cni_url_back, nom_etablissement, nom_classe, matricule_professeur) VALUES
+('550e8400-e29b-41d4-a716-446655440004', 'https://example.com/cni/marie_dupont_front.jpg', 'https://example.com/cni/marie_dupont_back.jpg', 'Lycée Jean Moulin', 'Terminale A', 'PROF-2024-001'),
+('550e8400-e29b-41d4-a716-446655440005', 'https://example.com/cni/lucas_martin_front.jpg', 'https://example.com/cni/lucas_martin_back.jpg', 'Collège Albert Camus', 'Quatrième B', 'PROF-2024-002'),
+('550e8400-e29b-41d4-a716-446655440006', 'https://example.com/cni/isabelle_lefevre_front.jpg', 'https://example.com/cni/isabelle_lefevre_back.jpg', 'École Primaire Victor Hugo', 'CE2', 'PROF-2024-003');
