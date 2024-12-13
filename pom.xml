@@ -32,13 +32,14 @@
         <dozer.version>5.5.1</dozer.version>
         <spring-context.version>5.3.24</spring-context.version>
         <maven.model.version>3.6.3</maven.model.version>
-        <jackson.version>2.13.4</jackson.version>
+        <jackson.version>2.17.2</jackson.version>
     </properties>
 
     <modules>
         <module>ressources-jpa</module>
         <module>interfaces</module>
         <module>business</module>
+        <module>commun</module>
     </modules>
     <dependencyManagement>
         <dependencies>
@@ -56,6 +57,21 @@
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
                 <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-web</artifactId>
+                <version>${spring-web.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

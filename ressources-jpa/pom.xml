@@ -27,6 +27,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
@@ -36,6 +37,12 @@
         <dependency>
             <groupId>net.sf.dozer</groupId>
             <artifactId>dozer</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cmr.notep.schochat</groupId>
+            <artifactId>commun</artifactId>
+            <version>${project.scolchat.version}</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
     <build>
@@ -47,6 +54,14 @@
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
                     <encoding>UTF-8</encoding>
+                    <forceJavacCompilerUse>true</forceJavacCompilerUse>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
         </plugins>
