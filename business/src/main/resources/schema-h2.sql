@@ -99,3 +99,13 @@ CREATE TABLE IF NOT EXISTS ressources.professeurs (
     PRIMARY KEY (professeurs_id),
     CONSTRAINT fk_professeurs_utilisateurs FOREIGN KEY (professeurs_id) REFERENCES ressources.utilisateurs(id)
 );
+-- Répétiteurs table
+CREATE TABLE IF NOT EXISTS ressources.repetiteurs (
+    repetiteurs_id VARCHAR(255) NOT NULL,
+    cni_url_front VARCHAR(255) NOT NULL,
+    cni_url_back VARCHAR(255) NOT NULL,
+    photo_full_picture VARCHAR(255) NOT NULL,
+    nom_classe VARCHAR(255) NOT NULL,
+    PRIMARY KEY (repetiteurs_id),
+    CONSTRAINT fk_repetiteurs_utilisateurs FOREIGN KEY (repetiteurs_id) REFERENCES ressources.utilisateurs(id)
+);
