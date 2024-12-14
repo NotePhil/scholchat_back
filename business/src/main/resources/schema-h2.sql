@@ -109,3 +109,42 @@ CREATE TABLE IF NOT EXISTS ressources.repetiteurs (
     PRIMARY KEY (repetiteurs_id),
     CONSTRAINT fk_repetiteurs_utilisateurs FOREIGN KEY (repetiteurs_id) REFERENCES ressources.utilisateurs(id)
 );
+-- Create professeurs table
+CREATE TABLE IF NOT EXISTS ressources.professeurs (
+    professeurs_id VARCHAR(255) NOT NULL,
+    cni_url_front VARCHAR(255) NOT NULL,
+    cni_url_back VARCHAR(255) NOT NULL,
+    nom_etablissement VARCHAR(255) NOT NULL,
+    nom_classe VARCHAR(255) NOT NULL,
+    matricule_professeur VARCHAR(255) NOT NULL UNIQUE,
+    PRIMARY KEY (professeurs_id),
+    CONSTRAINT fk_professeurs_utilisateurs FOREIGN KEY (professeurs_id) REFERENCES ressources.utilisateurs(id)
+);
+
+-- Create repetiteurs table
+CREATE TABLE IF NOT EXISTS ressources.repetiteurs (
+    repetiteurs_id VARCHAR(255) NOT NULL,
+    cni_url_front VARCHAR(255) NOT NULL,
+    cni_url_back VARCHAR(255) NOT NULL,
+    photo_full_picture VARCHAR(255) NOT NULL,
+    nom_classe VARCHAR(255) NOT NULL,
+    PRIMARY KEY (repetiteurs_id),
+    CONSTRAINT fk_repetiteurs_utilisateurs FOREIGN KEY (repetiteurs_id) REFERENCES ressources.utilisateurs(id)
+);
+
+-- Create profil_parents table
+CREATE TABLE IF NOT EXISTS ressources.profil_parents (
+    profil_parents_id VARCHAR(255) NOT NULL,
+    cni_url_front VARCHAR(255),
+    cni_url_back VARCHAR(255),
+    full_pic_url VARCHAR(255),
+    PRIMARY KEY (profil_parents_id),
+    CONSTRAINT fk_profil_parents_utilisateurs FOREIGN KEY (profil_parents_id) REFERENCES ressources.utilisateurs(id)
+);
+
+-- Create profil_eleves table
+CREATE TABLE IF NOT EXISTS ressources.profil_eleves (
+    profil_eleves_id VARCHAR(255) NOT NULL,
+    PRIMARY KEY (profil_eleves_id),
+    CONSTRAINT fk_profil_eleves_utilisateurs FOREIGN KEY (profil_eleves_id) REFERENCES ressources.utilisateurs(id)
+);

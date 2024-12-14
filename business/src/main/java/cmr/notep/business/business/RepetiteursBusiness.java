@@ -22,17 +22,16 @@ public class RepetiteursBusiness {
     }
 
     public Repetiteurs avoirRepetiteur(String idRepetiteur) {
-        log.info("Fetching Répétiteur with ID: {}", idRepetiteur);
+        log.info("avoirRepetiteur called");
         return dozerMapperBean.map(
                 daoAccessorService.getRepository(RepetiteursRepository.class)
                         .findById(idRepetiteur)
-                        .orElseThrow(() -> new RuntimeException("Répétiteur introuvable")),
+                        .orElseThrow(() -> new RuntimeException("Repetiteur introuvable")),
                 Repetiteurs.class
         );
     }
 
     public Repetiteurs posterRepetiteur(Repetiteurs repetiteur) {
-        log.info("Posting a new Répétiteur: {}", repetiteur);
         return dozerMapperBean.map(
                 this.daoAccessorService.getRepository(RepetiteursRepository.class)
                         .save(dozerMapperBean.map(repetiteur, RepetiteursEntity.class)),
@@ -41,7 +40,6 @@ public class RepetiteursBusiness {
     }
 
     public List<Repetiteurs> avoirToutRepetiteurs() {
-        log.info("Fetching all Répétiteurs");
         return daoAccessorService.getRepository(RepetiteursRepository.class).findAll()
                 .stream()
                 .map(rep -> dozerMapperBean.map(rep, Repetiteurs.class))

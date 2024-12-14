@@ -26,6 +26,6 @@ public class Utilisateurs implements Serializable {
     private  String etat;
     private  List<Messages> messagesEnvoyer;
     private  List<Messages> messagesRecus;
-    
-    
+
+
 }

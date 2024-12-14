@@ -18,7 +18,7 @@ public class RepetiteursEntity extends UtilisateursEntity {
     private String cniUrlBack;
 
     @Column(name = "photo_full_picture", nullable = false)
-    private String photoFullPicture;
+    private String fullPicUrl;
 
     @Column(name = "nom_classe", nullable = false)
     private String nomClasse;

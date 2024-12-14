@@ -14,7 +14,7 @@ import java.util.List;
 @ToString(exclude = {"messagesEnvoyer", "messagesRecus"})
 @EqualsAndHashCode(exclude = {"messagesEnvoyer", "messagesRecus"})
 @JsonIgnoreProperties({"messagesEnvoyer", "messagesRecus"})
-public class Repetiteurs implements Serializable {
+public class ProfilParents implements Serializable {
     private String id;
     private String nom;
     private String prenom;
@@ -28,8 +28,7 @@ public class Repetiteurs implements Serializable {
     // New fields matching the SQL insert
     private String cniUrlFront;
     private String cniUrlBack;
-    private String fullPicUrl;  // Corresponds to 'photo_full_picture' in SQL
-    private String nomClasse;
+    private String fullPicUrl;  // Corresponds to the 'full_pic_url' in SQL
 
     private List<Messages> messagesEnvoyer;
     private List<Messages> messagesRecus;
