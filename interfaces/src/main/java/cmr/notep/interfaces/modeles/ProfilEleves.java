@@ -1,30 +1,14 @@
 package cmr.notep.interfaces.modeles;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.*;
-
-import java.io.Serializable;
-import java.util.List;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Data
-@Builder
-@AllArgsConstructor
+@SuperBuilder
 @NoArgsConstructor
-@ToString(exclude = {"messagesEnvoyer", "messagesRecus"})
-@EqualsAndHashCode(exclude = {"messagesEnvoyer", "messagesRecus"})
-@JsonIgnoreProperties({"messagesEnvoyer", "messagesRecus"})
-public class ProfilEleves implements Serializable {
-    private String idProfilEleve;
-    private String nom;
-    private String prenom;
-    private String email;
-    @JsonIgnore
-    private String passeAccess;
-    private String telephone;
-    private String adresse;
-    private String etat;
-
-    private List<Messages> messagesEnvoyer;
-    private List<Messages> messagesRecus;
+@EqualsAndHashCode(callSuper = true)
+public class ProfilEleves extends Utilisateurs {
+    // Ajoutez ici des champs spécifiques à ProfilEleves si nécessaire
 }
