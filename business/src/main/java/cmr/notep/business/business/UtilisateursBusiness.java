@@ -1,5 +1,7 @@
 package cmr.notep.business.business;
 
+import cmr.notep.business.exceptions.SchoolException;
+import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.interfaces.modeles.Utilisateurs;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.UtilisateursEntity;
@@ -21,20 +23,23 @@ public class UtilisateursBusiness {
         this.daoAccessorService = daoAccessorService;
     }
 
-    public Utilisateurs avoirUtilisateur(String idUtilisateur) {
-        log.info("avoirUtilisateur called");
+    public Utilisateurs avoirUtilisateur(String idUtilisateur) throws SchoolException {
+        log.info("Récupération de l'utilisateur avec ID: {}", idUtilisateur);
         return dozerMapperBean.map(daoAccessorService.getRepository(UtilisateursRepository.class)
                 .findById(idUtilisateur)
-                .orElseThrow(()-> new RuntimeException("Utilisateur introuvable")),Utilisateurs.class);
+                .orElseThrow(()-> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable avec l'ID: " + idUtilisateur)),Utilisateurs.class);
     }
     
     public Utilisateurs posterUtilisateur(Utilisateurs utilisateur) {
-        return dozerMapperBean.map(this.daoAccessorService.getRepository(UtilisateursRepository.class)
-                .save(dozerMapperBean.map(utilisateur, UtilisateursEntity.class)), Utilisateurs.class);
+        log.info("Création d'un nouvel utilisateur");
+        UtilisateursEntity savedEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
+                .save(dozerMapperBean.map(utilisateur, UtilisateursEntity.class));
+        return dozerMapperBean.map(savedEntity, Utilisateurs.class);
 
     }
     
     public List<Utilisateurs> avoirToutUtilisateurs() {
+        log.info("Récupération de tous les utilisateurs");
         return daoAccessorService.getRepository(UtilisateursRepository.class).findAll()
                 .stream().map(msg -> dozerMapperBean.map(msg,Utilisateurs.class))
                 .collect(Collectors.toList());

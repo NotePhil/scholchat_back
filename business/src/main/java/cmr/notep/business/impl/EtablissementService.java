@@ -1,6 +1,8 @@
 package cmr.notep.business.impl;
 
 import cmr.notep.business.business.EtablissementBusiness;
+import cmr.notep.business.exceptions.SchoolException;
+import cmr.notep.business.utils.ExceptionUtil;
 import cmr.notep.interfaces.api.EtablissementApi;
 import cmr.notep.interfaces.modeles.Etablissement;
 import lombok.RequiredArgsConstructor;
@@ -22,9 +24,8 @@ public class EtablissementService implements EtablissementApi {
         try {
             log.info("Création d'un nouvel établissement: {}", etablissement.getNom());
             return etablissementBusiness.creerEtablissement(etablissement);
-        } catch (Exception e) {
-            log.error("Erreur lors de la création de l'établissement", e);
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Erreur lors de la création", e);
+        } catch (SchoolException e) {
+            throw ExceptionUtil.toResponseStatusException(e);
         }
     }
 
@@ -33,31 +34,29 @@ public class EtablissementService implements EtablissementApi {
         try {
             log.info("Modification de l'établissement avec ID: {}", idEtablissement);
             return etablissementBusiness.modifierEtablissement(idEtablissement, etablissementModifie);
-        } catch (Exception e) {
+        } catch (SchoolException e) {
             log.error("Erreur lors de la modification", e);
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Etablissement non trouvé ou erreur", e);
+            throw ExceptionUtil.toResponseStatusException(e);
         }
     }
 
     @Override
     public void supprimerEtablissement(String idEtablissement) {
+        log.info("Suppression de l'établissement avec ID: {}", idEtablissement);
         try {
-            log.info("Suppression de l'établissement avec ID: {}", idEtablissement);
             etablissementBusiness.supprimerEtablissement(idEtablissement);
-        } catch (Exception e) {
-            log.error("Erreur lors de la suppression", e);
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Etablissement non trouvé", e);
+        } catch (SchoolException e) {
+            throw ExceptionUtil.toResponseStatusException(e);
         }
     }
 
     @Override
     public Etablissement obtenirEtablissementParId(String idEtablissement) {
+        log.info("Récupération de l'établissement avec ID: {}", idEtablissement);
         try {
-            log.info("Récupération de l'établissement avec ID: {}", idEtablissement);
             return etablissementBusiness.obtenirEtablissementParId(idEtablissement);
-        } catch (Exception e) {
-            log.error("Etablissement non trouvé", e);
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Etablissement non trouvé", e);
+        } catch (SchoolException e) {
+            throw ExceptionUtil.toResponseStatusException(e);
         }
     }
 

@@ -1,14 +1,14 @@
 package cmr.notep.business.impl;
 
 import cmr.notep.business.business.ClassesBusiness;
+import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.interfaces.api.ClassesApi;
 import cmr.notep.interfaces.modeles.Classes;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
+import cmr.notep.business.utils.ExceptionUtil;
 import java.util.List;
 
 @RestController
@@ -25,11 +25,9 @@ public class ClassesService implements ClassesApi {
             Classes nouvelleClasse = classesBusiness.creerClasse(classes);
             log.info("Classe créée avec succès: {}", nouvelleClasse.getId());
             return nouvelleClasse;
-        } catch (Exception e) {
+        } catch (SchoolException e) {
             log.error("Erreur lors de la création de la classe", e);
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Impossible de créer la classe", e );
+            throw ExceptionUtil.toResponseStatusException(e);
         }
     }
 
@@ -43,11 +41,9 @@ public class ClassesService implements ClassesApi {
             Classes classeMAJ = classesBusiness.modifierClasse(idClasse, classeModifiee);
             log.info("Classe modifiée avec succès: {}", classeMAJ.getId());
             return classeMAJ;
-        } catch (RuntimeException e) {
+        } catch (SchoolException e) {
             log.error("Erreur lors de la modification de la classe", e);
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Classe non trouvée ou impossible à modifier", e);
+            throw ExceptionUtil.toResponseStatusException(e);
         }
     }
 
@@ -57,11 +53,9 @@ public class ClassesService implements ClassesApi {
             log.info("Tentative de suppression de la classe avec l'ID: {}", idClasse);
             classesBusiness.supprimerClasse(idClasse);
             log.info("Classe supprimée avec succès: {}", idClasse);
-        } catch (RuntimeException e) {
+        } catch (SchoolException e) {
             log.error("Erreur lors de la suppression de la classe", e);
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,  // Changed from NOT_FOUND
-                    "Classe non trouvée ou impossible à supprimer", e);
+            throw ExceptionUtil.toResponseStatusException(e);
         }
     }
 
@@ -69,16 +63,13 @@ public class ClassesService implements ClassesApi {
     public Classes obtenirClasseParId(@NonNull String idClasse) {
         try {
             log.info("Récupération de la classe avec l'ID: {}", idClasse);
-            Classes classe = classesBusiness.obtenirClasseParId(idClasse);
-            log.info("Classe récupérée avec succès: {}", idClasse);
-            return classe;
-        } catch (RuntimeException e) {
-            log.error("Erreur lors de la récupération de la classe", e);
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Classe non trouvée", e );
+            return classesBusiness.obtenirClasseParId(idClasse);
+        } catch (SchoolException e) {
+            log.error("Unexpected exception: {}", e.getMessage(), e);
+            throw ExceptionUtil.toResponseStatusException(e);
         }
     }
+
 
     @Override
     public List<Classes> obtenirToutesLesClasses() {
@@ -87,11 +78,10 @@ public class ClassesService implements ClassesApi {
             List<Classes> classes = classesBusiness.obtenirToutesLesClasses();
             log.info("Récupération de {} classes", classes.size());
             return classes;
-        } catch (Exception e) {
+        } catch (SchoolException e) {
             log.error("Erreur lors de la récupération de toutes les classes", e);
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Impossible de récupérer les classes", e );
+            throw ExceptionUtil.toResponseStatusException(e);
         }
     }
+
 }
