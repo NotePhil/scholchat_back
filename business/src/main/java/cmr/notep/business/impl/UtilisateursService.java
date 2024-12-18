@@ -1,6 +1,8 @@
 package cmr.notep.business.impl;
 
 import cmr.notep.business.business.UtilisateursBusiness;
+import cmr.notep.business.exceptions.SchoolException;
+import cmr.notep.business.utils.ExceptionUtil;
 import cmr.notep.interfaces.api.UtilisateursApi;
 import cmr.notep.interfaces.modeles.Utilisateurs;
 import lombok.NonNull;
@@ -19,11 +21,17 @@ public class UtilisateursService implements UtilisateursApi {
 
     @Override
     public Utilisateurs avoirUtilisateur(@NonNull String idUtilisateur) {
-        return utilisateursBusiness.avoirUtilisateur(idUtilisateur);
+        log.info("Récupération de l'utilisateur avec ID: {}", idUtilisateur);
+        try {
+            return utilisateursBusiness.avoirUtilisateur(idUtilisateur);
+        } catch (SchoolException e) {
+            throw ExceptionUtil.toResponseStatusException(e);
+        }
     }
 
     @Override
     public List<Utilisateurs> avoirToutUtilisateurs() {
+        log.info("Récupération de tous les utilisateurs");
         Utilisateurs utilisateur = Utilisateurs.builder()
                 .nom("nom")
                 .prenom("prenom")
@@ -39,6 +47,7 @@ public class UtilisateursService implements UtilisateursApi {
 
     @Override
     public Utilisateurs posterUtilisateur(@NonNull Utilisateurs utilisateur) {
+        log.info("Création d'un nouvel utilisateur");
         return utilisateursBusiness.posterUtilisateur(utilisateur);
     }
 }

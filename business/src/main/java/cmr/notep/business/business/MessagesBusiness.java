@@ -1,5 +1,7 @@
 package cmr.notep.business.business;
 
+import cmr.notep.business.exceptions.SchoolException;
+import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.interfaces.modeles.Messages;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.MessagesEntity;
@@ -22,10 +24,10 @@ public class MessagesBusiness {
         this.daoAccessorService = daoAccessorService;
     }
 
-    public Messages avoirMessage(String idMessage) {
+    public Messages avoirMessage(String idMessage) throws SchoolException {
         return dozerMapperBean.map(daoAccessorService.getRepository(MessagesRepository.class)
                 .findById(idMessage)
-                .orElseThrow(()-> new RuntimeException("Message introuvable")),Messages.class);
+                .orElseThrow(()-> new SchoolException(SchoolErrorCode.NOT_FOUND, "Message introuvable avec l'ID: " + idMessage)),Messages.class);
     }
 
     public Messages posterMessage(Messages message) {
