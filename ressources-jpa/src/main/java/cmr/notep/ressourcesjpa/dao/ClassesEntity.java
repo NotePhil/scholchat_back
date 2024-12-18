@@ -49,7 +49,7 @@ public class ClassesEntity {
             inverseJoinColumns = @JoinColumn(name = "parent_id"))
     @Mapping("parents")
     private List<ParentsEntity> parentsEntities;
-
+    //TODO : mettre les noms des associations tel que écrit dans le diagramme de classe
     @ManyToMany
     @JoinTable(name = "classe_eleves",
             joinColumns = @JoinColumn(name = "classe_id"),

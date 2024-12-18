@@ -10,6 +10,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class Repetiteurs extends Utilisateurs {
+    //TODO : supprimer cette classe et n'utiliser que la classe Professeurs
     private String cniUrlFront;
     private String cniUrlBack;
     private String fullPicUrl;

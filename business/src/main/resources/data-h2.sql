@@ -42,14 +42,14 @@ INSERT INTO ressources.etablissements (id, nom) VALUES
 ('550e8400-e29b-41d4-a716-446655440101', 'Etablissement B');
 
 -- Insert data into parents
-INSERT INTO ressources.parents (id, nom) VALUES
-('550e8400-e29b-41d4-a716-446655440200', 'Parent A'),
-('550e8400-e29b-41d4-a716-446655440201', 'Parent B');
+INSERT INTO ressources.parents (parents_id) VALUES
+('550e8400-e29b-41d4-a716-446655440200'),
+('550e8400-e29b-41d4-a716-446655440201');
 
 -- Insert data into eleves
-INSERT INTO ressources.eleves (id, nom) VALUES
-('550e8400-e29b-41d4-a716-446655440300', 'Eleve A'),
-('550e8400-e29b-41d4-a716-446655440301', 'Eleve B');
+INSERT INTO ressources.eleves (eleves_id, niveau) VALUES
+('550e8400-e29b-41d4-a716-446655440300','6eme'),
+('550e8400-e29b-41d4-a716-446655440301','5eme');
 
 -- Insert data into classes
 INSERT INTO ressources.classes (id, nom, niveau, date_creation, etat, etablissement_id) VALUES
@@ -72,12 +72,3 @@ INSERT INTO ressources.professeurs (professeurs_id, cni_url_front, cni_url_back,
 -- Insert data into repetiteurs
 INSERT INTO ressources.repetiteurs (repetiteurs_id, cni_url_front, cni_url_back, photo_full_picture, nom_classe) VALUES
 ('550e8400-e29b-41d4-a716-446655440010', 'https://example.com/cni/paul_durand_front.jpg', 'https://example.com/cni/paul_durand_back.jpg', 'https://example.com/photos/paul_durand_full.jpg', 'Terminale B');
-
--- Insert data into profil_parents
-INSERT INTO ressources.profil_parents (profil_parents_id, cni_url_front, cni_url_back, full_pic_url) VALUES
-('550e8400-e29b-41d4-a716-446655440200', 'https://example.com/cni/parent_a_front.jpg', 'https://example.com/cni/parent_a_back.jpg', 'https://example.com/photos/parent_a_full.jpg'),
-('550e8400-e29b-41d4-a716-446655440201', 'https://example.com/cni/parent_b_front.jpg', 'https://example.com/cni/parent_b_back.jpg', 'https://example.com/photos/parent_b_full.jpg');
-INSERT INTO ressources.profil_eleves (profil_eleves_id) VALUES
-('550e8400-e29b-41d4-a716-446655440300'),
-('550e8400-e29b-41d4-a716-446655440301'),
-('550e8400-e29b-41d4-a716-446655440302');

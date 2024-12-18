@@ -9,7 +9,9 @@ import lombok.experimental.SuperBuilder;
 public class Professeurs extends Utilisateurs {
     private String cniUrlFront;
     private String cniUrlBack;
+    //TODO : supprimer cette propriété pour etre conforme au diagramme de classe
     private String nomEtablissement;
+    //TODO : mettre la relation avec la classe Canal qui sera en relation avec Classe
     private String nomClasse;
     private String matriculeProfesseur;
 }

@@ -1,29 +1,28 @@
 package cmr.notep.interfaces.api;
 
-import cmr.notep.interfaces.modeles.ProfilEleves;
+import cmr.notep.interfaces.modeles.Parents;
 import lombok.NonNull;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RequestMapping("/profil-eleves")
-public interface ProfilElevesApi {
-
+@RequestMapping("/parents")
+public interface ParentsApi {
     @GetMapping(
-            path = "/{idProfilEleve}",
+            path = "/{idProfilParent}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    ProfilEleves avoirProfilEleve(@NonNull @PathVariable String idProfilEleve);
+    Parents avoirParent(@NonNull @PathVariable String idProfilParent);
 
     @GetMapping(
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    List<ProfilEleves> avoirToutProfilEleves();
+    List<Parents> avoirToutParents();
 
     @PostMapping(
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    ProfilEleves posterProfilEleve(@NonNull @RequestBody ProfilEleves profilEleve);
+    Parents posterParent(@NonNull @RequestBody Parents profilParent);
 }

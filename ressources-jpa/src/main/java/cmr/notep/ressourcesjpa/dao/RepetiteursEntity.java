@@ -19,7 +19,7 @@ public class RepetiteursEntity extends UtilisateursEntity {
 
     @Column(name = "photo_full_picture", nullable = false)
     private String fullPicUrl;
-
+    //TODO : mettre la relation avec la classe ClasseEntity
     @Column(name = "nom_classe", nullable = false)
     private String nomClasse;
 }

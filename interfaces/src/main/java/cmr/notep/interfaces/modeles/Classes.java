@@ -1,10 +1,8 @@
 package cmr.notep.interfaces.modeles;
 
 import cmr.notep.modele.EtatClasse;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.*;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -14,6 +12,9 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString(exclude = {"eleves", "parents"})
+@EqualsAndHashCode(exclude = {"eleves", "parents"})
+@JsonIgnoreProperties({"eleves", "parents"})
 public class Classes implements Serializable {
     private String id;
     private String nom;
