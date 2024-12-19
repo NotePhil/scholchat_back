@@ -32,8 +32,8 @@ public class UtilisateursService implements UtilisateursApi {
                 .telephone("telephone")
                 .adresse("adresse")
                 .build();
-        utilisateur = posterUtilisateur(utilisateur);
-        log.info("Utilisateur: {}", utilisateur);
+       // utilisateur = posterUtilisateur(utilisateur);
+       // log.info("Utilisateur: {}", utilisateur);
         return utilisateursBusiness.avoirToutUtilisateurs();
     }
 

@@ -1,17 +1,17 @@
 package cmr.notep.interfaces.modeles;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
+import java.util.List;
 
 @Data
-@Builder
-@NoArgsConstructor
+@SuperBuilder
 @AllArgsConstructor
-public class Eleves implements Serializable {
-    private String id;
-    private String nom;
+@NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
+public class Eleves extends Utilisateurs {
+    private String niveau;
+    private List<Classes> classes;
 }

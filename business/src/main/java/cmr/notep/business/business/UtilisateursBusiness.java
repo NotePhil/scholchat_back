@@ -27,13 +27,13 @@ public class UtilisateursBusiness {
                 .findById(idUtilisateur)
                 .orElseThrow(()-> new RuntimeException("Utilisateur introuvable")),Utilisateurs.class);
     }
-    
+
     public Utilisateurs posterUtilisateur(Utilisateurs utilisateur) {
         return dozerMapperBean.map(this.daoAccessorService.getRepository(UtilisateursRepository.class)
                 .save(dozerMapperBean.map(utilisateur, UtilisateursEntity.class)), Utilisateurs.class);
 
     }
-    
+
     public List<Utilisateurs> avoirToutUtilisateurs() {
         return daoAccessorService.getRepository(UtilisateursRepository.class).findAll()
                 .stream().map(msg -> dozerMapperBean.map(msg,Utilisateurs.class))
