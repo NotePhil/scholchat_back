@@ -1,5 +1,6 @@
 package cmr.notep.interfaces.api;
 
+import cmr.notep.interfaces.modeles.IUtilisateurs;
 import cmr.notep.interfaces.modeles.Messages;
 import cmr.notep.interfaces.modeles.Utilisateurs;
 import lombok.NonNull;

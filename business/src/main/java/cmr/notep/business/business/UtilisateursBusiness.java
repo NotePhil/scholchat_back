@@ -1,8 +1,8 @@
 package cmr.notep.business.business;
 
-import cmr.notep.interfaces.modeles.Utilisateurs;
+import cmr.notep.interfaces.modeles.*;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
-import cmr.notep.ressourcesjpa.dao.UtilisateursEntity;
+import cmr.notep.ressourcesjpa.dao.*;
 import cmr.notep.ressourcesjpa.repository.UtilisateursRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -36,7 +36,20 @@ public class UtilisateursBusiness {
 
     public List<Utilisateurs> avoirToutUtilisateurs() {
         return daoAccessorService.getRepository(UtilisateursRepository.class).findAll()
-                .stream().map(msg -> dozerMapperBean.map(msg,Utilisateurs.class))
+                .stream().map(utilisateur -> {
+                        if(utilisateur instanceof ProfesseursEntity)
+                            return dozerMapperBean.map(utilisateur, Professeurs.class);
+                        else if(utilisateur instanceof ElevesEntity)
+                            return dozerMapperBean.map(utilisateur, Eleves.class);
+                        else if (utilisateur instanceof RepetiteursEntity)
+                            return dozerMapperBean.map(utilisateur, Repetiteurs.class);
+                        else if (utilisateur instanceof ParentsEntity)
+                            return dozerMapperBean.map(utilisateur, Parents.class);
+                        else{
+                            log.info("Utilisateur: {}", utilisateur.getId());
+                            return dozerMapperBean.map(utilisateur, Utilisateurs.class);
+                        }
+                })
                 .collect(Collectors.toList());
     }
 }
