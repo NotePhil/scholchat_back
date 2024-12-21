@@ -23,33 +23,46 @@ public class UtilisateursBusiness {
 
     public Utilisateurs avoirUtilisateur(String idUtilisateur) {
         log.info("avoirUtilisateur called");
-        return dozerMapperBean.map(daoAccessorService.getRepository(UtilisateursRepository.class)
+        return mapUtilisateursEntityToModele(daoAccessorService.getRepository(UtilisateursRepository.class)
                 .findById(idUtilisateur)
-                .orElseThrow(()-> new RuntimeException("Utilisateur introuvable")),Utilisateurs.class);
+                .orElseThrow(()-> new RuntimeException("Utilisateur introuvable")));
     }
 
     public Utilisateurs posterUtilisateur(Utilisateurs utilisateur) {
-        return dozerMapperBean.map(this.daoAccessorService.getRepository(UtilisateursRepository.class)
-                .save(dozerMapperBean.map(utilisateur, UtilisateursEntity.class)), Utilisateurs.class);
+        return mapUtilisateursEntityToModele(this.daoAccessorService.getRepository(UtilisateursRepository.class)
+                .save(mapUtilisateursModeleToEntity(utilisateur)));
 
     }
 
     public List<Utilisateurs> avoirToutUtilisateurs() {
         return daoAccessorService.getRepository(UtilisateursRepository.class).findAll()
-                .stream().map(utilisateur -> {
-                        if(utilisateur instanceof ProfesseursEntity)
-                            return dozerMapperBean.map(utilisateur, Professeurs.class);
-                        else if(utilisateur instanceof ElevesEntity)
-                            return dozerMapperBean.map(utilisateur, Eleves.class);
-                        else if (utilisateur instanceof RepetiteursEntity)
-                            return dozerMapperBean.map(utilisateur, Repetiteurs.class);
-                        else if (utilisateur instanceof ParentsEntity)
-                            return dozerMapperBean.map(utilisateur, Parents.class);
-                        else{
-                            log.info("Utilisateur: {}", utilisateur.getId());
-                            return dozerMapperBean.map(utilisateur, Utilisateurs.class);
-                        }
-                })
+                .stream().map(utilisateursEntity -> mapUtilisateursEntityToModele(utilisateursEntity))
                 .collect(Collectors.toList());
+    }
+
+    private static Utilisateurs mapUtilisateursEntityToModele(UtilisateursEntity utilisateurEntity) {
+        if(utilisateurEntity instanceof ProfesseursEntity)
+            return dozerMapperBean.map(utilisateurEntity, Professeurs.class);
+        else if(utilisateurEntity instanceof ElevesEntity)
+            return dozerMapperBean.map(utilisateurEntity, Eleves.class);
+        else if (utilisateurEntity instanceof RepetiteursEntity)
+            return dozerMapperBean.map(utilisateurEntity, Repetiteurs.class);
+        else if (utilisateurEntity instanceof ParentsEntity)
+            return dozerMapperBean.map(utilisateurEntity, Parents.class);
+        else
+            return dozerMapperBean.map(utilisateurEntity, Utilisateurs.class);
+    }
+
+    private static UtilisateursEntity mapUtilisateursModeleToEntity(Utilisateurs utilisateur) {
+        if(utilisateur instanceof Professeurs)
+            return dozerMapperBean.map(utilisateur, ProfesseursEntity.class);
+        else if(utilisateur instanceof Eleves)
+            return dozerMapperBean.map(utilisateur, ElevesEntity.class);
+        else if (utilisateur instanceof Repetiteurs)
+            return dozerMapperBean.map(utilisateur, RepetiteursEntity.class);
+        else if (utilisateur instanceof Parents)
+            return dozerMapperBean.map(utilisateur, ParentsEntity.class);
+        else
+            return dozerMapperBean.map(utilisateur, UtilisateursEntity.class);
     }
 }

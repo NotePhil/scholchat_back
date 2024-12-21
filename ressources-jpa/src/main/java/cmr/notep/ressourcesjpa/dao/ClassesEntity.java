@@ -44,14 +44,14 @@ public class ClassesEntity {
     private EtablissementEntity etablissement;
 
     @ManyToMany
-    @JoinTable(name = "classe_parents",
+    @JoinTable(name = "classe_parents", schema = "ressources",
             joinColumns = @JoinColumn(name = "classe_id"),
             inverseJoinColumns = @JoinColumn(name = "parent_id"))
     @Mapping("parents")
     private List<ParentsEntity> parentsEntities;
     //TODO : mettre les noms des associations tel que écrit dans le diagramme de classe
     @ManyToMany
-    @JoinTable(name = "classe_eleves",
+    @JoinTable(name = "classe_eleves", schema = "ressources",
             joinColumns = @JoinColumn(name = "classe_id"),
             inverseJoinColumns = @JoinColumn(name = "eleve_id"))
     @Mapping("eleves")
