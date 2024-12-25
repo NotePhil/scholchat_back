@@ -2,7 +2,6 @@ package cmr.notep.business.impl;
 
 import cmr.notep.business.business.UtilisateursBusiness;
 import cmr.notep.interfaces.api.UtilisateursApi;
-import cmr.notep.interfaces.modeles.IUtilisateurs;
 import cmr.notep.interfaces.modeles.Utilisateurs;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
