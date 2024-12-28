@@ -4,7 +4,7 @@ import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import lombok.Getter;
 
 @Getter
-public class SchoolException extends Exception {
+public class SchoolException extends RuntimeException {
     private final SchoolErrorCode code;
 
     public SchoolException(SchoolErrorCode code, String message) {

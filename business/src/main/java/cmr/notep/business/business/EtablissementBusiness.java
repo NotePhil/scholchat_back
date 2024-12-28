@@ -21,7 +21,7 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 public class EtablissementBusiness {
     private final DaoAccessorService daoAccessorService;
 
-    public Etablissement creerEtablissement(Etablissement etablissement) throws SchoolException {
+    public Etablissement creerEtablissement(Etablissement etablissement) {
 
             EtablissementEntity entity = dozerMapperBean.map(etablissement, EtablissementEntity.class);
             EtablissementEntity saved = daoAccessorService.getRepository(EtablissementRepository.class).save(entity);
@@ -29,7 +29,7 @@ public class EtablissementBusiness {
             return dozerMapperBean.map(saved, Etablissement.class);
     }
 
-    public Etablissement modifierEtablissement(String id, Etablissement etablissementModifie) throws SchoolException {
+    public Etablissement modifierEtablissement(String id, Etablissement etablissementModifie) {
             EtablissementRepository repo = daoAccessorService.getRepository(EtablissementRepository.class);
             EtablissementEntity existing = repo.findById(id)
                     .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Établissement non trouvé avec l'ID: " + id));
@@ -43,7 +43,7 @@ public class EtablissementBusiness {
 
     }
 
-    public void supprimerEtablissement(String id) throws SchoolException {
+    public void supprimerEtablissement(String id) {
             EtablissementRepository repo = daoAccessorService.getRepository(EtablissementRepository.class);
             if (!repo.existsById(id)) {
                 throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Établissement non trouvé avec l'ID: " + id);
@@ -51,7 +51,7 @@ public class EtablissementBusiness {
             repo.deleteById(id);
     }
 
-    public Etablissement obtenirEtablissementParId(String id) throws SchoolException {
+    public Etablissement obtenirEtablissementParId(String id) {
             EtablissementRepository repo = daoAccessorService.getRepository(EtablissementRepository.class);
             EtablissementEntity entity = repo.findById(id)
                     .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Établissement non trouvé avec l'ID: " + id));

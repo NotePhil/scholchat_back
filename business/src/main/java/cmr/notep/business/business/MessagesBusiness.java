@@ -24,7 +24,7 @@ public class MessagesBusiness {
         this.daoAccessorService = daoAccessorService;
     }
 
-    public Messages avoirMessage(String idMessage) throws SchoolException {
+    public Messages avoirMessage(String idMessage) {
         return dozerMapperBean.map(daoAccessorService.getRepository(MessagesRepository.class)
                 .findById(idMessage)
                 .orElseThrow(()-> new SchoolException(SchoolErrorCode.NOT_FOUND, "Message introuvable avec l'ID: " + idMessage)),Messages.class);

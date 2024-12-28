@@ -23,7 +23,7 @@ public class UtilisateursBusiness {
         this.daoAccessorService = daoAccessorService;
     }
 
-    public Utilisateurs avoirUtilisateur(String idUtilisateur) throws SchoolException {
+    public Utilisateurs avoirUtilisateur(String idUtilisateur) {
         log.info("Récupération de l'utilisateur avec ID: {}", idUtilisateur);
         return dozerMapperBean.map(daoAccessorService.getRepository(UtilisateursRepository.class)
                 .findById(idUtilisateur)

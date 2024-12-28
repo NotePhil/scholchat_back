@@ -14,12 +14,10 @@ import cmr.notep.ressourcesjpa.repository.ClassesRepository;
 import cmr.notep.ressourcesjpa.repository.ElevesRepository;
 import cmr.notep.ressourcesjpa.repository.EtablissementRepository;
 import cmr.notep.ressourcesjpa.repository.ParentsRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;

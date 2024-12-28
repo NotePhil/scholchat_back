@@ -1,8 +1,6 @@
 package cmr.notep.business.impl;
 
 import cmr.notep.business.business.MessagesBusiness;
-import cmr.notep.business.exceptions.SchoolException;
-import cmr.notep.business.utils.ExceptionUtil;
 import cmr.notep.interfaces.api.MessagesApi;
 import cmr.notep.interfaces.modeles.Messages;
 import lombok.NonNull;
@@ -22,11 +20,7 @@ public class MessagesService implements MessagesApi {
     @Override
     public Messages avoirMessage(@NonNull String idMessage) {
         log.info("Récupération du message avec ID: {}", idMessage);
-        try {
             return messagesBusiness.avoirMessage(idMessage);
-        } catch (SchoolException e) {
-            throw ExceptionUtil.toResponseStatusException(e);
-        }
     }
 
     @Override
