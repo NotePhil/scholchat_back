@@ -18,27 +18,20 @@ public class UtilisateursService implements UtilisateursApi {
     }
 
     @Override
-    public Utilisateurs avoirUtilisateur(@NonNull String idUtilisateur) {
-        return utilisateursBusiness.avoirUtilisateur(idUtilisateur);
+    public Utilisateurs avoirUtilisateur( String idUtilisateur) {
+        log.info("Récupération de l'utilisateur avec ID: {}", idUtilisateur);
+            return utilisateursBusiness.avoirUtilisateur(idUtilisateur);
     }
 
     @Override
     public List<Utilisateurs> avoirToutUtilisateurs() {
-        Utilisateurs utilisateur = Utilisateurs.builder()
-                .nom("nom")
-                .prenom("prenom")
-                .email("email")
-                .passeAccess("passeAccess")
-                .telephone("telephone")
-                .adresse("adresse")
-                .build();
-        utilisateur = posterUtilisateur(utilisateur);
-        log.info("Utilisateur: {}", utilisateur);
+        log.info("Récupération de tous les utilisateurs");
         return utilisateursBusiness.avoirToutUtilisateurs();
     }
 
     @Override
     public Utilisateurs posterUtilisateur(@NonNull Utilisateurs utilisateur) {
+        log.info("Création d'un nouvel utilisateur");
         return utilisateursBusiness.posterUtilisateur(utilisateur);
     }
 }
