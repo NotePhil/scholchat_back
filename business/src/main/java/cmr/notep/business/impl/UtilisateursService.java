@@ -18,7 +18,7 @@ public class UtilisateursService implements UtilisateursApi {
     }
 
     @Override
-    public Utilisateurs avoirUtilisateur(@NonNull String idUtilisateur) {
+    public Utilisateurs avoirUtilisateur( String idUtilisateur) {
         log.info("Récupération de l'utilisateur avec ID: {}", idUtilisateur);
             return utilisateursBusiness.avoirUtilisateur(idUtilisateur);
     }
@@ -26,16 +26,6 @@ public class UtilisateursService implements UtilisateursApi {
     @Override
     public List<Utilisateurs> avoirToutUtilisateurs() {
         log.info("Récupération de tous les utilisateurs");
-        Utilisateurs utilisateur = Utilisateurs.builder()
-                .nom("nom")
-                .prenom("prenom")
-                .email("email")
-                .passeAccess("passeAccess")
-                .telephone("telephone")
-                .adresse("adresse")
-                .build();
-        utilisateur = posterUtilisateur(utilisateur);
-        log.info("Utilisateur: {}", utilisateur);
         return utilisateursBusiness.avoirToutUtilisateurs();
     }
 
