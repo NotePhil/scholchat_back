@@ -12,10 +12,10 @@ import lombok.Setter;
 public class ProfesseursEntity extends UtilisateursEntity {
 
     @Column(name = "cni_url_front", nullable = false)
-    private String cniUrlFront;
+    private String cniUrlRecto;
 
     @Column(name = "cni_url_back", nullable = false)
-    private String cniUrlBack;
+    private String cniUrlVerso;
     //TODO : supprimer ce champ et se mettre en conformité avec le diagramme de classe
     @Column(name = "nom_etablissement", nullable = false)
     private String nomEtablissement;
