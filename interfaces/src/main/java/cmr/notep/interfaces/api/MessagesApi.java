@@ -13,7 +13,7 @@ public interface MessagesApi {
             path = "/{idMessage}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    Messages avoirMessage(@NonNull @RequestParam String idMessage);
+    Messages avoirMessage(@NonNull @PathVariable(name ="idMessage") String idMessage);
 
     @GetMapping(
             produces = MediaType.APPLICATION_JSON_VALUE

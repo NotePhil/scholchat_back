@@ -1,5 +1,7 @@
 package cmr.notep.business.business;
 
+import cmr.notep.business.exceptions.SchoolException;
+import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.interfaces.modeles.*;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.*;
@@ -22,19 +24,21 @@ public class UtilisateursBusiness {
     }
 
     public Utilisateurs avoirUtilisateur(String idUtilisateur) {
-        log.info("avoirUtilisateur called");
+        log.info("Récupération de l'utilisateur avec ID: {}", idUtilisateur);
         return mapUtilisateursEntityToModele(daoAccessorService.getRepository(UtilisateursRepository.class)
                 .findById(idUtilisateur)
-                .orElseThrow(()-> new RuntimeException("Utilisateur introuvable")));
+                .orElseThrow(()-> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable avec l'ID: " + idUtilisateur)));
     }
 
     public Utilisateurs posterUtilisateur(Utilisateurs utilisateur) {
+        log.info("Création d'un nouvel utilisateur");
         return mapUtilisateursEntityToModele(this.daoAccessorService.getRepository(UtilisateursRepository.class)
                 .save(mapUtilisateursModeleToEntity(utilisateur)));
 
     }
-
+    
     public List<Utilisateurs> avoirToutUtilisateurs() {
+        log.info("Récupération de tous les utilisateurs");
         return daoAccessorService.getRepository(UtilisateursRepository.class).findAll()
                 .stream().map(utilisateursEntity -> mapUtilisateursEntityToModele(utilisateursEntity))
                 .collect(Collectors.toList());

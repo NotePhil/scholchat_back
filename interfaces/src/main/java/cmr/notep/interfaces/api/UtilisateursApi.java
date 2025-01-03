@@ -13,7 +13,7 @@ public interface UtilisateursApi {
             path = "/{idUtilisateur}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    Utilisateurs avoirUtilisateur(@NonNull @PathVariable String idUtilisateur);
+    Utilisateurs avoirUtilisateur(@NonNull @PathVariable(name = "idUtilisateur") String idUtilisateur);
 
     @GetMapping(
             produces = MediaType.APPLICATION_JSON_VALUE
