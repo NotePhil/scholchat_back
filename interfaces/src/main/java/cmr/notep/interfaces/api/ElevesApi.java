@@ -1,28 +1,29 @@
 package cmr.notep.interfaces.api;
 
-import cmr.notep.interfaces.modeles.Utilisateurs;
+import cmr.notep.interfaces.modeles.Eleves;
 import lombok.NonNull;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RequestMapping("/utilisateurs")
-public interface UtilisateursApi {
+@RequestMapping("/profil-eleves")
+public interface ElevesApi {
+
     @GetMapping(
-            path = "/{idUtilisateur}",
+            path = "/{idEleve}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    Utilisateurs avoirUtilisateur(@NonNull @PathVariable(name = "idUtilisateur") String idUtilisateur);
+    Eleves avoirEleve(@NonNull @PathVariable String idEleve);
 
     @GetMapping(
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    List<Utilisateurs> avoirToutUtilisateurs();
+    List<Eleves> avoirToutEleves();
 
     @PostMapping(
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    Utilisateurs posterUtilisateur(@NonNull @RequestBody Utilisateurs utilisateur);
+    Eleves posterEleve(@NonNull @RequestBody Eleves Eleve);
 }

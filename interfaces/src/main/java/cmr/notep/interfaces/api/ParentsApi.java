@@ -1,28 +1,28 @@
 package cmr.notep.interfaces.api;
 
-import cmr.notep.interfaces.modeles.Utilisateurs;
+import cmr.notep.interfaces.modeles.Parents;
 import lombok.NonNull;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RequestMapping("/utilisateurs")
-public interface UtilisateursApi {
+@RequestMapping("/parents")
+public interface ParentsApi {
     @GetMapping(
-            path = "/{idUtilisateur}",
+            path = "/{idProfilParent}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    Utilisateurs avoirUtilisateur(@NonNull @PathVariable(name = "idUtilisateur") String idUtilisateur);
+    Parents avoirParent(@NonNull @PathVariable String idProfilParent);
 
     @GetMapping(
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    List<Utilisateurs> avoirToutUtilisateurs();
+    List<Parents> avoirToutParents();
 
     @PostMapping(
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    Utilisateurs posterUtilisateur(@NonNull @RequestBody Utilisateurs utilisateur);
+    Parents posterParent(@NonNull @RequestBody Parents profilParent);
 }
