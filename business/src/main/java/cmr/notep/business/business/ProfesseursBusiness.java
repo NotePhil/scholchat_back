@@ -1,5 +1,7 @@
 package cmr.notep.business.business;
 
+import cmr.notep.business.exceptions.SchoolException;
+import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.interfaces.modeles.Professeurs;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.ProfesseursEntity;
@@ -26,7 +28,7 @@ public class ProfesseursBusiness {
         return dozerMapperBean.map(
                 daoAccessorService.getRepository(ProfesseursRepository.class)
                         .findById(idProfesseur)
-                        .orElseThrow(() -> new RuntimeException("Professeur introuvable")),
+                        .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND,"Professeur introuvable avec l'ID: " + idProfesseur)),
                 Professeurs.class
         );
     }

@@ -1,5 +1,7 @@
 package cmr.notep.business.business;
 
+import cmr.notep.business.exceptions.SchoolException;
+import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.interfaces.modeles.Repetiteurs;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.RepetiteursEntity;
@@ -26,7 +28,7 @@ public class RepetiteursBusiness {
         return dozerMapperBean.map(
                 daoAccessorService.getRepository(RepetiteursRepository.class)
                         .findById(idRepetiteur)
-                        .orElseThrow(() -> new RuntimeException("Repetiteur introuvable")),
+                        .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND,"Repetiteur introuvable avec l'ID: " + idRepetiteur)),
                 Repetiteurs.class
         );
     }

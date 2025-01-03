@@ -1,5 +1,7 @@
 package cmr.notep.business.business;
 
+import cmr.notep.business.exceptions.SchoolException;
+import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.interfaces.modeles.Parents;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.ParentsEntity;
@@ -26,7 +28,7 @@ public class ParentsBusiness {
         return dozerMapperBean.map(
                 daoAccessorService.getRepository(ParentsRepository.class)
                         .findById(idParent)
-                        .orElseThrow(() -> new RuntimeException("Parent introuvable")),
+                        .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND,"Parent introuvable avec l'ID: " + idParent)),
                 Parents.class
         );
     }
