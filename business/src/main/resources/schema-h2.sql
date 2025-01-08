@@ -134,5 +134,16 @@ CREATE TABLE IF NOT EXISTS ressources.repetiteurs (
     CONSTRAINT fk_repetiteurs_utilisateurs FOREIGN KEY (repetiteurs_id) REFERENCES ressources.utilisateurs(id)
 );
 
+ALTER TABLE ressources.utilisateurs
+ADD COLUMN IF NOT EXISTS activation_token VARCHAR(255) UNIQUE;
+
+-- Change the data type of the etat column
+ALTER TABLE ressources.utilisateurs ALTER COLUMN etat SET DATA TYPE VARCHAR(50);
+
+-- Set the default value of the etat column
+ALTER TABLE ressources.utilisateurs ALTER COLUMN etat SET DEFAULT 'INACTIVE';
+
+
+
 
 

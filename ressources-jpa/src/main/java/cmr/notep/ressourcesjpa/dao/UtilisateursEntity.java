@@ -1,5 +1,6 @@
 package cmr.notep.ressourcesjpa.dao;
 
+import cmr.notep.modele.EtatUtilisateur;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -37,8 +38,12 @@ public class UtilisateursEntity {
     @Column(name = "adresse")
     private String adresse;
 
+    @Column(name = "activation_token", unique = true)
+    private String activationToken;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "etat")
-    private String etat;
+    private EtatUtilisateur etat = EtatUtilisateur.INACTIVE;
 
     @OneToMany(mappedBy = "expediteurEntity")
     @Mapping("messagesEnvoyer")

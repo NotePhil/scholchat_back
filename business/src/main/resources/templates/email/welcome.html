@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome to ScholChat</title>
+    <style>
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+        }
+        .header {
+            background-color: #4A90E2;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            color: white;
+            margin: 0;
+        }
+        .content {
+            padding: 20px;
+            background-color: #ffffff;
+        }
+        .footer {
+            background-color: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666666;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4A90E2;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="header">
+        <h1>Bienvenue sur ScholChat!</h1>
+    </div>
+    <div class="content">
+        <p>Bonjour <strong th:text="${userName}">User</strong>,</p>
+        <p>Nous sommes ravis de vous accueillir sur ScholChat. Votre compte a été créé avec succès.</p>
+        <p>Commencez dès maintenant à explorer toutes les fonctionnalités que nous offrons:</p>
+        <ul>
+            <li>Chattez avec vos camarades de classe</li>
+            <li>Partagez des ressources éducatives</li>
+            <li>Participez aux discussions de groupe</li>
+        </ul>
+        <center>
+            <form action="#" th:action="${activationUrl}" method="post">
+                <input type="hidden" th:name="activationToken" th:value="${activationToken}" />
+                <button type="submit" class="button">Activer Mon Compte</button>
+            </form>
+        </center>
+    </div>
+    <div class="footer">
+        <p>© 2025 ScholChat. Tous droits réservés.</p>
+        <p th:text="${userEmail}">Cet email a été envoyé à email@example.com</p>
+    </div>
+</div>
+</body>
+</html>

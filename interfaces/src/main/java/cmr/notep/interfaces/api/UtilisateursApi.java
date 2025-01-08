@@ -25,4 +25,10 @@ public interface UtilisateursApi {
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
     Utilisateurs posterUtilisateur(@NonNull @RequestBody Utilisateurs utilisateur);
+
+    @PostMapping(
+            path = "/activate",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    Utilisateurs activerUtilisateur(@RequestParam String activationToken);
 }
