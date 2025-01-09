@@ -2,6 +2,7 @@ package cmr.notep.business.impl;
 
 import cmr.notep.business.business.UtilisateursBusiness;
 import cmr.notep.interfaces.api.UtilisateursApi;
+import cmr.notep.interfaces.modeles.IUtilisateurs;
 import cmr.notep.interfaces.modeles.Utilisateurs;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -33,5 +34,10 @@ public class UtilisateursService implements UtilisateursApi {
     public Utilisateurs posterUtilisateur(@NonNull Utilisateurs utilisateur) {
         log.info("Création d'un nouvel utilisateur");
         return utilisateursBusiness.posterUtilisateur(utilisateur);
+    }
+
+    @Override
+    public Utilisateurs posterGenericUtilisateur(IUtilisateurs utilisateur) {
+        return utilisateursBusiness.posterGenericUtilisateur(utilisateur);
     }
 }
