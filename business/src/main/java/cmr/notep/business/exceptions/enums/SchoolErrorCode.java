@@ -7,7 +7,10 @@ public enum SchoolErrorCode {
     INTERNAL_ERROR("Internal server error"),
     INVALID_INPUT("Invalid input data"),
     INVALID_TOKEN("Invalid activation token"),
-    INVALID_OPERATION("Invalid operation");
+    INVALID_OPERATION("Invalid operation"),
+    EMAIL_NOT_SENT("The activation email could not be sent."),
+    INVALID_STATE("The user is not in a valid state for this operation."),
+    MAPPING_FAILED("User entity mapping failed");
 
 
     private final String message;

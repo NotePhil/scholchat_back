@@ -7,6 +7,7 @@ import lombok.Setter;
 import org.dozer.Mapping;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -45,6 +46,9 @@ public class UtilisateursEntity {
     @Column(name = "etat")
     private EtatUtilisateur etat = EtatUtilisateur.INACTIVE;
 
+    @Column(name = "creation_date")
+    private LocalDateTime creationDate = LocalDateTime.now();
+
     @OneToMany(mappedBy = "expediteurEntity")
     @Mapping("messagesEnvoyer")
     private List<MessagesEntity> messagesEnvoyerEntities;
@@ -55,4 +59,5 @@ public class UtilisateursEntity {
             inverseJoinColumns = @JoinColumn(name = "message_id"))
     @Mapping("messagesRecus")
     private List<MessagesEntity> messagesRecusEntities;
+
 }

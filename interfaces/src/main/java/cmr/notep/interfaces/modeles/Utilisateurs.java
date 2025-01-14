@@ -8,6 +8,7 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -28,6 +29,7 @@ public class Utilisateurs implements Serializable {
     private String adresse;
     private String activationToken;
     private EtatUtilisateur etat;
+    private LocalDateTime creationDate;
     private List<Messages> messagesEnvoyer;
     private List<Messages> messagesRecus;
 }
