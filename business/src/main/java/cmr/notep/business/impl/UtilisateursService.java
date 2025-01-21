@@ -3,6 +3,7 @@ package cmr.notep.business.impl;
 import cmr.notep.business.business.UtilisateursBusiness;
 import cmr.notep.business.services.ActivationService;
 import cmr.notep.interfaces.api.UtilisateursApi;
+import cmr.notep.interfaces.modeles.IUtilisateurs;
 import cmr.notep.interfaces.modeles.Utilisateurs;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -49,5 +50,10 @@ public class UtilisateursService implements UtilisateursApi {
     public Utilisateurs regenererActivationEmail(@RequestParam String email) {
         log.info("Regeneration de l'email d'activation pour: {}", email);
         return utilisateursBusiness.regenererActivationEmail(email);
+    }
+
+    @Override
+    public Utilisateurs posterGenericUtilisateur(IUtilisateurs utilisateur) {
+        return utilisateursBusiness.posterGenericUtilisateur(utilisateur);
     }
 }

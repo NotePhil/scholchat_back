@@ -11,8 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class Repetiteurs extends Utilisateurs {
     //TODO : supprimer cette classe et n'utiliser que la classe Professeurs
-    private String cniUrlFront;
-    private String cniUrlBack;
+    private String cniUrlRecto;
+    private String cniUrlVerso;
     private String fullPicUrl;
     private String nomClasse;
 }

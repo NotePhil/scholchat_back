@@ -79,7 +79,12 @@ public class UtilisateursBusiness {
         return mapUtilisateursEntityToModele(savedUserEntity);
     }
 
+    public Utilisateurs posterGenericUtilisateur(IUtilisateurs utilisateur) {
+        log.info("Création d'un nouvel utilisateur");
+        return mapUtilisateursEntityToModele(this.daoAccessorService.getRepository(UtilisateursRepository.class)
+                .save(mapUtilisateursModeleToEntity(utilisateur)));
 
+    }
 
     public List<Utilisateurs> avoirToutUtilisateurs() {
         log.info("Récupération de tous les utilisateurs");
@@ -119,7 +124,7 @@ public class UtilisateursBusiness {
             return dozerMapperBean.map(utilisateurEntity, Utilisateurs.class);
     }
 
-    private static UtilisateursEntity mapUtilisateursModeleToEntity(Utilisateurs utilisateur) {
+    private static UtilisateursEntity mapUtilisateursModeleToEntity(IUtilisateurs utilisateur) {
         if(utilisateur instanceof Professeurs)
             return dozerMapperBean.map(utilisateur, ProfesseursEntity.class);
         else if(utilisateur instanceof Eleves)

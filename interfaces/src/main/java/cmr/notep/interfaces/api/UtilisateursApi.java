@@ -1,5 +1,6 @@
 package cmr.notep.interfaces.api;
 
+import cmr.notep.interfaces.modeles.IUtilisateurs;
 import cmr.notep.interfaces.modeles.Utilisateurs;
 import lombok.NonNull;
 import org.springframework.http.MediaType;
@@ -25,6 +26,13 @@ public interface UtilisateursApi {
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
     Utilisateurs posterUtilisateur(@NonNull @RequestBody Utilisateurs utilisateur);
+
+    @PostMapping(
+            path = "/generic",
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    Utilisateurs posterGenericUtilisateur(@RequestBody IUtilisateurs utilisateur);
 
     @PostMapping(
             path = "/activate",

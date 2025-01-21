@@ -18,7 +18,7 @@ import java.util.List;
 @ToString(exclude = {"messagesEnvoyer", "messagesRecus"})
 @EqualsAndHashCode(exclude = {"messagesEnvoyer", "messagesRecus"})
 @JsonIgnoreProperties(value={"messagesEnvoyer", "messagesRecus"},ignoreUnknown = true)
-public class Utilisateurs implements Serializable {
+public class Utilisateurs implements Serializable,IUtilisateurs {
     private String id;
     private String nom;
     private String prenom;
