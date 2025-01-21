@@ -17,7 +17,6 @@ import org.springframework.retry.annotation.Backoff;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
@@ -45,13 +44,24 @@ public class UtilisateursBusiness {
     public Utilisateurs posterUtilisateur(Utilisateurs utilisateur) {
         log.info("Création d'un nouvel utilisateur");
 
+        if (dozerMapperBean == null) {
+            throw new IllegalStateException("DozerBeanMapper is not initialized.");
+        }
+
         // Automatically set etat to PENDING
         utilisateur.setEtat(EtatUtilisateur.PENDING);
+
+        utilisateur.setCreationDate(LocalDateTime.now());
 
         // Map the user model to an entity
         UtilisateursEntity userEntity = mapUtilisateursModeleToEntity(utilisateur);
         if (userEntity == null) {
             throw new SchoolException(SchoolErrorCode.MAPPING_FAILED, "User entity mapping failed.");
+        }
+
+        // Ensure creation date is set on entity
+        if (userEntity.getCreationDate() == null) {
+            userEntity.setCreationDate(LocalDateTime.now());
         }
 
         // Save the user entity first to generate the ID
@@ -60,10 +70,12 @@ public class UtilisateursBusiness {
 
         // Now that the ID is available, generate JWT token
         String activationToken = jwtUtil.generateToken(
-                savedUserEntity.getEmail(),
-                Map.of("userId", savedUserEntity.getId())
+                savedUserEntity.getEmail()
         );
         savedUserEntity.setActivationToken(activationToken);
+
+        savedUserEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
+                .save(savedUserEntity);
 
         // Send the activation email after the user has been saved and the token is generated
         try {
@@ -166,8 +178,7 @@ public class UtilisateursBusiness {
 
         // Generate a new activation token
         String activationToken = jwtUtil.generateToken(
-                utilisateur.getEmail(),
-                Map.of("userId", utilisateur.getId())
+                utilisateur.getEmail()
         );
         utilisateur.setActivationToken(activationToken);
 

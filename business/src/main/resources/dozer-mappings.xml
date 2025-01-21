@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mappings xmlns="http://dozer.sourceforge.net"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://dozer.sourceforge.net
+          http://dozer.sourceforge.net/schema/beanmapping.xsd">
+
+    <!-- Declare the custom converter globally -->
+    <configuration>
+        <custom-converters>
+            <converter type="cmr.notep.business.config.LocalDateTimeConverter">
+                <class-a>java.time.LocalDateTime</class-a>
+                <class-b>java.time.LocalDateTime</class-b>
+            </converter>
+        </custom-converters>
+    </configuration>
+
+    <!-- Map the creationDate field -->
+    <mapping>
+        <class-a>cmr.notep.ressourcesjpa.dao.UtilisateursEntity</class-a>
+        <class-b>cmr.notep.interfaces.modeles.Utilisateurs</class-b>
+        <field>
+            <a>creationDate</a>
+            <b>creationDate</b>
+            <!-- Use type hints to trigger the converter -->
+            <a-hint>java.time.LocalDateTime</a-hint>
+            <b-hint>java.time.LocalDateTime</b-hint>
+        </field>
+    </mapping>
+</mappings>

@@ -27,7 +27,7 @@ public class UtilisateursEntity {
     @Column(name = "prenom")
     private String prenom;
 
-    @Column(name = "email")
+    @Column(name = "email", unique = true)
     private String email;
 
     @Column(name = "passeaccess")

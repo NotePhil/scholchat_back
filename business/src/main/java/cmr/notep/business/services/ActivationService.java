@@ -21,35 +21,34 @@ public class ActivationService {
     public Utilisateurs activerUtilisateur(String activationToken) {
         log.info("Activating user with token: {}", activationToken);
 
-        // Validate the activation token
-        if (!jwtUtil.validateToken(activationToken)) {
-            throw new SchoolException(SchoolErrorCode.INVALID_TOKEN, "Token d'activation invalide ou expiré");
-        }
+        // Validate token structure and expiration
+        jwtUtil.validateToken(activationToken);
 
-        // Extract email from the token
-        String email = jwtUtil.extractClaims(activationToken).getSubject();
+        // Extract email directly using dedicated method
+        String email = jwtUtil.extractEmail(activationToken);
         log.info("Extracted email from token: {}", email);
 
-        // Fetch the user by email
         Utilisateurs utilisateur = utilisateursBusiness.avoirUtilisateurParEmail(email);
 
-        // Ensure the user's state is PENDING
-        if (utilisateur.getEtat() != EtatUtilisateur.PENDING) {
+        // Additional security check: Verify token matches user's stored token
+        if (!activationToken.equals(utilisateur.getActivationToken())) {
             throw new SchoolException(
-                    SchoolErrorCode.INVALID_OPERATION,
-                    "L'utilisateur doit être dans l'état PENDING pour être activé."
+                    SchoolErrorCode.INVALID_TOKEN,
+                    "Token does not match user's activation token"
             );
         }
 
-        // Activate the user
+        if (utilisateur.getEtat() != EtatUtilisateur.PENDING) {
+            throw new SchoolException(
+                    SchoolErrorCode.INVALID_OPERATION,
+                    "User must be in PENDING state for activation"
+            );
+        }
+
         utilisateur.setEtat(EtatUtilisateur.ACTIVE);
-        utilisateur.setActivationToken(null);
+        utilisateur.setActivationToken(null);  // Invalidate used token
 
-        // Save the updated user state
-        utilisateursBusiness.mettreUtilisateurAJour(utilisateur);
-        log.info("User with email {} has been activated successfully.", email);
-
-        return utilisateur;
+        return utilisateursBusiness.mettreUtilisateurAJour(utilisateur);
     }
 
 }

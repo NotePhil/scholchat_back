@@ -22,26 +22,34 @@ public class JwtUtil {
     }
 
     // Generate a JWT token
-    public String generateToken(String subject, Map<String, Object> claims) {
+    public String generateToken(String email) {
         Date now = new Date();
         Date expiration = new Date(now.getTime() + expirationMillis);
 
         return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(subject)
+                .setSubject(email)
                 .setIssuedAt(now)
                 .setExpiration(expiration)
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // Validate a JWT token
-    public boolean validateToken(String token) {
+    // Extract email directly from token
+    public String extractEmail(String token) {
+        return extractClaims(token).getSubject();
+    }
+
+    // Updated validation with better error handling
+    public void validateToken(String token) {
         try {
-            Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token);
-            return true;
-        } catch (JwtException | IllegalArgumentException e) {
-            throw new SchoolException(SchoolErrorCode.INVALID_TOKEN, "Invalid JWT token");
+            Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
+                    .build()
+                    .parseClaimsJws(token);
+        } catch (ExpiredJwtException ex) {
+            throw new SchoolException(SchoolErrorCode.TOKEN_EXPIRED, "Activation token expired");
+        } catch (JwtException | IllegalArgumentException ex) {
+            throw new SchoolException(SchoolErrorCode.INVALID_TOKEN, "Invalid activation token");
         }
     }
 
