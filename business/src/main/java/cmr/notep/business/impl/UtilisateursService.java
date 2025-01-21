@@ -1,11 +1,13 @@
 package cmr.notep.business.impl;
 
 import cmr.notep.business.business.UtilisateursBusiness;
+import cmr.notep.business.services.ActivationService;
 import cmr.notep.interfaces.api.UtilisateursApi;
 import cmr.notep.interfaces.modeles.IUtilisateurs;
 import cmr.notep.interfaces.modeles.Utilisateurs;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -13,9 +15,11 @@ import java.util.List;
 @Slf4j
 public class UtilisateursService implements UtilisateursApi {
     private final UtilisateursBusiness utilisateursBusiness;
+    private final ActivationService activationService;
 
-    public UtilisateursService(UtilisateursBusiness utilisateursBusiness) {
+    public UtilisateursService(UtilisateursBusiness utilisateursBusiness,  ActivationService activationService) {
         this.utilisateursBusiness = utilisateursBusiness;
+        this.activationService = activationService;
     }
 
     @Override
@@ -34,6 +38,18 @@ public class UtilisateursService implements UtilisateursApi {
     public Utilisateurs posterUtilisateur(@NonNull Utilisateurs utilisateur) {
         log.info("Création d'un nouvel utilisateur");
         return utilisateursBusiness.posterUtilisateur(utilisateur);
+    }
+
+    @Override
+    public Utilisateurs activerUtilisateur(String activationToken) {
+        log.info("Activating user with token: {}", activationToken);
+        return activationService.activerUtilisateur(activationToken);
+    }
+
+    @Override
+    public Utilisateurs regenererActivationEmail(@RequestParam String email) {
+        log.info("Regeneration de l'email d'activation pour: {}", email);
+        return utilisateursBusiness.regenererActivationEmail(email);
     }
 
     @Override

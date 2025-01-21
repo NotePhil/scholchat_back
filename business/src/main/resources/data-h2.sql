@@ -1,19 +1,19 @@
 -- Insert data into utilisateurs
-INSERT INTO ressources.utilisateurs (id, nom, prenom, email, passeaccess, telephone, adresse, etat) VALUES
-('550e8400-e29b-41d4-a716-446655440000', 'Dupont', 'Jean', 'jean.dupont@example.com', 'password123', '0123456789', '123 Rue de Paris', 'active'),
-('550e8400-e29b-41d4-a716-446655440001', 'Martin', 'Marie', 'marie.martin@example.com', 'password123', '0123456788', '456 Avenue de Lyon', 'active'),
-('550e8400-e29b-41d4-a716-446655440002', 'Durand', 'Pierre', 'pierre.durand@example.com', 'password123', '0123456787', '789 Boulevard de Nice', 'inactive'),
-('550e8400-e29b-41d4-a716-446655440003', 'Lefevre', 'Sophie', 'sophie.lefevre@example.com', 'password123', '0123456786', '101 Rue de Marseille', 'active'),
-('550e8400-e29b-41d4-a716-446655440004', 'Durand', 'Paul', 'paul.durand@example.com', 'password123', '0123456785', '111 Rue de Lille', 'active'),
-('550e8400-e29b-41d4-a716-446655440007', 'Marie', 'Dupont', 'marie.dupont@example.com', 'password123', '0123456789', '123 Rue de Paris', 'active'),
-('550e8400-e29b-41d4-a716-446655440008', 'Lucas', 'Martin', 'lucas.martin@example.com', 'password123', '0123456788', '456 Avenue de Lyon', 'active'),
-('550e8400-e29b-41d4-a716-446655440009', 'Isabelle', 'Lefevre', 'isabelle.lefevre@example.com', 'password123', '0123456787', '789 Boulevard de Nice', 'active'),
-('550e8400-e29b-41d4-a716-446655440010', 'Paul', 'Durand', 'paul.durand@example.com', 'password123', '0123456786', '111 Rue de Lille', 'active'),
-('550e8400-e29b-41d4-a716-446655440200', 'Parent A', 'FirstNameA', 'parenta@example.com', 'password123', '0123456780', 'AddressA', 'active'),
-('550e8400-e29b-41d4-a716-446655440201', 'Parent B', 'FirstNameB', 'parentb@example.com', 'password123', '0123456781', 'AddressB', 'active'),
-('550e8400-e29b-41d4-a716-446655440300', 'Eleve A', 'Jean', 'jean.elevea@example.com', 'password123', '0123456700', '10 Rue des Écoles', 'active'),
-('550e8400-e29b-41d4-a716-446655440301', 'Eleve B', 'Marie', 'marie.eleveb@example.com', 'password123', '0123456701', '20 Rue des Lycées', 'active'),
-('550e8400-e29b-41d4-a716-446655440302', 'Eleve C', 'Paul', 'paul.elevec@example.com', 'password123', '0123456702', '30 Boulevard Université', 'inactive');
+INSERT INTO ressources.utilisateurs (id, nom, prenom, email, passeaccess, telephone, adresse, activation_token, etat) VALUES
+('550e8400-e29b-41d4-a716-446655440000', 'Dupont', 'Jean', 'jean.dupont@example.com', 'password123', '0123456789', '123 Rue de Paris', 'abc123activationcode1', 'ACTIVE'),
+('550e8400-e29b-41d4-a716-446655440001', 'Martin', 'Marie', 'marie.martin@example.com', 'password123', '0123456788', '456 Avenue de Lyon', 'abc123activationcode2', 'ACTIVE'),
+('550e8400-e29b-41d4-a716-446655440002', 'Durand', 'Pierre', 'pierre.durand@example.com', 'password123', '0123456787', '789 Boulevard de Nice', 'abc123activationcode3', 'ACTIVE'),
+('550e8400-e29b-41d4-a716-446655440003', 'Lefevre', 'Sophie', 'sophie.lefevre@example.com', 'password123', '0123456786', '101 Rue de Marseille', 'abc123activationcode4', 'ACTIVE'),
+('550e8400-e29b-41d4-a716-446655440004', 'Durand', 'Paul', 'paul.durand@example.com', 'password123', '0123456785', '111 Rue de Lille', 'abc123activationcode5', 'ACTIVE'),
+('550e8400-e29b-41d4-a716-446655440007', 'Marie', 'Dupont', 'marie.dupont@example.com', 'password123', '0123456789', '123 Rue de Paris', 'abc123activationcode6', 'ACTIVE'),
+('550e8400-e29b-41d4-a716-446655440008', 'Lucas', 'Martin', 'lucas.martin@example.com', 'password123', '0123456788', '456 Avenue de Lyon', 'abc123activationcode7', 'ACTIVE'),
+('550e8400-e29b-41d4-a716-446655440009', 'Isabelle', 'Lefevre', 'isabelle.lefevre@example.com', 'password123', '0123456787', '789 Boulevard de Nice', 'abc123activationcode8', 'ACTIVE'),
+('550e8400-e29b-41d4-a716-446655440010', 'Paul', 'Durand', 'paul.durand@example.com', 'password123', '0123456786', '111 Rue de Lille', 'abc123activationcode9', 'ACTIVE'),
+('550e8400-e29b-41d4-a716-446655440200', 'Parent A', 'FirstNameA', 'parenta@example.com', 'password123', '0123456780', 'AddressA', 'abc123activationcode10', 'ACTIVE'),
+('550e8400-e29b-41d4-a716-446655440201', 'Parent B', 'FirstNameB', 'parentb@example.com', 'password123', '0123456781', 'AddressB', 'abc123activationcode11', 'ACTIVE'),
+('550e8400-e29b-41d4-a716-446655440300', 'Eleve A', 'Jean', 'jean.elevea@example.com', 'password123', '0123456700', '10 Rue des Écoles', 'abc123activationcode12', 'ACTIVE'),
+('550e8400-e29b-41d4-a716-446655440301', 'Eleve B', 'Marie', 'marie.eleveb@example.com', 'password123', '0123456701', '20 Rue des Lycées', 'abc123activationcode13', 'ACTIVE'),
+('550e8400-e29b-41d4-a716-446655440302', 'Eleve C', 'Paul', 'paul.elevec@example.com', 'password123', '0123456702', '30 Boulevard Université', 'abc123activationcode14', 'ACTIVE');
 
 
 -- Insert data into messages

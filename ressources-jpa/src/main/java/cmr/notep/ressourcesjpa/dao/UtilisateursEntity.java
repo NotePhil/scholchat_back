@@ -1,11 +1,13 @@
 package cmr.notep.ressourcesjpa.dao;
 
+import cmr.notep.modele.EtatUtilisateur;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.dozer.Mapping;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -25,7 +27,7 @@ public class UtilisateursEntity {
     @Column(name = "prenom")
     private String prenom;
 
-    @Column(name = "email")
+    @Column(name = "email", unique = true)
     private String email;
 
     @Column(name = "passeaccess")
@@ -37,8 +39,15 @@ public class UtilisateursEntity {
     @Column(name = "adresse")
     private String adresse;
 
+    @Column(name = "activation_token", unique = true)
+    private String activationToken;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "etat")
-    private String etat;
+    private EtatUtilisateur etat = EtatUtilisateur.INACTIVE;
+
+    @Column(name = "creation_date")
+    private LocalDateTime creationDate = LocalDateTime.now();
 
     @OneToMany(mappedBy = "expediteurEntity")
     @Mapping("messagesEnvoyer")
@@ -50,4 +59,5 @@ public class UtilisateursEntity {
             inverseJoinColumns = @JoinColumn(name = "message_id"))
     @Mapping("messagesRecus")
     private List<MessagesEntity> messagesRecusEntities;
+
 }
