@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.dozer.Mapping;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -56,4 +57,7 @@ public class ClassesEntity {
             inverseJoinColumns = @JoinColumn(name = "eleve_id"))
     @Mapping("eleves")
     private List<ElevesEntity> elevesEntities;
+
+    @OneToMany(mappedBy = "classe", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CanalEntity> canaux = new ArrayList<>();
 }

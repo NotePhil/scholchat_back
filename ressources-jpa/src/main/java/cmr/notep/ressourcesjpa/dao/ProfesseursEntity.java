@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Setter
 @Entity
@@ -25,4 +28,6 @@ public class ProfesseursEntity extends UtilisateursEntity {
     //TODO : vérifier si le matricule est lié à l'établissement uniquement comme dans les collèges
     @Column(name = "matricule_professeur", nullable = false, unique = true)
     private String matriculeProfesseur;
+    @OneToMany(mappedBy = "professeur", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CanalEntity> canaux = new ArrayList<>();
 }
