@@ -136,6 +136,16 @@ CREATE TABLE IF NOT EXISTS ressources.repetiteurs (
     CONSTRAINT fk_repetiteurs_utilisateurs FOREIGN KEY (repetiteurs_id) REFERENCES ressources.utilisateurs(id)
 );
 
+-- Create the canaux table
+CREATE TABLE IF NOT EXISTS ressources.canaux (
+    id UUID PRIMARY KEY,
+    nom VARCHAR(255) NOT NULL,
+    description VARCHAR(255),
+    professeur_id VARCHAR(255) NOT NULL,
+    classe_id UUID NOT NULL,
+    CONSTRAINT fk_canaux_professeurs FOREIGN KEY (professeur_id) REFERENCES ressources.professeurs(professeurs_id),
+    CONSTRAINT fk_canaux_classes FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
+);
 
 
 
