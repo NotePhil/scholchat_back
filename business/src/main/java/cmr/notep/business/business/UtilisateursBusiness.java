@@ -2,6 +2,7 @@ package cmr.notep.business.business;
 
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
+import cmr.notep.business.services.ActivationEmailService;
 import cmr.notep.business.services.MailService;
 import cmr.notep.business.utils.JwtUtil;
 import cmr.notep.interfaces.modeles.*;
@@ -25,12 +26,12 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 @Slf4j
 public class UtilisateursBusiness {
     private final DaoAccessorService daoAccessorService ;
-    private final MailService mailService;
+    private final ActivationEmailService activationEmailService;
     private final JwtUtil jwtUtil;
 
-    public UtilisateursBusiness(DaoAccessorService daoAccessorService, MailService mailService, JwtUtil jwtUtil) {
+    public UtilisateursBusiness(DaoAccessorService daoAccessorService, ActivationEmailService activationEmailService, JwtUtil jwtUtil) {
         this.daoAccessorService = daoAccessorService;
-        this.mailService = mailService;
+        this.activationEmailService = activationEmailService;
         this.jwtUtil = jwtUtil;
     }
 
@@ -43,51 +44,38 @@ public class UtilisateursBusiness {
 
     public Utilisateurs posterUtilisateur(Utilisateurs utilisateur) {
         log.info("Création d'un nouvel utilisateur");
-
         if (dozerMapperBean == null) {
             throw new IllegalStateException("DozerBeanMapper is not initialized.");
         }
 
-        // Automatically set etat to PENDING
-        utilisateur.setEtat(EtatUtilisateur.PENDING);
+        if (utilisateur instanceof Professeurs) {
+            utilisateur.setEtat(EtatUtilisateur.AWAITING_VALIDATION);
+        } else {
+            utilisateur.setEtat(EtatUtilisateur.PENDING);
+        }
 
         utilisateur.setCreationDate(LocalDateTime.now());
 
-        // Map the user model to an entity
         UtilisateursEntity userEntity = mapUtilisateursModeleToEntity(utilisateur);
         if (userEntity == null) {
             throw new SchoolException(SchoolErrorCode.MAPPING_FAILED, "User entity mapping failed.");
         }
 
-        // Ensure creation date is set on entity
-        if (userEntity.getCreationDate() == null) {
-            userEntity.setCreationDate(LocalDateTime.now());
-        }
-
-        // Save the user entity first to generate the ID
         UtilisateursEntity savedUserEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .save(userEntity);
 
-        // Now that the ID is available, generate JWT token
-        String activationToken = jwtUtil.generateToken(
-                savedUserEntity.getEmail()
-        );
-        savedUserEntity.setActivationToken(activationToken);
+        // Only generate token and send email for non-professor users
+        if (!(savedUserEntity instanceof ProfesseursEntity)) {
+            String activationToken = jwtUtil.generateToken(savedUserEntity.getEmail());
+            savedUserEntity.setActivationToken(activationToken);
+            savedUserEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
+                    .save(savedUserEntity);
 
-        savedUserEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
-                .save(savedUserEntity);
-
-        // Send the activation email after the user has been saved and the token is generated
-        try {
-            mailService.sendWelcomeEmail(savedUserEntity.getEmail(), savedUserEntity.getNom(), activationToken);
-            log.info("Activation email sent successfully to {}", savedUserEntity.getEmail());
-        } catch (MessagingException e) {
-            log.error("Failed to send activation email to {}: {}", savedUserEntity.getEmail(), e.getMessage());
-            // Throw a custom exception to handle this error uniformly
-            throw new SchoolException(SchoolErrorCode.EMAIL_NOT_SENT, "Failed to send activation email.");
+            Utilisateurs savedUtilisateur = mapUtilisateursEntityToModele(savedUserEntity);
+            activationEmailService.sendActivationEmail(savedUtilisateur, activationToken);
+            log.info("Activation email process triggered successfully for {}", savedUserEntity.getEmail());
         }
 
-        // Return the created user model
         return mapUtilisateursEntityToModele(savedUserEntity);
     }
 
@@ -168,33 +156,87 @@ public class UtilisateursBusiness {
         log.info("Regenerating activation email for: {}", email);
 
         // Fetch the user
-        UtilisateursEntity utilisateur = daoAccessorService.getRepository(UtilisateursRepository.class)
+        UtilisateursEntity utilisateurEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .findByEmail(email)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable avec l'email: " + email));
 
-        if (utilisateur.getEtat() != EtatUtilisateur.PENDING) {
+        if (utilisateurEntity.getEtat() != EtatUtilisateur.PENDING) {
             throw new SchoolException(SchoolErrorCode.INVALID_STATE, "Activation email can only be regenerated for users in PENDING state");
         }
 
         // Generate a new activation token
-        String activationToken = jwtUtil.generateToken(
-                utilisateur.getEmail()
-        );
-        utilisateur.setActivationToken(activationToken);
+        String activationToken = jwtUtil.generateToken(utilisateurEntity.getEmail());
+        utilisateurEntity.setActivationToken(activationToken);
 
         // Save updated user
-        daoAccessorService.getRepository(UtilisateursRepository.class).save(utilisateur);
+        utilisateurEntity = daoAccessorService.getRepository(UtilisateursRepository.class).save(utilisateurEntity);
+
+        // Map the entity to the model
+        Utilisateurs utilisateur = mapUtilisateursEntityToModele(utilisateurEntity);
 
         // Send the activation email
         try {
-            mailService.sendWelcomeEmail(utilisateur.getEmail(), utilisateur.getNom(), activationToken);
+            activationEmailService.sendActivationEmail(utilisateur, activationToken);
             log.info("New activation email sent successfully to {}", utilisateur.getEmail());
-        } catch (MessagingException e) {
+        } catch (Exception e) {
             log.error("Failed to send activation email to {}: {}", utilisateur.getEmail(), e.getMessage());
             throw new SchoolException(SchoolErrorCode.EMAIL_NOT_SENT, "L'email d'activation n'a pas pu être envoyé.");
         }
 
-        return mapUtilisateursEntityToModele(utilisateur);
+        return utilisateur;
     }
 
+    public Utilisateurs validerProfesseur(String professorId) {
+        log.info("Processing professor validation for ID: {}", professorId);
+
+        UtilisateursEntity userEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
+                .findById(professorId)
+                .orElseThrow(() -> new SchoolException(
+                        SchoolErrorCode.NOT_FOUND,
+                        "Professeur introuvable avec l'ID: " + professorId
+                ));
+
+        if (!(userEntity instanceof ProfesseursEntity)) {
+            throw new SchoolException(
+                    SchoolErrorCode.INVALID_OPERATION,
+                    "L'utilisateur n'est pas un professeur"
+            );
+        }
+
+        if (userEntity.getEtat() != EtatUtilisateur.AWAITING_VALIDATION) {
+            throw new SchoolException(
+                    SchoolErrorCode.INVALID_STATE,
+                    "Le professeur n'est pas en attente de validation"
+            );
+        }
+
+        userEntity.setEtat(EtatUtilisateur.VALIDATED);
+
+        String activationToken = jwtUtil.generateToken(userEntity.getEmail());
+        userEntity.setActivationToken(activationToken);
+
+        userEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
+                .save(userEntity);
+
+        // Convert entity to model before passing to email service
+        Utilisateurs utilisateur = mapUtilisateursEntityToModele(userEntity);
+        activationEmailService.sendActivationEmail(utilisateur, activationToken);
+
+        log.info("Professor {} validated successfully", professorId);
+
+        return utilisateur;
+    }
+
+    public List<Utilisateurs> avoirProfesseursEnAttente() {
+        log.info("Fetching all professors awaiting validation");
+
+        // Fetch all ProfesseursEntity with the AWAITING_VALIDATION state
+        List<UtilisateursEntity> professeursEntities = daoAccessorService.getRepository(UtilisateursRepository.class)
+                .findByEtat(EtatUtilisateur.AWAITING_VALIDATION);
+
+        // Map the entities to the Utilisateurs model
+        return professeursEntities.stream()
+                .map(UtilisateursBusiness::mapUtilisateursEntityToModele)
+                .collect(Collectors.toList());
+    }
 }

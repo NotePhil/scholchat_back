@@ -45,4 +45,18 @@ public interface UtilisateursApi {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     Utilisateurs regenererActivationEmail(@RequestParam String email);
+
+    @PostMapping(
+            path = "/professors/{professorId}/validate",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    Utilisateurs validerProfesseur(
+            @NonNull @PathVariable(name = "professorId") String professorId
+    );
+
+    @GetMapping(
+            path = "/professors/pending",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    List<Utilisateurs> avoirProfesseursEnAttente();
 }

@@ -56,4 +56,16 @@ public class UtilisateursService implements UtilisateursApi {
     public Utilisateurs posterGenericUtilisateur(IUtilisateurs utilisateur) {
         return utilisateursBusiness.posterGenericUtilisateur(utilisateur);
     }
+
+    @Override
+    public Utilisateurs validerProfesseur(String professorId) {
+        log.info("Validating professor with ID: {} and comments: {}", professorId);
+        return utilisateursBusiness.validerProfesseur(professorId);
+    }
+
+    @Override
+    public List<Utilisateurs> avoirProfesseursEnAttente() {
+        log.info("Fetching all pending professors");
+        return utilisateursBusiness.avoirProfesseursEnAttente();
+    }
 }

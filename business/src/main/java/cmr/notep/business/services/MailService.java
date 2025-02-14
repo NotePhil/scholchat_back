@@ -1,5 +1,9 @@
 package cmr.notep.business.services;
 
+import cmr.notep.interfaces.modeles.Eleves;
+import cmr.notep.interfaces.modeles.IUtilisateurs;
+import cmr.notep.interfaces.modeles.Parents;
+import cmr.notep.interfaces.modeles.Professeurs;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -26,11 +30,22 @@ public class MailService {
     private String fromEmail;
 
     @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 2000))
-    public void sendWelcomeEmail(String to, String userName, String activationToken) throws MessagingException {
-        String subject = "Bienvenue sur ScholChat!";
-        String htmlContent = emailTemplateService.generateWelcomeEmail(userName, to, activationToken);
+    public void sendWelcomeEmail(IUtilisateurs utilisateur, String activationToken) throws MessagingException {
+        String htmlContent = emailTemplateService.generateActivationEmail(utilisateur, activationToken);
 
-        sendEmail(to, subject, htmlContent);
+        // Get subject based on user type
+        String subject = getSubjectForUserType(utilisateur);
+
+        sendEmail(utilisateur.getEmail(), subject, htmlContent);
+    }
+
+    private String getSubjectForUserType(IUtilisateurs utilisateur) {
+        return switch (utilisateur) {
+            case Professeurs p -> "Bienvenue sur ScholChat - Activation de votre compte professeur";
+            case Eleves e -> "Bienvenue sur ScholChat - Activation de votre compte étudiant";
+            case Parents p -> "Bienvenue sur ScholChat - Activation de votre compte parent";
+            default -> "Bienvenue sur ScholChat!";
+        };
     }
 
     public void sendEmail(String to, String subject, String htmlContent) throws MessagingException {
@@ -52,9 +67,12 @@ public class MailService {
     }
 
     @Recover
-    public void recover(MessagingException e, String to, String userName, String activationToken) {
-        // Log and throw a SchoolException to maintain consistent error handling
-        log.error("Failed to send activation email after retries: {}", e.getMessage());
-        throw new SchoolException(SchoolErrorCode.EMAIL_NOT_SENT, "Failed to send activation email after retries.");
+    public void recover(MessagingException e, IUtilisateurs utilisateur, String activationToken) {
+        log.error("Failed to send activation email after retries for user {}: {}",
+                utilisateur.getEmail(), e.getMessage());
+        throw new SchoolException(
+                SchoolErrorCode.EMAIL_NOT_SENT,
+                "Échec de l'envoi de l'email d'activation après plusieurs tentatives."
+        );
     }
 }

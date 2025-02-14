@@ -5,11 +5,13 @@ import org.dozer.CustomConverter;
 import org.dozer.DozerBeanMapper;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
+@EnableAsync
 @EnableJpaRepositories(basePackages = "cmr.notep.ressourcesjpa.repository")
 public class BusinessConfig {
     public static DozerBeanMapper dozerMapperBean;
