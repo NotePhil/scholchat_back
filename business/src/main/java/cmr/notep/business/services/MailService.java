@@ -22,22 +22,12 @@ import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class MailService {
+public class MailService implements MailServiceInterface {
     private final JavaMailSender mailSender;
     private final EmailTemplateService emailTemplateService;
 
     @Value("${spring.mail.username}")
     private String fromEmail;
-
-    @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 2000))
-    public void sendWelcomeEmail(IUtilisateurs utilisateur, String activationToken) throws MessagingException {
-        String htmlContent = emailTemplateService.generateActivationEmail(utilisateur, activationToken);
-
-        // Get subject based on user type
-        String subject = getSubjectForUserType(utilisateur);
-
-        sendEmail(utilisateur.getEmail(), subject, htmlContent);
-    }
 
     private String getSubjectForUserType(IUtilisateurs utilisateur) {
         return switch (utilisateur) {
@@ -67,12 +57,11 @@ public class MailService {
     }
 
     @Recover
-    public void recover(MessagingException e, IUtilisateurs utilisateur, String activationToken) {
-        log.error("Failed to send activation email after retries for user {}: {}",
-                utilisateur.getEmail(), e.getMessage());
+    public void recover(MessagingException e, String to, String subject, String htmlContent) {
+        log.error("Failed to send email after retries to {}: {}", to, e.getMessage());
         throw new SchoolException(
                 SchoolErrorCode.EMAIL_NOT_SENT,
-                "Échec de l'envoi de l'email d'activation après plusieurs tentatives."
+                "Échec de l'envoi de l'email après plusieurs tentatives."
         );
     }
 }
