@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Bienvenue sur ScholChat - Compte Parent</title>
+    <style>
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+        }
+        .header {
+            background-color: #4A90E2;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            color: white;
+            margin: 0;
+        }
+        .content {
+            padding: 20px;
+            background-color: #ffffff;
+        }
+        .footer {
+            background-color: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666666;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4A90E2;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="header">
+        <h1>Bienvenue sur ScholChat!</h1>
+    </div>
+    <div class="content">
+        <p>Cher(e) <strong th:text="${userName}">Parent</strong>,</p>
+        <p>Votre compte parent a été créé avec succès sur ScholChat. Notre plateforme vous permet de suivre et d'accompagner efficacement la scolarité de votre enfant.</p>
+
+        <p>Voici les fonctionnalités qui vous sont dédiées :</p>
+        <ul>
+            <li>Suivre en temps réel les résultats et la progression de votre enfant</li>
+            <li>Communiquer directement avec les enseignants</li>
+            <li>Recevoir les notifications importantes (devoirs, examens, réunions)</li>
+            <li>Consulter l'emploi du temps et le calendrier scolaire</li>
+            <li>Accéder aux bulletins de notes et aux rapports de progression</li>
+            <li>Justifier les absences et demander des autorisations</li>
+        </ul>
+
+        <p>Pour commencer à utiliser ces fonctionnalités, veuillez activer votre compte en cliquant sur le bouton ci-dessous :</p>
+
+        <center>
+            <a th:href="${activationUrl}" class="button">Activer Mon Compte Parent</a>
+        </center>
+
+        <p style="margin-top: 20px; font-style: italic;">Note : Cette activation est nécessaire pour garantir la sécurité de votre compte et des informations concernant votre enfant.</p>
+    </div>
+    <div class="footer">
+        <p>© 2025 ScholChat. Tous droits réservés.</p>
+        <p>Pour toute assistance, contactez notre support</p>
+        <p th:text="${userEmail}">email@example.com</p>
+    </div>
+</div>
+</html>

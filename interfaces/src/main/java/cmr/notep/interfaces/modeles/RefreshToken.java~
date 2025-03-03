@@ -1,0 +1,4 @@
+package cmr.notep.interfaces.modeles;
+
+public class RefreshToken {
+}

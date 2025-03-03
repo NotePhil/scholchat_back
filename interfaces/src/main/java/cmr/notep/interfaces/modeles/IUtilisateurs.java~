@@ -39,5 +39,4 @@ public interface IUtilisateurs {
     void setActivationToken(String activationToken);
     void setEtat(EtatUtilisateur etat);
     void setCreationDate(LocalDateTime creationDate);
-    void setAdmin(boolean isAdmin);
 }

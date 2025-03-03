@@ -1,0 +1,25 @@
+package cmr.notep.business.config;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class JwtConfig {
+
+    @Value("${jwt.secret}")
+    private String secretKey;
+
+    @Value("${jwt.access-token-expiration}")
+    private long accessTokenExpirationMillis;
+    
+    @Value("${jwt.refresh-token-expiration}")
+    private long refreshTokenExpirationMillis;
+
+    public String getSecretKey() {
+        return secretKey;
+    }
+
+    public long getExpirationMillis() {
+        return accessTokenExpirationMillis;
+    }
+}
