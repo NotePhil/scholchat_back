@@ -1,0 +1,4 @@
+package cmr.notep.interfaces.api;
+
+public interface AuthController {
+}

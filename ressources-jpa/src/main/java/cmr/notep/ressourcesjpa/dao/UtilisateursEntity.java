@@ -49,6 +49,9 @@ public class UtilisateursEntity {
     @Column(name = "creation_date")
     private LocalDateTime creationDate = LocalDateTime.now();
 
+    @Column(name = "is_admin")
+    private boolean isAdmin = false;
+
     @OneToMany(mappedBy = "expediteurEntity")
     @Mapping("messagesEnvoyer")
     private List<MessagesEntity> messagesEnvoyerEntities;
@@ -59,5 +62,10 @@ public class UtilisateursEntity {
             inverseJoinColumns = @JoinColumn(name = "message_id"))
     @Mapping("messagesRecus")
     private List<MessagesEntity> messagesRecusEntities;
+
+    public void setIsAdmin(boolean isAdmin) {
+        this.isAdmin = isAdmin;
+    }
+
 
 }

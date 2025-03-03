@@ -25,7 +25,7 @@ public class ActivationService {
         jwtUtil.validateToken(activationToken);
 
         // Extract email directly using dedicated method
-        String email = jwtUtil.extractEmail(activationToken);
+        String email = jwtUtil.getEmailFromToken(activationToken);
         log.info("Extracted email from token: {}", email);
 
         Utilisateurs utilisateur = utilisateursBusiness.avoirUtilisateurParEmail(email);

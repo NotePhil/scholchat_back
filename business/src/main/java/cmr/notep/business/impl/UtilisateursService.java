@@ -40,11 +40,6 @@ public class UtilisateursService implements UtilisateursApi {
         return utilisateursBusiness.posterUtilisateur(utilisateur);
     }
 
-    @Override
-    public Utilisateurs activerUtilisateur(String activationToken) {
-        log.info("Activating user with token: {}", activationToken);
-        return activationService.activerUtilisateur(activationToken);
-    }
 
     @Override
     public Utilisateurs regenererActivationEmail(@RequestParam String email) {

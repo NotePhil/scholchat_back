@@ -12,8 +12,7 @@ public enum SchoolErrorCode {
     INVALID_STATE("The user is not in a valid state for this operation."),
 
     MAPPING_FAILED("User entity mapping failed"),
-    TOKEN_EXPIRED("Token Expired"),
-    INACTIVE_USER("Cannot create refresh token for inactive user");
+    TOKEN_EXPIRED("Token Expired");
 
 
     private final String message;

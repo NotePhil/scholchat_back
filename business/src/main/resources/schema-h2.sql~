@@ -148,15 +148,6 @@ CREATE TABLE IF NOT EXISTS ressources.canaux (
     CONSTRAINT fk_canaux_classes FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
 );
 
--- Create the refresh_tokens table
-CREATE TABLE IF NOT EXISTS ressources.refresh_tokens (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    token VARCHAR(255) NOT NULL UNIQUE,
-    expiry_date TIMESTAMP NOT NULL,
-    utilisateur_id UUID NOT NULL,
-    CONSTRAINT fk_refresh_tokens_utilisateur FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id) ON DELETE CASCADE
-);
-
 
 
 

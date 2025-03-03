@@ -1,0 +1,7 @@
+package cmr.notep.interfaces.dto;
+
+import lombok.Data;
+
+public class UserRegistrationRequest {
+
+}

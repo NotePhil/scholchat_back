@@ -16,4 +16,8 @@ public class SchoolException extends RuntimeException {
         super(message, cause);
         this.code = code;
     }
+
+    public SchoolErrorCode getCode() {
+        return code;
+    }
 }

@@ -35,12 +35,6 @@ public interface UtilisateursApi {
     Utilisateurs posterGenericUtilisateur(@RequestBody IUtilisateurs utilisateur);
 
     @PostMapping(
-            path = "/activate",
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    Utilisateurs activerUtilisateur(@RequestParam String activationToken);
-
-    @PostMapping(
             path = "/regenerate-activation",
             produces = MediaType.APPLICATION_JSON_VALUE
     )

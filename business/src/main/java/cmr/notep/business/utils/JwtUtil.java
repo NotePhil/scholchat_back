@@ -1,64 +1,99 @@
 package cmr.notep.business.utils;
 
+import cmr.notep.business.config.JwtConfig;
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
-import cmr.notep.business.config.JwtConfig;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
+import io.jsonwebtoken.SignatureAlgorithm;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
-import java.util.Date;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
 
 @Component
+@Slf4j
 public class JwtUtil {
     private final Key secretKey;
-    private final long expirationMillis;
+    private final long accessTokenExpirationMillis;
+    private final long refreshTokenExpirationMillis;
 
     public JwtUtil(JwtConfig jwtConfig) {
         this.secretKey = Keys.hmacShaKeyFor(jwtConfig.getSecretKey().getBytes());
-        this.expirationMillis = jwtConfig.getExpirationMillis();
+        this.accessTokenExpirationMillis = jwtConfig.getAccessTokenExpirationMillis();
+        this.refreshTokenExpirationMillis = jwtConfig.getRefreshTokenExpirationMillis();
     }
 
-    // Generate a JWT token
-    public String generateToken(String email) {
-        Date now = new Date();
-        Date expiration = new Date(now.getTime() + expirationMillis);
+    // Generate an access token with roles
+    public String generateAccessToken(String email, List<String> roles) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", roles); // Add roles to token
+        return createToken(claims, email, accessTokenExpirationMillis);
+    }
 
+    // Generate a refresh token (without roles)
+    public String generateRefreshToken(String email) {
+        Map<String, Object> claims = new HashMap<>();
+        return createToken(claims, email, refreshTokenExpirationMillis);
+    }
+
+    private String createToken(Map<String, Object> claims, String subject, long expirationMillis) {
         return Jwts.builder()
-                .setSubject(email)
-                .setIssuedAt(now)
-                .setExpiration(expiration)
+                .setClaims(claims)
+                .setSubject(subject)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationMillis))
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // Extract email directly from token
-    public String extractEmail(String token) {
-        return extractClaims(token).getSubject();
+    public String getEmailFromToken(String token) {
+        return getClaimFromToken(token, Claims::getSubject);
     }
 
-    // Updated validation with better error handling
-    public void validateToken(String token) {
+    public List<String> getRolesFromToken(String token) {
+        return getClaimFromToken(token, claims -> claims.get("roles", List.class));
+    }
+
+    public Date getExpirationDateFromToken(String token) {
+        return getClaimFromToken(token, Claims::getExpiration);
+    }
+
+    private <T> T getClaimFromToken(String token, Function<Claims, T> claimsResolver) {
+        final Claims claims = getAllClaimsFromToken(token);
+        return claimsResolver.apply(claims);
+    }
+
+    private Claims getAllClaimsFromToken(String token) {
         try {
-            Jwts.parserBuilder()
+            return Jwts.parserBuilder()
                     .setSigningKey(secretKey)
                     .build()
-                    .parseClaimsJws(token);
-        } catch (ExpiredJwtException ex) {
-            throw new SchoolException(SchoolErrorCode.TOKEN_EXPIRED, "Activation token expired");
-        } catch (JwtException | IllegalArgumentException ex) {
-            throw new SchoolException(SchoolErrorCode.INVALID_TOKEN, "Invalid activation token");
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (ExpiredJwtException e) {
+            throw new SchoolException(SchoolErrorCode.TOKEN_EXPIRED, "The token has expired");
+        } catch (SignatureException e) {
+            throw new SchoolException(SchoolErrorCode.INVALID_TOKEN, "Invalid token signature");
+        } catch (MalformedJwtException e) {
+            throw new SchoolException(SchoolErrorCode.INVALID_TOKEN, "Malformed token");
+        } catch (UnsupportedJwtException e) {
+            throw new SchoolException(SchoolErrorCode.INVALID_TOKEN, "Unsupported token");
+        } catch (IllegalArgumentException e) {
+            throw new SchoolException(SchoolErrorCode.INVALID_TOKEN, "Token is empty or null");
         }
     }
 
-    // Extract claims from a JWT token
-    public Claims extractClaims(String token) {
+    public boolean validateToken(String token) {
         try {
-            return Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token).getBody();
-        } catch (JwtException e) {
-            throw new SchoolException(SchoolErrorCode.INVALID_TOKEN, "Failed to extract claims");
+            getAllClaimsFromToken(token);
+            return true;
+        } catch (SchoolException e) {
+            log.error("Token validation failed: {}", e.getMessage());
+            return false;
         }
     }
 }

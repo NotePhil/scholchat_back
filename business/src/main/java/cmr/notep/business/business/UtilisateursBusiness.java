@@ -17,6 +17,7 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.retry.annotation.Backoff;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,38 +45,70 @@ public class UtilisateursBusiness {
 
     public Utilisateurs posterUtilisateur(Utilisateurs utilisateur) {
         log.info("Création d'un nouvel utilisateur");
+
         if (dozerMapperBean == null) {
             throw new IllegalStateException("DozerBeanMapper is not initialized.");
         }
 
+        // Set user state based on user type
         if (utilisateur instanceof Professeurs) {
             utilisateur.setEtat(EtatUtilisateur.AWAITING_VALIDATION);
         } else {
             utilisateur.setEtat(EtatUtilisateur.PENDING);
         }
 
+        // Set creation date
         utilisateur.setCreationDate(LocalDateTime.now());
 
+        // Map the user model to entity
         UtilisateursEntity userEntity = mapUtilisateursModeleToEntity(utilisateur);
         if (userEntity == null) {
             throw new SchoolException(SchoolErrorCode.MAPPING_FAILED, "User entity mapping failed.");
         }
 
+        // Set role information here:
+        // If the user is a professor, mark them as a professor and ensure they aren't an admin by default
+        if (utilisateur instanceof Professeurs) {
+            userEntity.setIsAdmin(false);  // Professors are not admins by default, unless explicitly set
+        } else {
+            // If not a professor, handle based on type and admin flag
+            userEntity.setIsAdmin(utilisateur.isAdmin());
+        }
+
+        // Save the user entity
         UtilisateursEntity savedUserEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .save(userEntity);
 
         // Only generate token and send email for non-professor users
         if (!(savedUserEntity instanceof ProfesseursEntity)) {
-            String activationToken = jwtUtil.generateToken(savedUserEntity.getEmail());
+            // Here we handle the roles based on user type and admin status
+            List<String> roles = new ArrayList<>();
+            if (savedUserEntity.isAdmin()) {
+                roles.add("ROLE_ADMIN");
+            } else {
+                roles.add("ROLE_USER");
+            }
+
+            // Add user type as a role, e.g., "ROLE_PROFESSOR", "ROLE_STUDENT", etc.
+            if (savedUserEntity instanceof ProfesseursEntity) {
+                roles.add("ROLE_PROFESSOR");
+            } else if (savedUserEntity instanceof ElevesEntity) {
+                roles.add("ROLE_STUDENT");
+            }
+
+            // Generate token with the roles included
+            String activationToken = jwtUtil.generateAccessToken(savedUserEntity.getEmail(), roles);
             savedUserEntity.setActivationToken(activationToken);
             savedUserEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
                     .save(savedUserEntity);
 
+            // Send activation email
             Utilisateurs savedUtilisateur = mapUtilisateursEntityToModele(savedUserEntity);
             activationEmailService.sendActivationEmail(savedUtilisateur, activationToken);
             log.info("Activation email process triggered successfully for {}", savedUserEntity.getEmail());
         }
 
+        // Return the saved user model
         return mapUtilisateursEntityToModele(savedUserEntity);
     }
 
@@ -160,15 +193,39 @@ public class UtilisateursBusiness {
                 .findByEmail(email)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable avec l'email: " + email));
 
+        // Check if the user is in PENDING state (only allow email regeneration for users in this state)
         if (utilisateurEntity.getEtat() != EtatUtilisateur.PENDING) {
             throw new SchoolException(SchoolErrorCode.INVALID_STATE, "Activation email can only be regenerated for users in PENDING state");
         }
 
-        // Generate a new activation token
-        String activationToken = jwtUtil.generateToken(utilisateurEntity.getEmail());
+        // Determine the roles based on the user type
+        List<String> roles = new ArrayList<>();
+
+        // Check the type of user and assign roles accordingly
+        if (utilisateurEntity instanceof ProfesseursEntity) {
+            roles.add("ROLE_PROFESSOR");
+        } else if (utilisateurEntity instanceof ElevesEntity) {
+            roles.add("ROLE_STUDENT");
+        } else if (utilisateurEntity instanceof ParentsEntity) {
+            roles.add("ROLE_PARENT");
+        } else if (utilisateurEntity instanceof RepetiteursEntity) {
+            roles.add("ROLE_TUTOR");
+        } else {
+            roles.add("ROLE_USER");
+        }
+
+        // If the user is an admin, add the admin role
+        if (utilisateurEntity.isAdmin()) {
+            roles.add("ROLE_ADMIN");
+        }
+
+        // Generate a new activation token with email and roles
+        String activationToken = jwtUtil.generateAccessToken(utilisateurEntity.getEmail(), roles);
+
+        // Set the new activation token in the entity
         utilisateurEntity.setActivationToken(activationToken);
 
-        // Save updated user
+        // Save the updated user entity
         utilisateurEntity = daoAccessorService.getRepository(UtilisateursRepository.class).save(utilisateurEntity);
 
         // Map the entity to the model
@@ -186,9 +243,11 @@ public class UtilisateursBusiness {
         return utilisateur;
     }
 
+
     public Utilisateurs validerProfesseur(String professorId) {
         log.info("Processing professor validation for ID: {}", professorId);
 
+        // Fetch the professor by ID
         UtilisateursEntity userEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .findById(professorId)
                 .orElseThrow(() -> new SchoolException(
@@ -196,6 +255,7 @@ public class UtilisateursBusiness {
                         "Professeur introuvable avec l'ID: " + professorId
                 ));
 
+        // Ensure the user is a professor
         if (!(userEntity instanceof ProfesseursEntity)) {
             throw new SchoolException(
                     SchoolErrorCode.INVALID_OPERATION,
@@ -203,6 +263,7 @@ public class UtilisateursBusiness {
             );
         }
 
+        // Ensure the professor is in the correct state
         if (userEntity.getEtat() != EtatUtilisateur.AWAITING_VALIDATION) {
             throw new SchoolException(
                     SchoolErrorCode.INVALID_STATE,
@@ -210,22 +271,33 @@ public class UtilisateursBusiness {
             );
         }
 
+        // Change the state to 'VALIDATED'
         userEntity.setEtat(EtatUtilisateur.VALIDATED);
 
-        String activationToken = jwtUtil.generateToken(userEntity.getEmail());
-        userEntity.setActivationToken(activationToken);
+        // Assign the 'ROLE_PROFESSOR' if not already assigned
+        if (!userEntity.isAdmin()) {
+            List<String> roles = new ArrayList<>();
+            roles.add("ROLE_PROFESSOR");
 
+            // Assuming `generateAccessToken` now handles roles, we pass the email and roles
+            String activationToken = jwtUtil.generateAccessToken(userEntity.getEmail(), roles);
+            userEntity.setActivationToken(activationToken);
+        }
+
+        // Save the validated professor entity
         userEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .save(userEntity);
 
-        // Convert entity to model before passing to email service
+        // Convert the entity to model and send activation email
         Utilisateurs utilisateur = mapUtilisateursEntityToModele(userEntity);
-        activationEmailService.sendActivationEmail(utilisateur, activationToken);
+        activationEmailService.sendActivationEmail(utilisateur, userEntity.getActivationToken());
 
         log.info("Professor {} validated successfully", professorId);
 
+        // Return the updated professor
         return utilisateur;
     }
+
 
     public List<Utilisateurs> avoirProfesseursEnAttente() {
         log.info("Fetching all professors awaiting validation");
