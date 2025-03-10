@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.retry.annotation.Backoff;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -69,10 +70,10 @@ public class UtilisateursBusiness {
         // Set role information here:
         // If the user is a professor, mark them as a professor and ensure they aren't an admin by default
         if (utilisateur instanceof Professeurs) {
-            userEntity.setIsAdmin(false);  // Professors are not admins by default, unless explicitly set
+            userEntity.setAdmin(false);  // Professors are not admins by default, unless explicitly set
         } else {
             // If not a professor, handle based on type and admin flag
-            userEntity.setIsAdmin(utilisateur.isAdmin());
+            userEntity.setAdmin(utilisateur.isAdmin());
         }
 
         // Save the user entity
@@ -83,7 +84,7 @@ public class UtilisateursBusiness {
         if (!(savedUserEntity instanceof ProfesseursEntity)) {
             // Here we handle the roles based on user type and admin status
             List<String> roles = new ArrayList<>();
-            if (savedUserEntity.isAdmin()) {
+            if (savedUserEntity.getAdmin()) {
                 roles.add("ROLE_ADMIN");
             } else {
                 roles.add("ROLE_USER");
@@ -170,6 +171,7 @@ public class UtilisateursBusiness {
             return dozerMapperBean.map(utilisateur, UtilisateursEntity.class);
     }
 
+    @Transactional(readOnly = true)
     public Utilisateurs avoirUtilisateurParEmail(String email) {
         log.info("Fetching user with email: {}", email);
         return mapUtilisateursEntityToModele(
@@ -215,7 +217,7 @@ public class UtilisateursBusiness {
         }
 
         // If the user is an admin, add the admin role
-        if (utilisateurEntity.isAdmin()) {
+        if (utilisateurEntity.getAdmin()) {
             roles.add("ROLE_ADMIN");
         }
 
@@ -275,7 +277,7 @@ public class UtilisateursBusiness {
         userEntity.setEtat(EtatUtilisateur.VALIDATED);
 
         // Assign the 'ROLE_PROFESSOR' if not already assigned
-        if (!userEntity.isAdmin()) {
+        if (!userEntity.getAdmin()) {
             List<String> roles = new ArrayList<>();
             roles.add("ROLE_PROFESSOR");
 

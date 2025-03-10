@@ -60,7 +60,7 @@ public class SecurityConfig {
 
                         // Professor validation endpoints - admin only
                         .requestMatchers("/utilisateurs/validerProfesseur/**").hasRole("ADMIN")
-                        .requestMatchers("/utilisateurs/avoirProfesseursEnAttente/**").hasRole("ADMIN")
+                        .requestMatchers("/utilisateurs/professors/pending/**").hasRole("ADMIN")
 
                         // Secure all other endpoints
                         .anyRequest().authenticated()

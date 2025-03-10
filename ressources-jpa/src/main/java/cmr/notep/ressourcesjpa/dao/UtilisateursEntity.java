@@ -4,6 +4,7 @@ import cmr.notep.modele.EtatUtilisateur;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.NoArgsConstructor;
 import org.dozer.Mapping;
 
 import java.util.List;
@@ -11,6 +12,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "utilisateurs", schema = "ressources")
 @Inheritance(strategy = InheritanceType.JOINED)
@@ -50,9 +52,9 @@ public class UtilisateursEntity {
     private LocalDateTime creationDate = LocalDateTime.now();
 
     @Column(name = "is_admin")
-    private boolean isAdmin = false;
+    private Boolean admin = false;
 
-    @OneToMany(mappedBy = "expediteurEntity")
+    @OneToMany(mappedBy = "expediteurEntity", fetch = FetchType.EAGER)
     @Mapping("messagesEnvoyer")
     private List<MessagesEntity> messagesEnvoyerEntities;
 
@@ -62,10 +64,4 @@ public class UtilisateursEntity {
             inverseJoinColumns = @JoinColumn(name = "message_id"))
     @Mapping("messagesRecus")
     private List<MessagesEntity> messagesRecusEntities;
-
-    public void setIsAdmin(boolean isAdmin) {
-        this.isAdmin = isAdmin;
-    }
-
-
 }
