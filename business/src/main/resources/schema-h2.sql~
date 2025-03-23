@@ -148,7 +148,37 @@ CREATE TABLE IF NOT EXISTS ressources.canaux (
     CONSTRAINT fk_canaux_classes FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
 );
 
+-- Create the refresh_tokens table
+CREATE TABLE IF NOT EXISTS ressources.refresh_tokens (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    expiry_date TIMESTAMP NOT NULL,
+    utilisateur_id UUID NOT NULL,
+    CONSTRAINT fk_refresh_tokens_utilisateur FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id) ON DELETE CASCADE
+);
 
+--Create evenements table
+CREATE TABLE IF NOT EXISTS ressources.evenements (
+    id UUID PRIMARY KEY,
+    titre VARCHAR(255) NOT NULL,
+    description VARCHAR(255),
+    lieu VARCHAR(255),
+    heure_debut TIMESTAMP NOT NULL,
+    heure_fin TIMESTAMP,
+    etat VARCHAR(50) NOT NULL,
+    canal_id UUID NOT NULL,
+    CONSTRAINT fk_evenement_canal FOREIGN KEY (canal_id) REFERENCES ressources.canaux(id)
+);
 
+--Create Interactions table
+CREATE TABLE IF NOT EXISTS ressources.interactions (
+    id UUID PRIMARY KEY,
+    type VARCHAR(50) NOT NULL,
+    contenu TEXT NOT NULL,
+    date_creation TIMESTAMP NOT NULL,
+    niveau VARCHAR(50),
+    evenement_id UUID NOT NULL, 
+    CONSTRAINT fk_interaction_evenement FOREIGN KEY (evenement_id) REFERENCES ressources.evenements(id)
+);
 
 

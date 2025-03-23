@@ -1,0 +1,4 @@
+package cmr.notep.ressourcesjpa.repository;
+
+public class EvenementRepository {
+}

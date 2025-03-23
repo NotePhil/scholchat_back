@@ -80,3 +80,16 @@ INSERT INTO ressources.canaux (id, nom, description, professeur_id, classe_id) V
 ('550e8400-e29b-41d4-a716-446655440500', 'Canal de Mathématiques', 'Canal dédié aux cours de mathématiques', '550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440400'),
 ('550e8400-e29b-41d4-a716-446655440501', 'Canal de Français', 'Canal dédié aux cours de français', '550e8400-e29b-41d4-a716-446655440008', '550e8400-e29b-41d4-a716-446655440400'),
 ('550e8400-e29b-41d4-a716-446655440502', 'Canal de Sciences', 'Canal dédié aux cours de sciences', '550e8400-e29b-41d4-a716-446655440009', '550e8400-e29b-41d4-a716-446655440400');
+
+-- Insert data into evenements
+INSERT INTO ressources.evenements (id, titre, description, lieu, heure_debut, heure_fin, etat, canal_id) VALUES
+('660e8400-e29b-41d4-a716-446655440600', 'Examen de Mathématiques', 'Examen final de mathématiques', 'Salle A1', '2024-12-15 09:00:00', '2024-12-15 11:00:00', 'EN_ATTENTE_DE_CONFIRMATION', '550e8400-e29b-41d4-a716-446655440500'),
+('660e8400-e29b-41d4-a716-446655440601', 'Cours de Français', 'Cours sur la littérature française', 'Salle B2', '2024-12-16 14:00:00', '2024-12-16 16:00:00', 'EN_COURS', '550e8400-e29b-41d4-a716-446655440501'),
+('660e8400-e29b-41d4-a716-446655440602', 'TP de Sciences', 'Travaux pratiques de chimie', 'Labo C3', '2024-12-17 10:00:00', '2024-12-17 12:00:00', 'PASSE', '550e8400-e29b-41d4-a716-446655440502');
+
+-- Insert data into interactions
+INSERT INTO ressources.interactions (id, type, contenu, date_creation, niveau, evenement_id) VALUES
+('770e8400-e29b-41d4-a716-446655440700', 'COMMENTAIRE', 'Je suis prêt pour l’examen!', '2024-12-14 10:00:00', 'Facile', '660e8400-e29b-41d4-a716-446655440600'),
+('770e8400-e29b-41d4-a716-446655440701', 'QUESTION', 'Quel chapitre sera couvert?', '2024-12-14 11:00:00', 'Moyen', '660e8400-e29b-41d4-a716-446655440600'),
+('770e8400-e29b-41d4-a716-446655440702', 'REACTION', 'J’adore ce cours!', '2024-12-16 15:00:00', 'Difficile', '660e8400-e29b-41d4-a716-446655440601'),
+('770e8400-e29b-41d4-a716-446655440703', 'FEEDBACK', 'Le TP était très instructif.', '2024-12-17 13:00:00', 'Facile', '660e8400-e29b-41d4-a716-446655440602');
