@@ -69,12 +69,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/evenements/**").hasAnyRole("PROFESSOR", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/evenements/**").hasRole("ADMIN")
 
-                        // Interaction endpoints
-                        .requestMatchers(HttpMethod.GET, "/interactions/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/interactions").hasAnyRole("ELEVE", "PROFESSOR", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/interactions/**").hasAnyRole("ELEVE", "PROFESSOR", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/interactions/**").hasRole("ADMIN")
-
 
                         // Secure all other endpoints
                         .anyRequest().authenticated()

@@ -1,0 +1,4 @@
+package cmr.notep.modele;
+
+public enum TypeInteraction {
+}

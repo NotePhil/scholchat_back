@@ -1,0 +1,20 @@
+package cmr.notep.interfaces.modeles;
+
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class Evenement {
+    private String id; // Unique identifier for the event
+    private String canalId; // ID of the associated canal
+    private String titre; // Title of the event
+    private String description; // Description of the event
+    private String lieu; // Location of the event
+    private LocalDateTime heureDebut; // Start time of the event
+    private LocalDateTime heureFin; // End time of the event
+    private EtatEvenement etat; // Current state of the event
+}

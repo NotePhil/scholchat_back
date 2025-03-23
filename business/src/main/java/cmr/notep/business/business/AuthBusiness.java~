@@ -320,6 +320,7 @@ public class AuthBusiness {
      */
     private void validateUserTypeRequirements(Utilisateurs utilisateur) {
         // Implement any additional validation logic based on user type
+        // For example, if the user is a professor, check for specific fields
         if (utilisateur instanceof Professeurs) {
             // Add specific validations for professors if needed
         }

@@ -25,5 +25,9 @@
             <a-hint>java.time.LocalDateTime</a-hint>
             <b-hint>java.time.LocalDateTime</b-hint>
         </field>
+        <field-exclude>
+            <a>messagesEnvoyerEntities</a>
+            <b>messagesEnvoyer</b>
+        </field-exclude>
     </mapping>
 </mappings>
