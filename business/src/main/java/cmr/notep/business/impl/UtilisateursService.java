@@ -48,11 +48,6 @@ public class UtilisateursService implements UtilisateursApi {
     }
 
     @Override
-    public Utilisateurs posterGenericUtilisateur(IUtilisateurs utilisateur) {
-        return utilisateursBusiness.posterGenericUtilisateur(utilisateur);
-    }
-
-    @Override
     public Utilisateurs validerProfesseur(String professorId) {
         log.info("Validating professor with ID: {} and comments: {}", professorId);
         return utilisateursBusiness.validerProfesseur(professorId);

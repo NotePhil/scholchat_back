@@ -40,27 +40,24 @@ public class AuthBusiness {
         log.info("Processing user registration request for email: {}", utilisateur.getEmail());
 
         // Check if email already exists
-        try {
-            Utilisateurs existingUser = utilisateursBusiness.avoirUtilisateurParEmail(utilisateur.getEmail());
-            if (existingUser != null) {
-                log.warn("Email already registered: {}", utilisateur.getEmail());
-                throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Email already registered");
-            }
-        } catch (SchoolException e) {
-            if (e.getCode() != SchoolErrorCode.NOT_FOUND) {
-                throw e;
-            }
+
+        Utilisateurs existingUser = utilisateursBusiness.avoirUtilisateurParEmail(utilisateur.getEmail());
+        if (existingUser == null) {
+            log.warn("Email already registered: {}", utilisateur.getEmail());
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Email already registered");
         }
 
+
         // Validate user data
-        validateUserData(utilisateur);
+        validateUserData(existingUser);
 
         // Encode password before saving
         log.debug("Encoding password for user: {}", utilisateur.getEmail());
-        utilisateur.setPasseAccess(passwordEncoder.encode(utilisateur.getPasseAccess()));
+        existingUser.setPasseAccess(passwordEncoder.encode(utilisateur.getPasseAccess()));
+        existingUser.setEtat(EtatUtilisateur.ACTIVE);
 
         // Save user - will handle activation email internally
-        utilisateursBusiness.posterUtilisateur(utilisateur);
+        utilisateursBusiness.mettreUtilisateurAJour(existingUser);
 
         log.info("User registration completed successfully for: {}", utilisateur.getEmail());
         return "User registered successfully. Please check your email for activation instructions.";

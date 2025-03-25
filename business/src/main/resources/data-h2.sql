@@ -1,7 +1,7 @@
 -- Insert data into utilisateurs with is_admin flag
 INSERT INTO ressources.utilisateurs (id, nom, prenom, email, passeaccess, telephone, adresse, activation_token, etat, is_admin) VALUES
 -- Add admin user
-('550e8400-e29b-41d4-a716-446655440999', 'Admin', 'Super', 'admin@example.com', '$2a$10$rQmw/QpUxQBJCNkdJpORk.lIAjDpMYgU9Z.F91JwMcRzdjQ/VeW0C', '0123456777', 'Admin Office', NULL, 'ACTIVE', TRUE),
+('550e8400-e29b-41d4-a716-446655440999', 'Admin', 'Super', 'admin@example.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456777', 'Admin Office', NULL, 'ACTIVE', TRUE),
 
 -- Regular users (existing data)
 ('550e8400-e29b-41d4-a716-446655440000', 'Dupont', 'Jean', 'jean.dupont@example.com', 'password123', '0123456789', '123 Rue de Paris', 'abc123activationcode1', 'ACTIVE', FALSE),

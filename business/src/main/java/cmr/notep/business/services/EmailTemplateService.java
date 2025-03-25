@@ -1,9 +1,6 @@
 package cmr.notep.business.services;
 
-import cmr.notep.interfaces.modeles.Eleves;
-import cmr.notep.interfaces.modeles.IUtilisateurs;
-import cmr.notep.interfaces.modeles.Parents;
-import cmr.notep.interfaces.modeles.Professeurs;
+import cmr.notep.interfaces.modeles.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -19,7 +16,7 @@ public class EmailTemplateService {
     private String activationUrl;
 
 
-    public String generateActivationEmail(IUtilisateurs utilisateur, String activationToken) {
+    public String generateActivationEmail(Utilisateurs utilisateur, String activationToken) {
         Context context = new Context();
         context.setVariable("userName", utilisateur.getNom());
         context.setVariable("userEmail", utilisateur.getEmail());

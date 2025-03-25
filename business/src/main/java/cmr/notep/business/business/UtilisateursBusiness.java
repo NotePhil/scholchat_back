@@ -3,7 +3,6 @@ package cmr.notep.business.business;
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.ActivationEmailService;
-import cmr.notep.business.services.MailService;
 import cmr.notep.business.utils.JwtUtil;
 import cmr.notep.interfaces.modeles.*;
 import cmr.notep.modele.EtatUtilisateur;
@@ -26,6 +25,7 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 
 @Component
 @Slf4j
+@Transactional(noRollbackFor = SchoolException.class)
 public class UtilisateursBusiness {
     private final DaoAccessorService daoAccessorService ;
     private final ActivationEmailService activationEmailService;
@@ -113,12 +113,6 @@ public class UtilisateursBusiness {
         return mapUtilisateursEntityToModele(savedUserEntity);
     }
 
-    public Utilisateurs posterGenericUtilisateur(IUtilisateurs utilisateur) {
-        log.info("Création d'un nouvel utilisateur");
-        return mapUtilisateursEntityToModele(this.daoAccessorService.getRepository(UtilisateursRepository.class)
-                .save(mapUtilisateursModeleToEntity(utilisateur)));
-
-    }
 
     public List<Utilisateurs> avoirToutUtilisateurs() {
         log.info("Récupération de tous les utilisateurs");

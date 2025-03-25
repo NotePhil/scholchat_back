@@ -1,9 +1,6 @@
 package cmr.notep.business.services;
 
-import cmr.notep.interfaces.modeles.Eleves;
-import cmr.notep.interfaces.modeles.IUtilisateurs;
-import cmr.notep.interfaces.modeles.Parents;
-import cmr.notep.interfaces.modeles.Professeurs;
+import cmr.notep.interfaces.modeles.*;
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +15,7 @@ public class ActivationEmailService {
     private final EmailTemplateService emailTemplateService;
 
     @Async
-    public void sendActivationEmail(IUtilisateurs utilisateur, String activationToken) {
+    public void sendActivationEmail(Utilisateurs utilisateur, String activationToken) {
         try {
             log.info("Sending activation email asynchronously to {}", utilisateur.getEmail());
             String htmlContent = emailTemplateService.generateActivationEmail(utilisateur, activationToken);

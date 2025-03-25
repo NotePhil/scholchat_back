@@ -45,7 +45,8 @@ public class SecurityConfig {
                                 "/auth/register", "/auth/register/",
                                 "/auth/login", "/auth/login/",
                                 "/auth/activate", "/auth/activate/",
-                                "/auth/refresh", "/auth/refresh/"
+                                "/auth/refresh", "/auth/refresh/",
+                                "/utilisateurs", "/utilisateurs/"
                         ).permitAll()
 
                         // Enable debug logging for matchers
