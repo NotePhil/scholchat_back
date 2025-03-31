@@ -47,7 +47,7 @@ public class AuthBusiness {
             throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Email already registered");
         }
 
-
+        existingUser.setPasseAccess(utilisateur.getPasseAccess());
         // Validate user data
         validateUserData(existingUser);
 
