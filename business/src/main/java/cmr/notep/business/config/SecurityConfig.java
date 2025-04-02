@@ -48,7 +48,11 @@ public class SecurityConfig {
                                 "/auth/refresh", "/auth/refresh/",
                                 "/utilisateurs", "/utilisateurs/"
                         ).permitAll()
-
+                        .requestMatchers(
+                                "/utilisateurs/professeurs/*/rejet",
+                                "/utilisateurs/validerProfesseur/**",
+                                "/utilisateurs/professors/pending/**"
+                        ).hasRole("ADMIN")
                         // Enable debug logging for matchers
                         .requestMatchers("/actuator/**").permitAll()
 

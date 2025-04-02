@@ -75,6 +75,21 @@ INSERT INTO ressources.professeurs (professeurs_id, cni_url_front, cni_url_back,
 INSERT INTO ressources.repetiteurs (repetiteurs_id, cni_url_front, cni_url_back, photo_full_picture, nom_classe) VALUES
 ('550e8400-e29b-41d4-a716-446655440010', 'https://example.com/cni/paul_durand_front.jpg', 'https://example.com/cni/paul_durand_back.jpg', 'https://example.com/photos/paul_durand_full.jpg', 'Terminale B');
 
+-- Insertion des motifs de rejet initiaux
+-- Add test professor with your email
+INSERT INTO ressources.utilisateurs (id, nom, prenom, email, passeaccess, telephone, adresse, activation_token, etat, is_admin) VALUES
+    ('660e8400-e29b-41d4-a716-446655440999', 'Test', 'Professor', 'kamsuperold2004@gmail.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456789', 'Test Address', 'testactivationtoken', 'AWAITING_VALIDATION', FALSE);
+
+INSERT INTO ressources.professeurs (professeurs_id, cni_url_front, cni_url_back, nom_etablissement, nom_classe, matricule_professeur) VALUES
+    ('660e8400-e29b-41d4-a716-446655440999', 'http://example.com/cni.jpg', 'http://example.com/cni-back.jpg', 'Test School', 'Test Class', 'PROF-TEST-001');
+-- Insert initial rejection reasons
+INSERT INTO ressources.motifs_rejet (id, code, descriptif, date_creation) VALUES
+                                                                              ('550e8400-e29b-41d4-a716-446655440600', 'PHOTO_FLOU_RECTO', 'Photo recto de la CNI floue ou illisible', CURRENT_TIMESTAMP),
+                                                                              ('550e8400-e29b-41d4-a716-446655440601', 'PHOTO_FLOU_VERSO', 'Photo verso de la CNI floue ou illisible', CURRENT_TIMESTAMP),
+                                                                              ('550e8400-e29b-41d4-a716-446655440602', 'PHOTO_FLOU_SELFIE', 'Photo selfie floue ou illisible', CURRENT_TIMESTAMP),
+                                                                              ('550e8400-e29b-41d4-a716-446655440603', 'PHOTO_INCOHERENTE_RECTO_VERSO', 'Incohérence entre les photos recto et verso de la CNI', CURRENT_TIMESTAMP),
+                                                                              ('550e8400-e29b-41d4-a716-446655440604', 'PHOTO_INCOHERENTE_RECTO_SELFIE', 'Incohérence entre la photo recto de la CNI et le selfie', CURRENT_TIMESTAMP),
+                                                                              ('550e8400-e29b-41d4-a716-446655440605', 'MATRICULE_INCORRECT', 'Matricule professeur incorrect ou invalide', CURRENT_TIMESTAMP);
 -- Insert data into canaux
 INSERT INTO ressources.canaux (id, nom, description, professeur_id, classe_id) VALUES
 ('550e8400-e29b-41d4-a716-446655440500', 'Canal de Mathématiques', 'Canal dédié aux cours de mathématiques', '550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440400'),

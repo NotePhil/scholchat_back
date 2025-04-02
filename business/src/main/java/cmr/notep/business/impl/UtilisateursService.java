@@ -7,6 +7,7 @@ import cmr.notep.interfaces.modeles.IUtilisateurs;
 import cmr.notep.interfaces.modeles.Utilisateurs;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -57,5 +58,13 @@ public class UtilisateursService implements UtilisateursApi {
     public List<Utilisateurs> avoirProfesseursEnAttente() {
         log.info("Fetching all pending professors");
         return utilisateursBusiness.avoirProfesseursEnAttente();
+    }
+
+    @Override
+    public Utilisateurs rejeterProfesseur(
+            @PathVariable String professorId,
+            @RequestParam String codeErreur,
+            @RequestParam(required = false) String motifSupplementaire) {
+        return utilisateursBusiness.rejeterProfesseur(professorId, codeErreur, motifSupplementaire);
     }
 }
