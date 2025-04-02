@@ -331,7 +331,7 @@ public class UtilisateursBusiness {
     }
 
 
-    // Add this method to UtilisateursBusiness
+
     public Utilisateurs rejeterProfesseur(String professorId, String codeErreur, String motifSupplementaire) {
         log.info("Rejet du professeur avec l'ID: {}", professorId);
 
