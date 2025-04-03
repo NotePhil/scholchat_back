@@ -1,6 +1,8 @@
 package cmr.notep.business.services;
 
 import cmr.notep.interfaces.modeles.*;
+import cmr.notep.ressourcesjpa.dao.MotifRejetEntity;
+import cmr.notep.ressourcesjpa.dao.ProfesseursEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -31,5 +33,15 @@ public class EmailTemplateService {
         };
 
         return templateEngine.process(templateName, context);
+    }
+
+    public String generateRejectionEmail(ProfesseursEntity professeur, MotifRejetEntity motif, String motifSupplementaire) {
+        Context context = new Context();
+        context.setVariable("nom", professeur.getNom());
+        context.setVariable("prenom", professeur.getPrenom());
+        context.setVariable("motif", motif.getDescriptif());
+        context.setVariable("motifSupplementaire", motifSupplementaire);
+
+        return templateEngine.process("email/professor-rejection", context);
     }
 }

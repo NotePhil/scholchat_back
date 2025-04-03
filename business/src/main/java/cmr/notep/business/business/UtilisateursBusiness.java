@@ -1,4 +1,5 @@
 package cmr.notep.business.business;
+import cmr.notep.business.services.RejectionEmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
@@ -45,16 +46,23 @@ public class UtilisateursBusiness {
     private final ActivationEmailService activationEmailService;
     private final JwtUtil jwtUtil;
     private final MailService mailService;
+    private final RejectionEmailService rejectionEmailService;
+
 
 
     @Autowired
     private TemplateEngine templateEngine;
 
-    public UtilisateursBusiness(DaoAccessorService daoAccessorService, ActivationEmailService activationEmailService, JwtUtil jwtUtil, MailService mailService) {
+    public UtilisateursBusiness(DaoAccessorService daoAccessorService,
+                                ActivationEmailService activationEmailService,
+                                JwtUtil jwtUtil,
+                                MailService mailService,
+                                RejectionEmailService rejectionEmailService) {
         this.daoAccessorService = daoAccessorService;
         this.activationEmailService = activationEmailService;
         this.jwtUtil = jwtUtil;
         this.mailService = mailService;
+        this.rejectionEmailService = rejectionEmailService;
     }
 
     public Utilisateurs avoirUtilisateur(String idUtilisateur) {
@@ -362,53 +370,9 @@ public class UtilisateursBusiness {
         ProfesseursEntity savedEntity = daoAccessorService.getRepository(ProfesseursRepository.class)
                 .save(professeurEntity);
 
-        // Envoyer l'email de rejet
-        try {
-            log.info("Préparation de l'email de rejet pour le professeur: {} {}",
-                    professeurEntity.getPrenom(), professeurEntity.getNom());
-
-            // Create context for Thymeleaf template
-            Context context = new Context();
-            context.setVariable("nom", professeurEntity.getNom());
-            context.setVariable("prenom", professeurEntity.getPrenom());
-            context.setVariable("motif", motifEntity.getDescriptif());
-            context.setVariable("motifSupplementaire", motifSupplementaire);
-
-            // Process the template
-            String htmlContent = templateEngine.process("email/professor-rejection", context);
-            String subject = "Votre demande de compte professeur a été rejetée";
-
-            // Send the email
-            mailService.sendEmail(professeurEntity.getEmail(), subject, htmlContent);
-            log.info("Email de rejet envoyé avec succès à {}", professeurEntity.getEmail());
-        } catch (Exception e) {
-            log.error("Erreur lors de l'envoi de l'email de rejet à {}: {}",
-                    professeurEntity.getEmail(), e.getMessage());
-            // We don't throw exception here because the rejection was successful, just the email failed
-        }
+        // Envoyer l'email de rejet via le service dédié
+        rejectionEmailService.sendRejectionEmail(professeurEntity, motifEntity, motifSupplementaire);
 
         return dozerMapperBean.map(savedEntity, Utilisateurs.class);
-    }
-    private void envoyerEmailRejet(ProfesseursEntity professeur, MotifRejetEntity motif, String motifSupplementaire) {
-        try {
-            String sujet = "Votre demande de compte professeur a été rejetée";
-
-            // Create context for Thymeleaf template
-            Context context = new Context();
-            context.setVariable("nom", professeur.getNom());
-            context.setVariable("prenom", professeur.getPrenom());
-            context.setVariable("motif", motif.getDescriptif());
-            context.setVariable("motifSupplementaire", motifSupplementaire);
-
-            // Process the template
-            String htmlContent = templateEngine.process("email/professor-rejection", context);
-
-            // Send the email
-            mailService.sendEmail(professeur.getEmail(), sujet, htmlContent);
-            log.info("Email de rejet envoyé avec succès à {}", professeur.getEmail());
-        } catch (Exception e) {
-            log.error("Erreur lors de l'envoi de l'email de rejet", e);
-            throw new SchoolException(SchoolErrorCode.EMAIL_NOT_SENT, "Erreur lors de l'envoi de l'email de rejet");
-        }
     }
 }
