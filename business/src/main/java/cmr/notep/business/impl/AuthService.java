@@ -23,9 +23,9 @@ public class AuthService implements AuthApi {
     private final ActivationService activationService;
 
     @Override
-    public String registerUser(@NonNull Utilisateurs utilisateur) {
+    public void registerUser(@NonNull Utilisateurs utilisateur) {
         log.info("Registering new user: {}", utilisateur.getEmail());
-        return authBusiness.registerUser (utilisateur);
+        authBusiness.registerUser(utilisateur);
     }
 
     @Override
@@ -41,9 +41,9 @@ public class AuthService implements AuthApi {
         return activationService.activerUtilisateur(activationToken);
     }
 
-    @Override
-    public String refreshToken(String refreshToken) {
-        log.info("Refreshing token: {}", refreshToken);
-        return authBusiness.refreshAccessToken(refreshToken);
-    }
+//    @Override
+//    public String refreshToken(String refreshToken) {
+//        log.info("Refreshing token: {}", refreshToken);
+//        return authBusiness.refreshAccessToken(refreshToken);
+//    }
 }
