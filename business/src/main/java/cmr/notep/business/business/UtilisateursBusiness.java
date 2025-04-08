@@ -1,13 +1,11 @@
 package cmr.notep.business.business;
-import cmr.notep.business.services.RejectionEmailService;
+import cmr.notep.business.services.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
-import cmr.notep.business.services.ActivationEmailService;
-import cmr.notep.business.services.MailService;
 import cmr.notep.business.utils.JwtUtil;
 import cmr.notep.interfaces.modeles.*;
 import cmr.notep.modele.EtatUtilisateur;
@@ -45,8 +43,8 @@ public class UtilisateursBusiness {
     private final DaoAccessorService daoAccessorService ;
     private final ActivationEmailService activationEmailService;
     private final JwtUtil jwtUtil;
-    private final MailService mailService;
-    private final RejectionEmailService rejectionEmailService;
+    private final MailServiceInterface mailService;
+    private final IRejectionEmailService rejectionEmailService;
 
 
 
@@ -56,8 +54,8 @@ public class UtilisateursBusiness {
     public UtilisateursBusiness(DaoAccessorService daoAccessorService,
                                 ActivationEmailService activationEmailService,
                                 JwtUtil jwtUtil,
-                                MailService mailService,
-                                RejectionEmailService rejectionEmailService) {
+                                MailServiceInterface mailService,
+                                IRejectionEmailService rejectionEmailService) {
         this.daoAccessorService = daoAccessorService;
         this.activationEmailService = activationEmailService;
         this.jwtUtil = jwtUtil;

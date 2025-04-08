@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @Slf4j
 public class ActivationEmailService {
-    private final MailService mailService;
+    private final MailServiceInterface mailService;
     private final EmailTemplateService emailTemplateService;
 
     @Async

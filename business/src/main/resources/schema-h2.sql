@@ -160,7 +160,7 @@ CREATE TABLE IF NOT EXISTS ressources.refresh_tokens (
 
 -- Table pour les motifs de rejet
 CREATE TABLE IF NOT EXISTS ressources.motifs_rejet (
-                                                       id VARCHAR(255) PRIMARY KEY,
+    id VARCHAR(255) PRIMARY KEY,
     code VARCHAR(255) NOT NULL UNIQUE,
     descriptif VARCHAR(255) NOT NULL,
     date_creation TIMESTAMP NOT NULL

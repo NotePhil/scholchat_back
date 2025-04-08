@@ -11,12 +11,10 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class RejectionEmailService {
-    private final MailService mailService;
+public class RejectionEmailService implements IRejectionEmailService {
+    private final MailServiceInterface mailService;
     private final EmailTemplateService emailTemplateService;
 
-
-    @Async
     public void sendRejectionEmail(ProfesseursEntity professeur, MotifRejetEntity motif, String motifSupplementaire) {
         try {
             log.info("Sending rejection email asynchronously to {}", professeur.getEmail());

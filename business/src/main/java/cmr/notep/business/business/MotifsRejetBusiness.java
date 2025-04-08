@@ -42,12 +42,11 @@ public class MotifsRejetBusiness {
     public void supprimerMotifRejet(String id) {
         log.info("Suppression du motif de rejet avec l'ID: {}", id);
 
-        MotifRejetRepository repository = daoAccessorService.getRepository(MotifRejetRepository.class);
-        if (!repository.existsById(id)) {
-            throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Motif de rejet introuvable avec l'ID: " + id);
-        }
+        MotifRejetEntity rejetEntity = daoAccessorService.getRepository(MotifRejetRepository.class).findById(id)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Motif de rejet introuvable avec l'ID: " + id));
 
-        repository.deleteById(id);
+        daoAccessorService.getRepository(MotifRejetRepository.class).delete(rejetEntity);
+        log.info("Motif de rejet supprimé avec succès: {}", id);
     }
 
     public MotifRejet obtenirMotifParCode(String code) {
