@@ -10,35 +10,31 @@ import cmr.notep.business.utils.JwtUtil;
 import cmr.notep.interfaces.dto.LoginDto;
 import cmr.notep.interfaces.modeles.*;
 import cmr.notep.modele.EtatUtilisateur;
-import com.google.i18n.phonenumbers.NumberParseException;
-import com.google.i18n.phonenumbers.PhoneNumberUtil;
-import com.google.i18n.phonenumbers.Phonenumber;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Component
-@RequiredArgsConstructor
+
 @Slf4j
 public class AuthBusiness {
 
     private final PasswordEncoder passwordEncoder;
     private final UtilisateursBusiness utilisateursBusiness;
-    private final RefreshTokenBusiness refreshTokenBusiness;
     private final JwtUtil jwtUtil;
     private final JwtConfig jwtConfig;
-    private final ActivationEmailService activationEmailService;
     private final RoleService roleService;
     private final UserValidationService userValidationService;
 
-    /**
+    public AuthBusiness(PasswordEncoder passwordEncoder, UtilisateursBusiness utilisateursBusiness, JwtUtil jwtUtil, JwtConfig jwtConfig, ActivationEmailService activationEmailService, RoleService roleService, UserValidationService userValidationService) {
+this.passwordEncoder = passwordEncoder;this.utilisateursBusiness = utilisateursBusiness;
+    this.jwtUtil = jwtUtil;
+    this.jwtConfig = jwtConfig;
+        this.roleService = roleService;
+    this.userValidationService = userValidationService;}
+   /**
      * Register a new user account
      *
      * @param utilisateur User information for registration

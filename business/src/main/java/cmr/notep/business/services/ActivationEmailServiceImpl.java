@@ -12,14 +12,18 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
-@Async
+
 public class ActivationEmailServiceImpl implements ActivationEmailService {
     private final MailServiceInterface mailService;
     private final EmailTemplateService emailTemplateService;
 
- 
+    public ActivationEmailServiceImpl(MailServiceInterface mailService,
+                                      EmailTemplateService emailTemplateService) {
+        this.mailService = mailService;
+        this.emailTemplateService = emailTemplateService;
+    }
+
     public void sendActivationEmail(Utilisateurs utilisateur, String activationToken) {
         try {
             log.info("Sending activation email asynchronously to {}", utilisateur.getEmail());

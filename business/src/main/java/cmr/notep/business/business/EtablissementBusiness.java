@@ -17,9 +17,11 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 
 @Component
 @Slf4j
-@RequiredArgsConstructor
+
 public class EtablissementBusiness {
     private final DaoAccessorService daoAccessorService;
+
+    public EtablissementBusiness(DaoAccessorService daoAccessorService) {this.daoAccessorService = daoAccessorService;}
 
     public Etablissement creerEtablissement(Etablissement etablissement) {
 

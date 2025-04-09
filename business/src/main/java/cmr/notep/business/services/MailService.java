@@ -20,11 +20,13 @@ import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 
 @Service
-@RequiredArgsConstructor
+
 @Slf4j
 public class MailService implements MailServiceInterface {
     private final JavaMailSender mailSender;
     private final EmailTemplateService emailTemplateService;
+
+    public MailService(JavaMailSender mailSender, EmailTemplateService emailTemplateService) {this.mailSender = mailSender; this.emailTemplateService = emailTemplateService;}
 
     @Value("${spring.mail.username}")
     private String fromEmail;
