@@ -11,8 +11,6 @@ public class Professeurs extends Utilisateurs {
     private String cniUrlVerso;
     //TODO : supprimer cette propriété pour etre conforme au diagramme de classe
     private String nomEtablissement;
-    //TODO : mettre la relation avec la classe Canal qui sera en relation avec Classe
-    private String nomClasse;
     private String matriculeProfesseur;
 }
 

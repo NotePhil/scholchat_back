@@ -98,8 +98,7 @@ CREATE TABLE IF NOT EXISTS ressources.professeurs (
     professeurs_id VARCHAR(255) NOT NULL,
     cni_url_front VARCHAR(255) NOT NULL,
     cni_url_back VARCHAR(255) NOT NULL,
-    nom_etablissement VARCHAR(255) NOT NULL,
-    nom_classe VARCHAR(255) NOT NULL,
+    nom_etablissement VARCHAR(255) ,
     matricule_professeur VARCHAR(255) NOT NULL UNIQUE,
     PRIMARY KEY (professeurs_id),
     CONSTRAINT fk_professeurs_utilisateurs FOREIGN KEY (professeurs_id) REFERENCES ressources.utilisateurs(id)
