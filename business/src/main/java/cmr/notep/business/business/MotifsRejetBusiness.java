@@ -18,10 +18,13 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
+
 public class MotifsRejetBusiness {
     private final DaoAccessorService daoAccessorService;
 
+ public MotifsRejetBusiness(DaoAccessorService daoAccessorService) {
+     this.daoAccessorService = daoAccessorService;
+ }
     public MotifRejet creerMotifRejet(MotifRejet motifRejet) {
         log.info("Création d'un nouveau motif de rejet: {}", motifRejet.getCode());
 

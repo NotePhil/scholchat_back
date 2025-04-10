@@ -9,11 +9,16 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
+
 @Slf4j
 public class RejectionEmailService implements IRejectionEmailService {
     private final MailServiceInterface mailService;
     private final EmailTemplateService emailTemplateService;
+
+    public RejectionEmailService(MailServiceInterface mailService, EmailTemplateService emailTemplateService) {
+        this.mailService = mailService;
+        this.emailTemplateService = emailTemplateService;
+    }
 
     public void sendRejectionEmail(ProfesseursEntity professeur, MotifRejetEntity motif, String motifSupplementaire) {
         try {

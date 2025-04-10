@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Component
-@RequiredArgsConstructor
+
 @Slf4j
 public class AuthBusiness {
 
@@ -29,6 +29,17 @@ public class AuthBusiness {
     private final JwtUtil jwtUtil;
     private final JwtConfig jwtConfig;
     private final ActivationEmailService activationEmailService;
+
+
+public AuthBusiness(PasswordEncoder passwordEncoder,UtilisateursBusiness utilisateursBusiness, JwtUtil jwtUtil, JwtConfig jwtConfig, ActivationEmailService activationEmailService, RefreshTokenBusiness refreshTokenBusiness) {
+    this.passwordEncoder = passwordEncoder;
+    this.utilisateursBusiness = utilisateursBusiness;
+    this.jwtUtil = jwtUtil;
+    this.jwtConfig = jwtConfig;
+    this.activationEmailService = activationEmailService;
+    this.refreshTokenBusiness = refreshTokenBusiness;
+
+}
 
     /**
      * Register a new user account

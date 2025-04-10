@@ -8,11 +8,16 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
+
 @Slf4j
 public class ActivationEmailService {
     private final MailServiceInterface mailService;
     private final EmailTemplateService emailTemplateService;
+
+    public ActivationEmailService(MailServiceInterface mailService, EmailTemplateService emailTemplateService) {
+        this.mailService = mailService;
+        this.emailTemplateService = emailTemplateService;
+    }
 
     @Async
     public void sendActivationEmail(Utilisateurs utilisateur, String activationToken) {

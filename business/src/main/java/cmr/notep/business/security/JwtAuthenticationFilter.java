@@ -22,12 +22,17 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
-@RequiredArgsConstructor
+
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
+
+    public JwtAuthenticationFilter(JwtUtil jwtUtil, UserDetailsService userDetailsService) {
+        this.jwtUtil = jwtUtil;
+        this.userDetailsService = userDetailsService;
+    }
 
     // List of public endpoints that should bypass authentication
     private final List<String> publicEndpoints = List.of(

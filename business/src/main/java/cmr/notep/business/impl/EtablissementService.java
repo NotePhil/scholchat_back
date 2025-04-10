@@ -11,9 +11,13 @@ import java.util.List;
 
 @RestController
 @Slf4j
-@RequiredArgsConstructor
+
 public class EtablissementService implements EtablissementApi {
     private final EtablissementBusiness etablissementBusiness;
+
+    public EtablissementService(EtablissementBusiness etablissementBusiness) {
+        this.etablissementBusiness = etablissementBusiness;
+    }
 
     @Override
     public Etablissement creerEtablissement(Etablissement etablissement) {

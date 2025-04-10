@@ -10,9 +10,13 @@ import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
 @Service
-@RequiredArgsConstructor
+
 public class EmailTemplateService {
     private final SpringTemplateEngine templateEngine;
+
+    public EmailTemplateService(SpringTemplateEngine templateEngine) {
+        this.templateEngine = templateEngine;
+    }
 
     @Value("${app.activation-url}")
     private String activationUrl;

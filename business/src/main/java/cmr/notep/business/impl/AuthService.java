@@ -16,11 +16,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @Slf4j
-@RequiredArgsConstructor
+
 public class AuthService implements AuthApi {
 
     private final AuthBusiness authBusiness;
     private final ActivationService activationService;
+
+    public AuthService(AuthBusiness authBusiness, ActivationService activationService) {
+        this.authBusiness = authBusiness;
+        this.activationService = activationService;
+    }
 
     @Override
     public String registerUser(@NonNull Utilisateurs utilisateur) {
