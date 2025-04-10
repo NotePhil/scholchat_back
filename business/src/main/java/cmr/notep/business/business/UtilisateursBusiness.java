@@ -293,8 +293,8 @@ public class UtilisateursBusiness {
             );
         }
 
-        // Change the state to 'VALIDATED'
-        userEntity.setEtat(EtatUtilisateur.VALIDATED);
+        // Change the state to 'PENDING'
+        userEntity.setEtat(EtatUtilisateur.PENDING);
 
         // Assign the 'ROLE_PROFESSOR' if not already assigned
         if (!userEntity.getAdmin()) {

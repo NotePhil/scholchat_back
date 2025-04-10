@@ -20,10 +20,10 @@ public class ProfesseursEntity extends UtilisateursEntity {
     @Column(name = "cni_url_back", nullable = false)
     private String cniUrlVerso;
     //TODO : supprimer ce champ et se mettre en conformité avec le diagramme de classe
-    @Column(name = "nom_etablissement", nullable = false)
+    @Column(name = "nom_etablissement", nullable = true)
     private String nomEtablissement;
     //TODO : mettre la relation avec la classe CanalEntity qui sera en relation avec ClasseEntity
-    @Column(name = "nom_classe", nullable = false)
+    @Column(name = "nom_classe", nullable = true)
     private String nomClasse;
     //TODO : vérifier si le matricule est lié à l'établissement uniquement comme dans les collèges
     @Column(name = "matricule_professeur", nullable = false, unique = true)
