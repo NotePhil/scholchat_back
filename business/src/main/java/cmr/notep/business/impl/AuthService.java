@@ -28,9 +28,9 @@ public class AuthService implements AuthApi {
     }
 
     @Override
-    public String registerUser(@NonNull Utilisateurs utilisateur) {
+    public Utilisateurs registerUser(@NonNull Utilisateurs utilisateur) {
         log.info("Registering new user: {}", utilisateur.getEmail());
-        return authBusiness.registerUser (utilisateur);
+        return authBusiness.registerUser(utilisateur);
     }
 
     @Override
@@ -39,7 +39,17 @@ public class AuthService implements AuthApi {
         return authBusiness.loginUser(loginDto);
     }
 
+    @Override
+    public Utilisateurs getUtilisateurByEmailWithToken(String email, String token) {
+        log.info("Fetching user by email with token: {}", email);
+        return authBusiness.getUtilisateurByEmailWithToken(email, token);
+    }
 
+    @Override
+    public Utilisateurs registerUserWithToken(Utilisateurs utilisateur, String token) {
+        log.info("Registering user with token: {}", utilisateur.getEmail());
+        return authBusiness.registerUserWithToken(utilisateur, token);
+    }
     @Override
     public Utilisateurs activerUtilisateur(String activationToken) {
         log.info("Activating user with token: {}", activationToken);

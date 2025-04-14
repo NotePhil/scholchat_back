@@ -34,6 +34,21 @@
       border-left: 4px solid #e74c3c;
       margin: 15px 0;
     }
+    .button-container {
+      text-align: center;
+      margin: 20px 0;
+    }
+    .button {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #e74c3c;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+    }
+    .button:hover {
+      background-color: #c0392b;
+    }
   </style>
 </head>
 <body>
@@ -62,7 +77,13 @@
       <li>Soumettre à nouveau votre demande</li>
       <li>Nous contacter pour plus d'informations</li>
     </ul>
+    <p>Pour modifier vos informations et soumettre à nouveau votre demande, cliquez sur le lien ci-dessous :</p>
 
+    <div class="button-container">
+      <a th:href="${updateUrl}" class="button">
+        Modifier mes informations
+      </a>
+    </div>
     <p>Nous vous remercions pour votre compréhension.</p>
   </div>
   <div class="footer">

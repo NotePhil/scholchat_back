@@ -4,6 +4,7 @@ import cmr.notep.interfaces.dto.LoginDto;
 import cmr.notep.interfaces.modeles.AuthResponse;
 import cmr.notep.interfaces.modeles.Utilisateurs;
 import lombok.NonNull;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,7 +17,7 @@ public interface AuthApi {
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    String registerUser(@NonNull @RequestBody Utilisateurs utilisateur);
+    Utilisateurs registerUser(@NonNull @RequestBody Utilisateurs utilisateur);
 
     @PostMapping(
             path = "/login",
@@ -25,6 +26,28 @@ public interface AuthApi {
     )
     AuthResponse loginUser(@NonNull @RequestBody LoginDto utilisateur);
 
+
+
+    @GetMapping(
+            path = "/users/byEmail",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    Utilisateurs getUtilisateurByEmailWithToken(
+            @RequestParam String email,
+            @RequestParam String token
+    );
+
+    @PostMapping(
+            path = "/users/register",
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    Utilisateurs registerUserWithToken(
+            @RequestBody Utilisateurs utilisateur,
+            @RequestParam String token
+    );
 
     @PostMapping(
             path = "/activate",

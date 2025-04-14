@@ -54,13 +54,16 @@ public class SecurityConfig {
                                 "/auth/login", "/auth/login/",
                                 "/auth/activate", "/auth/activate/",
                                 "/auth/refresh", "/auth/refresh/",
-                                "/utilisateurs", "/utilisateurs/"
+                                "/utilisateurs", "/utilisateurs/",
+                                "/auth/users/byEmail", // Ajoutez cette ligne
+                                "/auth/users/register"
                         ).permitAll()
                         .requestMatchers(
                                 "/utilisateurs/professeurs/*/rejet",
                                 "/utilisateurs/validerProfesseur/**",
                                 "/utilisateurs/professors/pending/**",
                                 "/motifsRejets/**"  // Added endpoint for motifs rejets
+
                         ).hasRole("ADMIN")
                         // Enable debug logging for matchers
                         .requestMatchers("/actuator/**").permitAll()

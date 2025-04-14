@@ -40,6 +40,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/auth/login",
             "/auth/activate",
             "/auth/refresh",
+            "/auth/users/byEmail",
+            "/auth/users/register",
             "/h2-console",
             "/scholchat/h2-console",
             "/h2",

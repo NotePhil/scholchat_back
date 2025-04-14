@@ -347,6 +347,10 @@ public class UtilisateursBusiness {
                         "Professeur introuvable avec l'ID: " + professorId
                 ));
 
+        // Vérifiez que le token est bien présent
+        if (professeurEntity.getActivationToken() == null) {
+            professeurEntity.setActivationToken(jwtUtil.generateRefreshToken(professeurEntity.getEmail()));
+        }
         // Vérifier que le professeur est en attente de validation
         if (professeurEntity.getEtat() != EtatUtilisateur.AWAITING_VALIDATION) {
             throw new SchoolException(

@@ -47,18 +47,23 @@ public AuthBusiness(PasswordEncoder passwordEncoder,UtilisateursBusiness utilisa
      * @param utilisateur User information for registration
      * @return Registration result message
      */
-    public String registerUser(Utilisateurs utilisateur) {
+    public Utilisateurs registerUser(Utilisateurs utilisateur) {
         log.info("Processing user registration request for email: {}", utilisateur.getEmail());
 
         // Check if email already exists
-
         Utilisateurs existingUser = utilisateursBusiness.avoirUtilisateurParEmail(utilisateur.getEmail());
         if (existingUser == null) {
             log.warn("Email already registered: {}", utilisateur.getEmail());
             throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Email already registered");
         }
 
+        // Update user data
+        existingUser.setNom(utilisateur.getNom());
+        existingUser.setPrenom(utilisateur.getPrenom());
         existingUser.setPasseAccess(utilisateur.getPasseAccess());
+        existingUser.setTelephone(utilisateur.getTelephone());
+        existingUser.setAdresse(utilisateur.getAdresse());
+
         // Validate user data
         validateUserData(existingUser);
 
@@ -67,13 +72,12 @@ public AuthBusiness(PasswordEncoder passwordEncoder,UtilisateursBusiness utilisa
         existingUser.setPasseAccess(passwordEncoder.encode(utilisateur.getPasseAccess()));
         existingUser.setEtat(EtatUtilisateur.ACTIVE);
 
-        // Save user - will handle activation email internally
-        utilisateursBusiness.mettreUtilisateurAJour(existingUser);
+        // Save user
+        Utilisateurs updatedUser = utilisateursBusiness.mettreUtilisateurAJour(existingUser);
 
         log.info("User registration completed successfully for: {}", utilisateur.getEmail());
-        return "User registered successfully. Please check your email for activation instructions.";
+        return updatedUser;
     }
-
     /**
      * Authenticate a user and generate tokens
      *
@@ -332,5 +336,44 @@ public AuthBusiness(PasswordEncoder passwordEncoder,UtilisateursBusiness utilisa
             // Add specific validations for professors if needed
         }
         // Add other user type checks as necessary
+    }
+
+
+    public Utilisateurs getUtilisateurByEmailWithToken(String email, String token) {
+        log.info("Fetching user by email with token validation: {}", email);
+        log.debug("Incoming token: {}", token);
+
+        // Get user by email
+        Utilisateurs utilisateur = utilisateursBusiness.avoirUtilisateurParEmail(email);
+        log.debug("Stored token: {}", utilisateur.getActivationToken());
+
+        // Verify token matches user's token
+        if (!token.equals(utilisateur.getActivationToken())) {
+            throw new SchoolException(SchoolErrorCode.INVALID_TOKEN,
+                    "Token does not match user's token. Received: " + token +
+                            " Expected: " + utilisateur.getActivationToken());
+        }
+
+        return utilisateur;
+    }
+
+    public Utilisateurs registerUserWithToken(Utilisateurs utilisateur, String token) {
+        log.info("Registering user with token validation: {}", utilisateur.getEmail());
+
+        // Validate token first
+        if (!jwtUtil.validateToken(token)) {
+            throw new SchoolException(SchoolErrorCode.INVALID_TOKEN, "Invalid token");
+        }
+
+        // Get existing user
+        Utilisateurs existingUser = utilisateursBusiness.avoirUtilisateurParEmail(utilisateur.getEmail());
+
+        // Verify token matches user's token
+        if (!token.equals(existingUser.getActivationToken())) {
+            throw new SchoolException(SchoolErrorCode.INVALID_TOKEN, "Token does not match user's token");
+        }
+
+        // Proceed with registration/update
+        return registerUser(utilisateur);
     }
 }

@@ -41,11 +41,19 @@ public class EmailTemplateService {
 
     public String generateRejectionEmail(ProfesseursEntity professeur, MotifRejetEntity motif, String motifSupplementaire) {
         Context context = new Context();
+        if (professeur == null) {
+            throw new IllegalArgumentException("ProfesseurEntity cannot be null");
+        }
         context.setVariable("nom", professeur.getNom());
         context.setVariable("prenom", professeur.getPrenom());
+        context.setVariable("email", professeur.getEmail());
+        context.setVariable("activationToken", professeur.getActivationToken());
         context.setVariable("motif", motif.getDescriptif());
         context.setVariable("motifSupplementaire", motifSupplementaire);
-
+        // Construisez l'URL directement dans le service
+        String updateUrl = "http://localhost:3000/schoolchat/signup?email=" +
+                professeur.getEmail() + "&token=" + professeur.getActivationToken();
+        context.setVariable("updateUrl", updateUrl);
         return templateEngine.process("email/professor-rejection", context);
     }
 }

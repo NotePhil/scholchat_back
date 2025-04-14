@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS ressources.messages
 );
 
 
+
+
 CREATE TABLE IF NOT EXISTS ressources.utilisateurs
 (
     id          VARCHAR(255) NOT NULL,
