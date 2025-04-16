@@ -4,6 +4,7 @@ import cmr.notep.business.config.JwtConfig;
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.ActivationEmailService;
+import cmr.notep.business.services.PasswordResetEmailService;
 import cmr.notep.business.utils.JwtUtil;
 import cmr.notep.interfaces.dto.LoginDto;
 import cmr.notep.interfaces.modeles.*;
@@ -29,9 +30,10 @@ public class AuthBusiness {
     private final JwtUtil jwtUtil;
     private final JwtConfig jwtConfig;
     private final ActivationEmailService activationEmailService;
+    private final PasswordResetEmailService passwordResetEmailService;
 
 
-public AuthBusiness(PasswordEncoder passwordEncoder,UtilisateursBusiness utilisateursBusiness, JwtUtil jwtUtil, JwtConfig jwtConfig, ActivationEmailService activationEmailService, RefreshTokenBusiness refreshTokenBusiness) {
+public AuthBusiness(PasswordEncoder passwordEncoder, UtilisateursBusiness utilisateursBusiness, JwtUtil jwtUtil, JwtConfig jwtConfig, ActivationEmailService activationEmailService, RefreshTokenBusiness refreshTokenBusiness, PasswordResetEmailService passwordResetEmailService) {
     this.passwordEncoder = passwordEncoder;
     this.utilisateursBusiness = utilisateursBusiness;
     this.jwtUtil = jwtUtil;
@@ -39,6 +41,7 @@ public AuthBusiness(PasswordEncoder passwordEncoder,UtilisateursBusiness utilisa
     this.activationEmailService = activationEmailService;
     this.refreshTokenBusiness = refreshTokenBusiness;
 
+    this.passwordResetEmailService = passwordResetEmailService;
 }
 
     /**
@@ -355,6 +358,25 @@ public AuthBusiness(PasswordEncoder passwordEncoder,UtilisateursBusiness utilisa
         }
 
         return utilisateur;
+    }
+
+    public void requestPasswordReset(String email) {
+        log.info("Processing password reset request for email: {}", email);
+
+        // Retrieve user by email
+        Utilisateurs user = utilisateursBusiness.avoirUtilisateurParEmail(email);
+
+        // Generate reset token
+        String resetToken = jwtUtil.generatePasswordResetToken(user.getEmail());
+
+        // Save token to user entity
+        user.setResetPasswordToken(resetToken);
+        utilisateursBusiness.mettreUtilisateurAJour(user);
+
+        // Send email
+        passwordResetEmailService.sendPasswordResetEmail(user, resetToken);
+
+        log.info("Password reset email sent to: {}", email);
     }
 
     public Utilisateurs registerUserWithToken(Utilisateurs utilisateur, String token) {

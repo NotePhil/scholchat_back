@@ -10,6 +10,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -43,6 +44,12 @@ public class AuthService implements AuthApi {
     public Utilisateurs getUtilisateurByEmailWithToken(String email, String token) {
         log.info("Fetching user by email with token: {}", email);
         return authBusiness.getUtilisateurByEmailWithToken(email, token);
+    }
+
+    @Override
+    public void requestPasswordReset(String email) {
+        log.info("Password reset requested for email: {}", email);
+        authBusiness.requestPasswordReset(email);
     }
 
     @Override

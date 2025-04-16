@@ -56,7 +56,8 @@ public class SecurityConfig {
                                 "/auth/refresh", "/auth/refresh/",
                                 "/utilisateurs", "/utilisateurs/",
                                 "/auth/users/byEmail", // Ajoutez cette ligne
-                                "/auth/users/register"
+                                "/auth/users/register",
+                                "/reset-password-request"
                         ).permitAll()
                         .requestMatchers(
                                 "/utilisateurs/professeurs/*/rejet",

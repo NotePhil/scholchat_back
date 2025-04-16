@@ -15,6 +15,12 @@ public class JwtConfig {
     @Value("${jwt.refresh-token-expiration}")
     private long refreshTokenExpirationMillis;
 
+    @Value("${jwt.password-reset-token-expiration}")
+    private long passwordResetTokenExpirationMillis;
+
+    public long getPasswordResetTokenExpirationMillis() {
+        return passwordResetTokenExpirationMillis;
+    }
     public String getSecretKey() {
         return secretKey;
     }

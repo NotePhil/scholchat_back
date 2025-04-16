@@ -25,6 +25,7 @@ public class Utilisateurs implements Serializable, IUtilisateurs {
     @NonNull
     private String prenom;
     private String email;
+    private String resetPasswordToken;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String passeAccess;
     private String telephone;

@@ -34,7 +34,7 @@ public class RefreshTokenBusiness {
 
     public RefreshTokenBusiness(DaoAccessorService daoAccessorService, JwtConfig jwtConfig) {
         this.daoAccessorService = daoAccessorService;
-        this.jwtUtil = new JwtUtil(jwtConfig);
+        this.jwtUtil = new JwtUtil(jwtConfig);  // Now only passing one parameter
         this.jwtConfig = jwtConfig;
     }
     /**

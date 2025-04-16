@@ -6,6 +6,7 @@ import cmr.notep.interfaces.modeles.Utilisateurs;
 import lombok.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,6 +19,13 @@ public interface AuthApi {
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
     Utilisateurs registerUser(@NonNull @RequestBody Utilisateurs utilisateur);
+
+    @PostMapping(
+            path = "/reset-password-request",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    void requestPasswordReset(@RequestParam String email);
 
     @PostMapping(
             path = "/login",
