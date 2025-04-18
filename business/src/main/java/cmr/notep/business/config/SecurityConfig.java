@@ -55,7 +55,7 @@ public class SecurityConfig {
                                 "/auth/activate", "/auth/activate/",
                                 "/auth/refresh", "/auth/refresh/",
                                 "/utilisateurs", "/utilisateurs/",
-                                "/auth/users/byEmail", // Ajoutez cette ligne
+                                "/auth/users/byEmail",
                                 "/auth/users/register",
                                 "/reset-password-request"
                         ).permitAll()
