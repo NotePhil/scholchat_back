@@ -3,6 +3,7 @@ package cmr.notep.business.impl;
 import cmr.notep.business.business.AuthBusiness;
 import cmr.notep.interfaces.api.AuthApi;
 import cmr.notep.interfaces.dto.LoginDto;
+import cmr.notep.interfaces.dto.PasswordResetRequest;
 import cmr.notep.interfaces.modeles.AuthResponse;
 import cmr.notep.interfaces.modeles.Utilisateurs;
 import cmr.notep.business.services.ActivationService;
@@ -22,6 +23,7 @@ public class AuthService implements AuthApi {
 
     private final AuthBusiness authBusiness;
     private final ActivationService activationService;
+    
 
     public AuthService(AuthBusiness authBusiness, ActivationService activationService) {
         this.authBusiness = authBusiness;
@@ -50,6 +52,11 @@ public class AuthService implements AuthApi {
     public void requestPasswordReset(String email) {
         log.info("Password reset requested for email: {}", email);
         authBusiness.requestPasswordReset(email);
+    }
+
+    @Override
+    public void resetPassword(PasswordResetRequest request) {
+        authBusiness.resetPassword(request);
     }
 
     @Override

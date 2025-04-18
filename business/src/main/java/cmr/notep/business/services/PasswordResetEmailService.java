@@ -10,6 +10,9 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -37,7 +40,10 @@ public class PasswordResetEmailService {
     private String generateResetEmail(Utilisateurs user, String resetToken) {
         Context context = new Context();
         context.setVariable("userName", user.getNom());
-        context.setVariable("resetUrl", resetPasswordUrl + "?token=" + resetToken);
+
+        // the URL is properly encoded and complete
+        String resetUrl = resetPasswordUrl + "?token=" + URLEncoder.encode(resetToken, StandardCharsets.UTF_8);
+        context.setVariable("resetUrl", resetUrl);
 
         return templateEngine.process("email/password-reset", context);
     }

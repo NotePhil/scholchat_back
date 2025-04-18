@@ -1,6 +1,7 @@
 package cmr.notep.interfaces.api;
 
 import cmr.notep.interfaces.dto.LoginDto;
+import cmr.notep.interfaces.dto.PasswordResetRequest;
 import cmr.notep.interfaces.modeles.AuthResponse;
 import cmr.notep.interfaces.modeles.Utilisateurs;
 import lombok.NonNull;
@@ -26,6 +27,15 @@ public interface AuthApi {
     )
     @ResponseStatus(HttpStatus.OK)
     void requestPasswordReset(@RequestParam String email);
+
+
+    @PostMapping(
+            path = "/reset-password",
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    void resetPassword(@RequestBody PasswordResetRequest request);
 
     @PostMapping(
             path = "/login",

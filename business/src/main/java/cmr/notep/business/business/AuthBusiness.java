@@ -7,6 +7,7 @@ import cmr.notep.business.services.ActivationEmailService;
 import cmr.notep.business.services.PasswordResetEmailService;
 import cmr.notep.business.utils.JwtUtil;
 import cmr.notep.interfaces.dto.LoginDto;
+import cmr.notep.interfaces.dto.PasswordResetRequest;
 import cmr.notep.interfaces.modeles.*;
 import cmr.notep.modele.EtatUtilisateur;
 import lombok.RequiredArgsConstructor;
@@ -378,7 +379,31 @@ public AuthBusiness(PasswordEncoder passwordEncoder, UtilisateursBusiness utilis
 
         log.info("Password reset email sent to: {}", email);
     }
+    public void resetPassword(PasswordResetRequest request) {
+        // Validate token
+        if (!jwtUtil.validatePasswordResetToken(request.getToken())) {
+            throw new SchoolException(SchoolErrorCode.INVALID_TOKEN, "Invalid or expired reset token");
+        }
 
+        // Get user email from token
+        String email = jwtUtil.getEmailFromToken(request.getToken());
+
+        // Get user
+        Utilisateurs user = utilisateursBusiness.avoirUtilisateurParEmail(email);
+
+        // Validate passwords match
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Passwords do not match");
+        }
+
+        // Update password
+        user.setPasseAccess(passwordEncoder.encode(request.getNewPassword()));
+        user.setResetPasswordToken(null); // Clear the reset token
+
+        // Save user
+        utilisateursBusiness.mettreUtilisateurAJour(user);
+        log.info("Password reset successful");
+    }
     public Utilisateurs registerUserWithToken(Utilisateurs utilisateur, String token) {
         log.info("Registering user with token validation: {}", utilisateur.getEmail());
 
