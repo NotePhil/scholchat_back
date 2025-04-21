@@ -4,8 +4,10 @@ import cmr.notep.business.config.JwtConfig;
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.ActivationEmailService;
+import cmr.notep.business.services.PasswordResetEmailService;
 import cmr.notep.business.utils.JwtUtil;
 import cmr.notep.interfaces.dto.LoginDto;
+import cmr.notep.interfaces.dto.PasswordResetRequest;
 import cmr.notep.interfaces.modeles.*;
 import cmr.notep.modele.EtatUtilisateur;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Component
-@RequiredArgsConstructor
+
 @Slf4j
 public class AuthBusiness {
 
@@ -29,6 +31,19 @@ public class AuthBusiness {
     private final JwtUtil jwtUtil;
     private final JwtConfig jwtConfig;
     private final ActivationEmailService activationEmailService;
+    private final PasswordResetEmailService passwordResetEmailService;
+
+
+public AuthBusiness(PasswordEncoder passwordEncoder, UtilisateursBusiness utilisateursBusiness, JwtUtil jwtUtil, JwtConfig jwtConfig, ActivationEmailService activationEmailService, RefreshTokenBusiness refreshTokenBusiness, PasswordResetEmailService passwordResetEmailService) {
+    this.passwordEncoder = passwordEncoder;
+    this.utilisateursBusiness = utilisateursBusiness;
+    this.jwtUtil = jwtUtil;
+    this.jwtConfig = jwtConfig;
+    this.activationEmailService = activationEmailService;
+    this.refreshTokenBusiness = refreshTokenBusiness;
+
+    this.passwordResetEmailService = passwordResetEmailService;
+}
 
     /**
      * Register a new user account
@@ -36,36 +51,37 @@ public class AuthBusiness {
      * @param utilisateur User information for registration
      * @return Registration result message
      */
-    public String registerUser(Utilisateurs utilisateur) {
+    public Utilisateurs registerUser(Utilisateurs utilisateur) {
         log.info("Processing user registration request for email: {}", utilisateur.getEmail());
 
         // Check if email already exists
-        try {
-            Utilisateurs existingUser = utilisateursBusiness.avoirUtilisateurParEmail(utilisateur.getEmail());
-            if (existingUser != null) {
-                log.warn("Email already registered: {}", utilisateur.getEmail());
-                throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Email already registered");
-            }
-        } catch (SchoolException e) {
-            if (e.getCode() != SchoolErrorCode.NOT_FOUND) {
-                throw e;
-            }
+        Utilisateurs existingUser = utilisateursBusiness.avoirUtilisateurParEmail(utilisateur.getEmail());
+        if (existingUser == null) {
+            log.warn("Email already registered: {}", utilisateur.getEmail());
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Email already registered");
         }
 
+        // Update user data
+        existingUser.setNom(utilisateur.getNom());
+        existingUser.setPrenom(utilisateur.getPrenom());
+        existingUser.setPasseAccess(utilisateur.getPasseAccess());
+        existingUser.setTelephone(utilisateur.getTelephone());
+        existingUser.setAdresse(utilisateur.getAdresse());
+
         // Validate user data
-        validateUserData(utilisateur);
+        validateUserData(existingUser);
 
         // Encode password before saving
         log.debug("Encoding password for user: {}", utilisateur.getEmail());
-        utilisateur.setPasseAccess(passwordEncoder.encode(utilisateur.getPasseAccess()));
+        existingUser.setPasseAccess(passwordEncoder.encode(utilisateur.getPasseAccess()));
+        existingUser.setEtat(EtatUtilisateur.ACTIVE);
 
-        // Save user - will handle activation email internally
-        utilisateursBusiness.posterUtilisateur(utilisateur);
+        // Save user
+        Utilisateurs updatedUser = utilisateursBusiness.mettreUtilisateurAJour(existingUser);
 
         log.info("User registration completed successfully for: {}", utilisateur.getEmail());
-        return "User registered successfully. Please check your email for activation instructions.";
+        return updatedUser;
     }
-
     /**
      * Authenticate a user and generate tokens
      *
@@ -287,8 +303,8 @@ public class AuthBusiness {
         String cleanedPhone = phoneNumber.replaceAll("\\s+|-|\\(|\\)", "");
 
         // Check if the number matches Cameroon format
-        // Cameroon: +237 followed by 8 digits or starts with 6 and has 8 digits total
-        boolean validCameroon = cleanedPhone.matches("^(\\+237|00237)?[6-9]\\d{7}$");
+        // Cameroon: +237 followed by 8 digits or starts with 6 and has 9 digits total
+        boolean validCameroon = cleanedPhone.matches("^(\\+237|00237)?[6-9]\\d{8}$");
 
         // Check if the number matches France format
         // France: +33 followed by 9 digits or starts with 0 and has 9 digits total
@@ -303,7 +319,7 @@ public class AuthBusiness {
         // ensure it has the appropriate format for each country
         if (!cleanedPhone.startsWith("+") && !cleanedPhone.startsWith("00")) {
             // For Cameroon, should start with 6 or other valid prefix and have 9 digits total
-            boolean validCameroonFormat = cleanedPhone.matches("^[6-9]\\d{7}$");
+            boolean validCameroonFormat = cleanedPhone.matches("^6\\d{8}$");
 
             // For France, should start with 0 and have 10 digits total
             boolean validFranceFormat = cleanedPhone.matches("^0[1-9]\\d{8}$");
@@ -320,10 +336,91 @@ public class AuthBusiness {
      */
     private void validateUserTypeRequirements(Utilisateurs utilisateur) {
         // Implement any additional validation logic based on user type
-        // For example, if the user is a professor, check for specific fields
         if (utilisateur instanceof Professeurs) {
             // Add specific validations for professors if needed
         }
         // Add other user type checks as necessary
+    }
+
+
+    public Utilisateurs getUtilisateurByEmailWithToken(String email, String token) {
+        log.info("Fetching user by email with token validation: {}", email);
+        log.debug("Incoming token: {}", token);
+
+        // Get user by email
+        Utilisateurs utilisateur = utilisateursBusiness.avoirUtilisateurParEmail(email);
+        log.debug("Stored token: {}", utilisateur.getActivationToken());
+
+        // Verify token matches user's token
+        if (!token.equals(utilisateur.getActivationToken())) {
+            throw new SchoolException(SchoolErrorCode.INVALID_TOKEN,
+                    "Token does not match user's token. Received: " + token +
+                            " Expected: " + utilisateur.getActivationToken());
+        }
+
+        return utilisateur;
+    }
+
+    public void requestPasswordReset(String email) {
+        log.info("Processing password reset request for email: {}", email);
+
+        // Retrieve user by email
+        Utilisateurs user = utilisateursBusiness.avoirUtilisateurParEmail(email);
+
+        // Generate reset token
+        String resetToken = jwtUtil.generatePasswordResetToken(user.getEmail());
+
+        // Save token to user entity
+        user.setResetPasswordToken(resetToken);
+        utilisateursBusiness.mettreUtilisateurAJour(user);
+
+        // Send email
+        passwordResetEmailService.sendPasswordResetEmail(user, resetToken);
+
+        log.info("Password reset email sent to: {}", email);
+    }
+    public void resetPassword(PasswordResetRequest request) {
+        // Validate token
+        if (!jwtUtil.validatePasswordResetToken(request.getToken())) {
+            throw new SchoolException(SchoolErrorCode.INVALID_TOKEN, "Invalid or expired reset token");
+        }
+
+        // Get user email from token
+        String email = jwtUtil.getEmailFromToken(request.getToken());
+
+        // Get user
+        Utilisateurs user = utilisateursBusiness.avoirUtilisateurParEmail(email);
+
+        // Validate passwords match
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Passwords do not match");
+        }
+
+        // Update password
+        user.setPasseAccess(passwordEncoder.encode(request.getNewPassword()));
+        user.setResetPasswordToken(null); // Clear the reset token
+
+        // Save user
+        utilisateursBusiness.mettreUtilisateurAJour(user);
+        log.info("Password reset successful");
+    }
+    public Utilisateurs registerUserWithToken(Utilisateurs utilisateur, String token) {
+        log.info("Registering user with token validation: {}", utilisateur.getEmail());
+
+        // Validate token first
+        if (!jwtUtil.validateToken(token)) {
+            throw new SchoolException(SchoolErrorCode.INVALID_TOKEN, "Invalid token");
+        }
+
+        // Get existing user
+        Utilisateurs existingUser = utilisateursBusiness.avoirUtilisateurParEmail(utilisateur.getEmail());
+
+        // Verify token matches user's token
+        if (!token.equals(existingUser.getActivationToken())) {
+            throw new SchoolException(SchoolErrorCode.INVALID_TOKEN, "Token does not match user's token");
+        }
+
+        // Proceed with registration/update
+        return registerUser(utilisateur);
     }
 }

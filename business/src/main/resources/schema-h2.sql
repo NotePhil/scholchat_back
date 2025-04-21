@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS ressources.messages
 );
 
 
+
+
 CREATE TABLE IF NOT EXISTS ressources.utilisateurs
 (
     id          VARCHAR(255) NOT NULL,
@@ -157,6 +159,14 @@ CREATE TABLE IF NOT EXISTS ressources.refresh_tokens (
     CONSTRAINT fk_refresh_tokens_utilisateur FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id) ON DELETE CASCADE
 );
 
+
+-- Table pour les motifs de rejet
+CREATE TABLE IF NOT EXISTS ressources.motifs_rejet (
+    id VARCHAR(255) PRIMARY KEY,
+    code VARCHAR(255) NOT NULL UNIQUE,
+    descriptif VARCHAR(255) NOT NULL,
+    date_creation TIMESTAMP NOT NULL
+    );
 
 
 

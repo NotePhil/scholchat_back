@@ -7,5 +7,6 @@ public enum EtatUtilisateur {
     VALIDATED,
     SUSPECT,
     SIGNALE,
-    PENDING
+    PENDING,
+    REJECTED
 }

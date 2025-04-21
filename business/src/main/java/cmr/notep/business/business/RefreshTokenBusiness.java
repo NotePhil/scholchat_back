@@ -24,7 +24,7 @@ import java.util.UUID;
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 
 @Component
-@RequiredArgsConstructor
+
 @Slf4j
 public class RefreshTokenBusiness {
 
@@ -32,6 +32,11 @@ public class RefreshTokenBusiness {
     private final JwtUtil jwtUtil;
     private final JwtConfig jwtConfig;
 
+    public RefreshTokenBusiness(DaoAccessorService daoAccessorService, JwtConfig jwtConfig) {
+        this.daoAccessorService = daoAccessorService;
+        this.jwtUtil = new JwtUtil(jwtConfig);  // Now only passing one parameter
+        this.jwtConfig = jwtConfig;
+    }
     /**
      * Creates a new refresh token for a user
      *

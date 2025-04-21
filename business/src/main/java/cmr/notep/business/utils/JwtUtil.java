@@ -20,12 +20,15 @@ public class JwtUtil {
     private final Key secretKey;
     private final long accessTokenExpirationMillis;
     private final long refreshTokenExpirationMillis;
+    private final JwtConfig jwtConfig;
 
     public JwtUtil(JwtConfig jwtConfig) {
         this.secretKey = Keys.hmacShaKeyFor(jwtConfig.getSecretKey().getBytes());
         this.accessTokenExpirationMillis = jwtConfig.getAccessTokenExpirationMillis();
         this.refreshTokenExpirationMillis = jwtConfig.getRefreshTokenExpirationMillis();
+        this.jwtConfig = jwtConfig;  // Remove the second parameter
     }
+
 
     // Generate an access token with roles
     public String generateAccessToken(String email, List<String> roles) {
@@ -40,6 +43,27 @@ public class JwtUtil {
         return createToken(claims, email, refreshTokenExpirationMillis);
     }
 
+
+    public String generatePasswordResetToken(String email) {
+        return Jwts.builder()
+                .setSubject(email)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + jwtConfig.getPasswordResetTokenExpirationMillis()))
+                .signWith(secretKey, SignatureAlgorithm.HS256) // Utilisez secretKey au lieu de jwtConfig.getSecretKey()
+                .compact();
+    }
+
+    public boolean validatePasswordResetToken(String token) {
+        try {
+            Jwts.parserBuilder()
+                    .setSigningKey(secretKey) // Utilisez secretKey ici aussi
+                    .build()
+                    .parseClaimsJws(token);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
     private String createToken(Map<String, Object> claims, String subject, long expirationMillis) {
         return Jwts.builder()
                 .setClaims(claims)

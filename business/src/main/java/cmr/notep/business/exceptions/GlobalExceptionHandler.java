@@ -26,6 +26,7 @@ public class GlobalExceptionHandler {
             case NOT_FOUND -> HttpStatus.NOT_FOUND;
             case OPERATION_INTERDITE -> HttpStatus.FORBIDDEN;
             case INTERFACE_NON_RESPECTEE -> HttpStatus.BAD_REQUEST;
+            case INVALID_STATE -> HttpStatus.CONFLICT;
             default -> HttpStatus.INTERNAL_SERVER_ERROR;
         };
     }

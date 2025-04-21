@@ -1,9 +1,11 @@
 package cmr.notep.business.business;
+import cmr.notep.business.services.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
-import cmr.notep.business.services.ActivationEmailService;
-import cmr.notep.business.services.MailService;
 import cmr.notep.business.utils.JwtUtil;
 import cmr.notep.interfaces.modeles.*;
 import cmr.notep.modele.EtatUtilisateur;
@@ -15,8 +17,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.retry.annotation.Backoff;
+import org.springframework.transaction.annotation.Transactional;
+
+import cmr.notep.interfaces.modeles.Professeurs;
+import cmr.notep.interfaces.modeles.Utilisateurs;
+
+import cmr.notep.ressourcesjpa.dao.MotifRejetEntity;
+import cmr.notep.ressourcesjpa.dao.ProfesseursEntity;
+import cmr.notep.ressourcesjpa.repository.MotifRejetRepository;
+import cmr.notep.ressourcesjpa.repository.ProfesseursRepository;
+
 
 import java.time.LocalDateTime;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,15 +38,29 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 
 @Component
 @Slf4j
+@Transactional(noRollbackFor = SchoolException.class)
 public class UtilisateursBusiness {
     private final DaoAccessorService daoAccessorService ;
     private final ActivationEmailService activationEmailService;
     private final JwtUtil jwtUtil;
+    private final MailServiceInterface mailService;
+    private final IRejectionEmailService rejectionEmailService;
 
-    public UtilisateursBusiness(DaoAccessorService daoAccessorService, ActivationEmailService activationEmailService, JwtUtil jwtUtil) {
+
+
+    @Autowired
+    private TemplateEngine templateEngine;
+
+    public UtilisateursBusiness(DaoAccessorService daoAccessorService,
+                                ActivationEmailService activationEmailService,
+                                JwtUtil jwtUtil,
+                                MailServiceInterface mailService,
+                                IRejectionEmailService rejectionEmailService) {
         this.daoAccessorService = daoAccessorService;
         this.activationEmailService = activationEmailService;
         this.jwtUtil = jwtUtil;
+        this.mailService = mailService;
+        this.rejectionEmailService = rejectionEmailService;
     }
 
     public Utilisateurs avoirUtilisateur(String idUtilisateur) {
@@ -69,10 +96,10 @@ public class UtilisateursBusiness {
         // Set role information here:
         // If the user is a professor, mark them as a professor and ensure they aren't an admin by default
         if (utilisateur instanceof Professeurs) {
-            userEntity.setIsAdmin(false);  // Professors are not admins by default, unless explicitly set
+            userEntity.setAdmin(false);  // Professors are not admins by default, unless explicitly set
         } else {
             // If not a professor, handle based on type and admin flag
-            userEntity.setIsAdmin(utilisateur.isAdmin());
+            userEntity.setAdmin(utilisateur.isAdmin());
         }
 
         // Save the user entity
@@ -83,7 +110,7 @@ public class UtilisateursBusiness {
         if (!(savedUserEntity instanceof ProfesseursEntity)) {
             // Here we handle the roles based on user type and admin status
             List<String> roles = new ArrayList<>();
-            if (savedUserEntity.isAdmin()) {
+            if (savedUserEntity.getAdmin()) {
                 roles.add("ROLE_ADMIN");
             } else {
                 roles.add("ROLE_USER");
@@ -112,12 +139,6 @@ public class UtilisateursBusiness {
         return mapUtilisateursEntityToModele(savedUserEntity);
     }
 
-    public Utilisateurs posterGenericUtilisateur(IUtilisateurs utilisateur) {
-        log.info("Création d'un nouvel utilisateur");
-        return mapUtilisateursEntityToModele(this.daoAccessorService.getRepository(UtilisateursRepository.class)
-                .save(mapUtilisateursModeleToEntity(utilisateur)));
-
-    }
 
     public List<Utilisateurs> avoirToutUtilisateurs() {
         log.info("Récupération de tous les utilisateurs");
@@ -170,6 +191,7 @@ public class UtilisateursBusiness {
             return dozerMapperBean.map(utilisateur, UtilisateursEntity.class);
     }
 
+    @Transactional(readOnly = true)
     public Utilisateurs avoirUtilisateurParEmail(String email) {
         log.info("Fetching user with email: {}", email);
         return mapUtilisateursEntityToModele(
@@ -215,7 +237,7 @@ public class UtilisateursBusiness {
         }
 
         // If the user is an admin, add the admin role
-        if (utilisateurEntity.isAdmin()) {
+        if (utilisateurEntity.getAdmin()) {
             roles.add("ROLE_ADMIN");
         }
 
@@ -275,7 +297,7 @@ public class UtilisateursBusiness {
         userEntity.setEtat(EtatUtilisateur.VALIDATED);
 
         // Assign the 'ROLE_PROFESSOR' if not already assigned
-        if (!userEntity.isAdmin()) {
+        if (!userEntity.getAdmin()) {
             List<String> roles = new ArrayList<>();
             roles.add("ROLE_PROFESSOR");
 
@@ -310,5 +332,49 @@ public class UtilisateursBusiness {
         return professeursEntities.stream()
                 .map(UtilisateursBusiness::mapUtilisateursEntityToModele)
                 .collect(Collectors.toList());
+    }
+
+
+
+    public Utilisateurs rejeterProfesseur(String professorId, String codeErreur, String motifSupplementaire) {
+        log.info("Rejet du professeur avec l'ID: {}", professorId);
+
+        // Récupérer le professeur
+        ProfesseursEntity professeurEntity = daoAccessorService.getRepository(ProfesseursRepository.class)
+                .findById(professorId)
+                .orElseThrow(() -> new SchoolException(
+                        SchoolErrorCode.NOT_FOUND,
+                        "Professeur introuvable avec l'ID: " + professorId
+                ));
+
+        // Vérifiez que le token est bien présent
+        if (professeurEntity.getActivationToken() == null) {
+            professeurEntity.setActivationToken(jwtUtil.generateRefreshToken(professeurEntity.getEmail()));
+        }
+        // Vérifier que le professeur est en attente de validation
+        if (professeurEntity.getEtat() != EtatUtilisateur.AWAITING_VALIDATION) {
+            throw new SchoolException(
+                    SchoolErrorCode.INVALID_STATE,
+                    "Le professeur doit être en attente de validation pour être rejeté. Statut actuel: " + professeurEntity.getEtat()
+            );
+        }
+
+        // Récupérer le motif de rejet
+        MotifRejetEntity motifEntity = daoAccessorService.getRepository(MotifRejetRepository.class)
+                .findByCode(codeErreur)
+                .orElseThrow(() -> new SchoolException(
+                        SchoolErrorCode.NOT_FOUND,
+                        "Motif de rejet introuvable avec le code: " + codeErreur
+                ));
+
+        // Mettre à jour le statut du professeur
+        professeurEntity.setEtat(EtatUtilisateur.REJECTED);
+        ProfesseursEntity savedEntity = daoAccessorService.getRepository(ProfesseursRepository.class)
+                .save(professeurEntity);
+
+        // Envoyer l'email de rejet via le service dédié
+        rejectionEmailService.sendRejectionEmail(professeurEntity, motifEntity, motifSupplementaire);
+
+        return dozerMapperBean.map(savedEntity, Utilisateurs.class);
     }
 }
