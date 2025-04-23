@@ -55,35 +55,24 @@ public AuthBusiness(PasswordEncoder passwordEncoder, UtilisateursBusiness utilis
      * @param utilisateur User information for registration
      * @return Registration result message
      */
-    public Utilisateurs registerUser(Utilisateurs utilisateur) {
+    public void registerUser(Utilisateurs utilisateur) {
         log.info("Processing user registration request for email: {}", utilisateur.getEmail());
 
-        // Vérification de la force du mot de passe
+        // Only validate password strength here (other validations are in posterUtilisateur)
         userValidationService.validatePasswordStrength(utilisateur.getPasseAccess());
-        // Check if email already exists
+
+        // Find existing user
         Utilisateurs existingUser = utilisateursBusiness.avoirUtilisateurParEmail(utilisateur.getEmail());
-        if (existingUser == null) {
-            log.warn("Email already registered: {}", utilisateur.getEmail());
-            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Email already registered");
-        }
 
-        // Update user data
-        existingUser.setNom(utilisateur.getNom());
-        existingUser.setPrenom(utilisateur.getPrenom());
-        existingUser.setPasseAccess(utilisateur.getPasseAccess());
-        existingUser.setTelephone(utilisateur.getTelephone());
-        existingUser.setAdresse(utilisateur.getAdresse());
-
-        // Encode password before saving
-        log.debug("Encoding password for user: {}", utilisateur.getEmail());
+        // Update user password and status
         existingUser.setPasseAccess(passwordEncoder.encode(utilisateur.getPasseAccess()));
         existingUser.setEtat(EtatUtilisateur.ACTIVE);
 
-        // Enregistrement
+        // Save updated user
         utilisateursBusiness.mettreUtilisateurAJour(existingUser);
         log.info("User registration completed successfully for: {}", utilisateur.getEmail());
-        return null;
     }
+
     /**
      * Authenticate a user and generate tokens
      *
@@ -209,6 +198,7 @@ public AuthBusiness(PasswordEncoder passwordEncoder, UtilisateursBusiness utilis
         }
 
         // Proceed with registration/update
-        return registerUser(utilisateur);
+        registerUser(utilisateur);
+        return existingUser;
     }
 }

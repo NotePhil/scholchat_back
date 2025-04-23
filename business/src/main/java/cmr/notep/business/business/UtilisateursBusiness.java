@@ -1,4 +1,5 @@
 package cmr.notep.business.business;
+
 import cmr.notep.business.services.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.thymeleaf.TemplateEngine;
@@ -27,9 +28,7 @@ import cmr.notep.ressourcesjpa.dao.ProfesseursEntity;
 import cmr.notep.ressourcesjpa.repository.MotifRejetRepository;
 import cmr.notep.ressourcesjpa.repository.ProfesseursRepository;
 
-
 import java.time.LocalDateTime;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -40,14 +39,13 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 @Slf4j
 @Transactional(noRollbackFor = SchoolException.class)
 public class UtilisateursBusiness {
-    private final DaoAccessorService daoAccessorService ;
+    private final DaoAccessorService daoAccessorService;
     private final ActivationEmailService activationEmailService;
     private final JwtUtil jwtUtil;
     private final MailServiceInterface mailService;
     private final IRejectionEmailService rejectionEmailService;
     private final RoleService roleService;
     private final UserValidationService userValidationService;
-
 
     @Autowired
     private TemplateEngine templateEngine;
@@ -57,7 +55,7 @@ public class UtilisateursBusiness {
                                 JwtUtil jwtUtil,
                                 MailServiceInterface mailService,
                                 IRejectionEmailService rejectionEmailService,
-                                RoleService roleService,  UserValidationService userValidationService) {
+                                RoleService roleService, UserValidationService userValidationService) {
         this.daoAccessorService = daoAccessorService;
         this.activationEmailService = activationEmailService;
         this.jwtUtil = jwtUtil;
@@ -71,28 +69,28 @@ public class UtilisateursBusiness {
         log.info("Récupération de l'utilisateur avec ID: {}", idUtilisateur);
         return mapUtilisateursEntityToModele(daoAccessorService.getRepository(UtilisateursRepository.class)
                 .findById(idUtilisateur)
-                .orElseThrow(()-> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable avec l'ID: " + idUtilisateur)));
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable avec l'ID: " + idUtilisateur)));
     }
 
     @Transactional
     public Utilisateurs posterUtilisateur(Utilisateurs utilisateur) {
         log.info("Creating new user: {}", utilisateur.getEmail());
 
-        // Validation des données
+        // Validate user data
         userValidationService.validateUserData(utilisateur);
 
-        // Configuration par défaut
+        // Default configuration
         utilisateur.setAdmin(false);
         utilisateur.setEtat(utilisateur instanceof Professeurs ?
                 EtatUtilisateur.AWAITING_VALIDATION : EtatUtilisateur.PENDING);
         utilisateur.setCreationDate(LocalDateTime.now());
 
-        // Mapping et sauvegarde
+        // Mapping and saving
         UtilisateursEntity userEntity = mapUtilisateursModeleToEntity(utilisateur);
         UtilisateursEntity savedUserEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .save(userEntity);
 
-        // Génération du token et envoi d'email (sauf pour les professeurs)
+        // Generate token and send activation email (except for professors)
         if (!(savedUserEntity instanceof ProfesseursEntity)) {
             List<String> roles = roleService.determineUserRoles(mapUtilisateursEntityToModele(savedUserEntity));
             String activationToken = jwtUtil.generateAccessToken(savedUserEntity.getEmail(), roles);
@@ -107,7 +105,6 @@ public class UtilisateursBusiness {
 
         return mapUtilisateursEntityToModele(savedUserEntity);
     }
-
 
     public List<Utilisateurs> avoirToutUtilisateurs() {
         log.info("Récupération de tous les utilisateurs");
@@ -135,9 +132,9 @@ public class UtilisateursBusiness {
     }
 
     private static Utilisateurs mapUtilisateursEntityToModele(UtilisateursEntity utilisateurEntity) {
-        if(utilisateurEntity instanceof ProfesseursEntity)
+        if (utilisateurEntity instanceof ProfesseursEntity)
             return dozerMapperBean.map(utilisateurEntity, Professeurs.class);
-        else if(utilisateurEntity instanceof ElevesEntity)
+        else if (utilisateurEntity instanceof ElevesEntity)
             return dozerMapperBean.map(utilisateurEntity, Eleves.class);
         else if (utilisateurEntity instanceof RepetiteursEntity)
             return dozerMapperBean.map(utilisateurEntity, Repetiteurs.class);
@@ -148,9 +145,9 @@ public class UtilisateursBusiness {
     }
 
     private static UtilisateursEntity mapUtilisateursModeleToEntity(IUtilisateurs utilisateur) {
-        if(utilisateur instanceof Professeurs)
+        if (utilisateur instanceof Professeurs)
             return dozerMapperBean.map(utilisateur, ProfesseursEntity.class);
-        else if(utilisateur instanceof Eleves)
+        else if (utilisateur instanceof Eleves)
             return dozerMapperBean.map(utilisateur, ElevesEntity.class);
         else if (utilisateur instanceof Repetiteurs)
             return dozerMapperBean.map(utilisateur, RepetiteursEntity.class);
@@ -175,8 +172,6 @@ public class UtilisateursBusiness {
         }
     }
 
-
-
     public Utilisateurs regenererActivationEmail(String email) {
         log.info("Regenerating activation email for: {}", email);
 
@@ -190,7 +185,7 @@ public class UtilisateursBusiness {
                     "Activation email can only be regenerated for users in PENDING state");
         }
 
-        // Utilisation du service de rôles
+        // Use the role service
         Utilisateurs utilisateur = mapUtilisateursEntityToModele(utilisateurEntity);
         List<String> roles = roleService.determineUserRoles(utilisateur);
 
@@ -209,8 +204,6 @@ public class UtilisateursBusiness {
 
         return utilisateur;
     }
-
-
 
     public Utilisateurs validerProfesseur(String professorId) {
         log.info("Processing professor validation for ID: {}", professorId);
@@ -266,7 +259,6 @@ public class UtilisateursBusiness {
         return utilisateur;
     }
 
-
     public List<Utilisateurs> avoirProfesseursEnAttente() {
         log.info("Fetching all professors awaiting validation");
 
@@ -279,8 +271,6 @@ public class UtilisateursBusiness {
                 .map(UtilisateursBusiness::mapUtilisateursEntityToModele)
                 .collect(Collectors.toList());
     }
-
-
 
     public Utilisateurs rejeterProfesseur(String professorId, String codeErreur, String motifSupplementaire) {
         log.info("Rejet du professeur avec l'ID: {}", professorId);
