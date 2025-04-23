@@ -46,7 +46,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/scholchat/h2-console",
             "/h2",
             "/scholchat/h2",
-            "/scholchat/utilisateurs"
+            "/scholchat/utilisateurs",
+            "/utilisateurs", // POST pour créer un utilisateur
+            "/utilisateurs/regenerate-activation"
     );
 
     @Override
