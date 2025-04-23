@@ -10,7 +10,7 @@ public enum SchoolErrorCode {
     INVALID_OPERATION("Invalid operation"),
     EMAIL_NOT_SENT("The activation email could not be sent."),
     INVALID_STATE("The user is not in a valid state for this operation."),
-
+    EMAIL_ERROR("Email processing error"),
     MAPPING_FAILED("User entity mapping failed"),
     TOKEN_EXPIRED("Token Expired"),
     INACTIVE_USER("Cannot create refresh token for inactive user");
