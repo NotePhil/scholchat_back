@@ -57,8 +57,7 @@ public class SecurityConfig {
                                 "/utilisateurs", "/utilisateurs/",
                                 "/auth/users/byEmail",
                                 "/auth/users/register",
-                                "/reset-password-request",
-                                "/utilisateurs/regenerate-activation", "/utilisateurs/regenerate-activation/"
+                                "/reset-password-request"
                         ).permitAll()
                         .requestMatchers(
                                 "/utilisateurs/professeurs/*/rejet",

@@ -19,8 +19,7 @@ public interface AuthApi {
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    void registerUser(@NonNull @RequestBody Utilisateurs utilisateur);
+    Utilisateurs registerUser(@NonNull @RequestBody Utilisateurs utilisateur);
 
     @PostMapping(
             path = "/reset-password-request",
@@ -74,9 +73,9 @@ public interface AuthApi {
     )
     Utilisateurs activerUtilisateur(@RequestParam String activationToken);
 
-//    @PostMapping(
-//            path = "/refresh",
-//            produces = MediaType.APPLICATION_JSON_VALUE
-//    )
-//    String refreshToken(@RequestParam String refreshToken);
+    @PostMapping(
+            path = "/refresh",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    String refreshToken(@RequestParam String refreshToken);
 }
