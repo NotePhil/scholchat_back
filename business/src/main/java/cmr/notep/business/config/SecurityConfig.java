@@ -55,6 +55,8 @@ public class SecurityConfig {
                                 "/auth/activate", "/auth/activate/",
                                 "/auth/refresh", "/auth/refresh/",
                                 "/utilisateurs", "/utilisateurs/",
+                                "/auth/reset-password-request",  // Keep this public
+                                "/auth/reset-password",
                                 "/auth/users/byEmail",
                                 "/auth/users/register",
                                 "/reset-password-request"
