@@ -168,6 +168,18 @@ CREATE TABLE IF NOT EXISTS ressources.motifs_rejet (
     date_creation TIMESTAMP NOT NULL
     );
 
-
+CREATE TABLE IF NOT EXISTS ressources.media (
+    id VARCHAR(255) PRIMARY KEY,
+    bucket_name VARCHAR(255) NOT NULL,
+    content_type VARCHAR(255),
+    file_name VARCHAR(255) NOT NULL,
+    file_path VARCHAR(255) NOT NULL,
+    file_size BIGINT,
+    file_type VARCHAR(50),
+    media_type VARCHAR(50),
+    owner_id VARCHAR(255),
+    uploaded_date TIMESTAMP,
+    CONSTRAINT fk_media_owner FOREIGN KEY (owner_id) REFERENCES ressources.utilisateurs(id)
+);
 
 

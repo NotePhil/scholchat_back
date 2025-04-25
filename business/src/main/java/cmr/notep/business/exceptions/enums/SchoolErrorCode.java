@@ -1,6 +1,7 @@
 package cmr.notep.business.exceptions.enums;
 
 public enum SchoolErrorCode {
+    // Existing codes
     NOT_FOUND("Resource not found"),
     OPERATION_INTERDITE("Operation is not allowed"),
     INTERFACE_NON_RESPECTEE("Interface contract not respected"),
@@ -10,11 +11,17 @@ public enum SchoolErrorCode {
     INVALID_OPERATION("Invalid operation"),
     EMAIL_NOT_SENT("The activation email could not be sent."),
     INVALID_STATE("The user is not in a valid state for this operation."),
-
     MAPPING_FAILED("User entity mapping failed"),
     TOKEN_EXPIRED("Token Expired"),
-    INACTIVE_USER("Cannot create refresh token for inactive user");
+    INACTIVE_USER("Cannot create refresh token for inactive user"),
 
+    // New codes needed for MediaExceptionHandler
+    RESOURCE_NOT_FOUND("Resource not found"),
+    UNAUTHORIZED("Unauthorized access"),
+    FORBIDDEN("Access forbidden"),
+    DUPLICATE_RESOURCE("Resource already exists"),
+    OPERATION_FAILURE("Operation failed"),
+    INIT_ERROR("Initialization error");
 
     private final String message;
 
