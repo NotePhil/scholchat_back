@@ -25,4 +25,6 @@ public class MediaDto {
 
     // For presigned URL operations
     private String presignedUrl;
+    private String uploadUrl;
+    private String downloadUrl;
 }

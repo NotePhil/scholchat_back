@@ -25,14 +25,18 @@ public class MinioConfig {
     @Value("${minio.secure:false}")
     private boolean secure;
 
+    @Value("${minio.region:us-east-1}")
+    private String region;
+
     @Value("${minio.presigned-url.expiry:3600}")
-    private int presignedUrlExpiry; // Default 1 hour in seconds
+    private int presignedUrlExpiry;
 
     @Bean
     public MinioClient minioClient() {
         return MinioClient.builder()
                 .endpoint(endpoint)
                 .credentials(accessKey, secretKey)
+                .region(region)
                 .build();
     }
 }
