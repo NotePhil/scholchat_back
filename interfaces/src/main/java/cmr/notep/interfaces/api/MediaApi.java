@@ -5,6 +5,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RequestMapping("/media")
 public interface MediaApi {
@@ -14,7 +15,7 @@ public interface MediaApi {
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    MediaDto generatePresignedUrl(@RequestBody MediaDto mediaDto);
+    Map<String, String> generatePresignedUrl(@RequestBody Map<String, String> request);
 
     @GetMapping(
             path = "/{mediaId}",

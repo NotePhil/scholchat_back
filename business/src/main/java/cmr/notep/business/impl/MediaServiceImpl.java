@@ -35,40 +35,25 @@ public class MediaServiceImpl {
         log.debug("Generating upload URL for file: {}", request.getFileName());
 
         try {
-            // Sanitize filename and create path
+            // Sanitize filename
             String sanitizedFileName = request.getFileName()
                     .replaceAll("\\s+", "_")
                     .replaceAll("[^a-zA-Z0-9._-]", "");
 
-            // Use "anonymous" for path creation but not for database owner reference
-            String pathOwnerId = (request.getOwnerId() == null || request.getOwnerId().isEmpty())
-                    ? "anonymous"
-                    : request.getOwnerId();
-
-            String actualOwnerId = request.getOwnerId(); // This can be null or empty
-
-            String filePath = String.format("%s/%s/%s/%s",
-                    request.getMediaType(),
-                    pathOwnerId,  // For path organization
-                    UUID.randomUUID().toString(),
-                    sanitizedFileName);
-
-            // Generate URL and save metadata (if owner exists)
-            String presignedUrl = mediaService.generateUploadPresignedUrl(filePath, request.getContentType());
-            MediaEntity media = mediaBusiness.saveMediaMetadata(
+            // Generate URL and save metadata
+            String presignedUrl = mediaBusiness.generateUploadUrl(
                     sanitizedFileName,
-                    filePath,
                     request.getContentType(),
                     request.getMediaType(),
-                    actualOwnerId  // This might be null or empty
-            );
+                    request.getOwnerId(),
+                    request.getDocumentType());
 
             // Return response
             Map<String, String> response = new HashMap<>();
             response.put("url", presignedUrl);
-            response.put("mediaId", media.getId());
+            response.put("fileName", sanitizedFileName);
             response.put("mediaType", request.getMediaType());
-            response.put("filePath", filePath);
+            response.put("documentType", request.getDocumentType());
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -100,7 +85,6 @@ public class MediaServiceImpl {
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<MediaDto>> getMediaByUserId(@PathVariable String userId) {
         if (userId == null || userId.isEmpty()) {
-            // Return empty list for anonymous requests
             return ResponseEntity.ok(List.of());
         }
 
@@ -129,16 +113,10 @@ public class MediaServiceImpl {
         return ResponseEntity.ok(convertToDto(updatedMedia));
     }
 
-    /**
-     * Direct download method for files without requiring database lookup.
-     * Useful for anonymous uploads where metadata isn't stored in the database.
-     */
     @GetMapping("/download-by-path")
     public ResponseEntity<Map<String, String>> generateDownloadUrlByPath(
             @RequestParam String filePath) {
         String presignedUrl = mediaService.generateDownloadPresignedUrl(filePath);
-
-        // Extract filename from path
         String fileName = filePath.substring(filePath.lastIndexOf('/') + 1);
 
         return ResponseEntity.ok(Map.of(
@@ -167,8 +145,8 @@ public class MediaServiceImpl {
         private String contentType;
         private String mediaType;
         private String ownerId;
+        private String documentType;
 
-        // Getters and setters
         public String getFileName() { return fileName; }
         public void setFileName(String fileName) { this.fileName = fileName; }
         public String getContentType() { return contentType; }
@@ -177,13 +155,14 @@ public class MediaServiceImpl {
         public void setMediaType(String mediaType) { this.mediaType = mediaType; }
         public String getOwnerId() { return ownerId; }
         public void setOwnerId(String ownerId) { this.ownerId = ownerId; }
+        public String getDocumentType() { return documentType; }
+        public void setDocumentType(String documentType) { this.documentType = documentType; }
     }
 
     public static class MediaUpdateRequest {
         private Long fileSize;
         private String mediaType;
 
-        // Getters and setters
         public Long getFileSize() { return fileSize; }
         public void setFileSize(Long fileSize) { this.fileSize = fileSize; }
         public String getMediaType() { return mediaType; }

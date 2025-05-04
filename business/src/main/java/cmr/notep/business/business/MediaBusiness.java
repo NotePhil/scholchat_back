@@ -28,7 +28,6 @@ public class MediaBusiness {
         // Only proceed if we have a valid owner ID
         if (ownerId == null || ownerId.isEmpty()) {
             // Skip database save and return a transient entity with the metadata
-            // This entity won't be persisted but can be used to return information
             MediaEntity transientMedia = new MediaEntity();
             transientMedia.setId(UUID.randomUUID().toString()); // Generate ID for reference
             transientMedia.setFileName(fileName);
@@ -54,16 +53,24 @@ public class MediaBusiness {
     }
 
     public String generateUploadUrl(String fileName, String contentType,
-                                    String mediaType, String ownerId) {
-        String uniqueId = UUID.randomUUID().toString();
+                                    String mediaType, String ownerId, String documentType) {
         String sanitizedFileName = fileName.replaceAll("\\s+", "_")
                 .replaceAll("[^a-zA-Z0-9._-]", "");
 
-        String filePath = String.format("%s/%s/%s/%s",
-                mediaType,
-                (ownerId == null || ownerId.isEmpty()) ? "anonymous" : ownerId, // Still use "anonymous" in the path
-                uniqueId,
-                sanitizedFileName);
+        // Build file path based on media type and document type
+        String filePath;
+        if (documentType != null && !documentType.isEmpty()) {
+            filePath = String.format("%s/%s/%s/%s",
+                    ownerId,
+                    mediaType,
+                    documentType,
+                    sanitizedFileName);
+        } else {
+            filePath = String.format("%s/%s/%s",
+                    ownerId,
+                    mediaType,
+                    sanitizedFileName);
+        }
 
         // Save metadata (will be handled differently based on ownerId)
         saveMediaMetadata(fileName, filePath, contentType, mediaType, ownerId);
@@ -93,8 +100,6 @@ public class MediaBusiness {
 
     public List<MediaEntity> getMediaByOwnerId(String ownerId) {
         if (ownerId == null || ownerId.isEmpty()) {
-            // Return empty list for anonymous users
-            // since we don't store their media metadata
             return List.of();
         }
         return mediaRepository.findByOwnerId(ownerId);
@@ -112,7 +117,6 @@ public class MediaBusiness {
         return mediaRepository.save(media);
     }
 
-    // Add helper method to check if a media exists by its path
     public boolean mediaExistsByPath(String filePath) {
         return mediaRepository.findByFilePath(filePath).isPresent();
     }
