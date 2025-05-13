@@ -45,4 +45,8 @@ public class MediaEntity {
 
     @Column(name = "content_type")
     private String contentType;
+
+    @ManyToOne
+    @JoinColumn(name = "evenement_id")
+    private EvenementEntity evenement;
 }

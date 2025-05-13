@@ -23,11 +23,21 @@ public class ProfesseursEntity extends UtilisateursEntity {
     @Column(name = "nom_etablissement", nullable = false)
     private String nomEtablissement;
     //TODO : mettre la relation avec la classe CanalEntity qui sera en relation avec ClasseEntity
-    @Column(name = "nom_classe", nullable = false)
-    private String nomClasse;
+//    @Column(name = "nom_classe", nullable = false)
+//    private String nomClasse;
     //TODO : vérifier si le matricule est lié à l'établissement uniquement comme dans les collèges
     @Column(name = "matricule_professeur", nullable = false, unique = true)
     private String matriculeProfesseur;
     @OneToMany(mappedBy = "professeur", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CanalEntity> canaux = new ArrayList<>();
+
+    @ManyToMany
+    @JoinTable(name = "professeur_matiere", schema = "ressources",
+            joinColumns = @JoinColumn(name = "professeur_id"),
+            inverseJoinColumns = @JoinColumn(name = "matiere_id"))
+    private List<MatiereEntity> matieresEnseignees = new ArrayList<>();
+
+    @OneToMany(mappedBy = "createur", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<EvenementEntity> evenementsCrees;
+
 }

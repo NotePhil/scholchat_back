@@ -24,7 +24,7 @@ INSERT INTO ressources.utilisateurs (id, nom, prenom, email, passeaccess, teleph
 -- Insertion des motifs de rejet initiaux
 -- Add test professor with your email
 INSERT INTO ressources.utilisateurs (id, nom, prenom, email, passeaccess, telephone, adresse, activation_token, etat, is_admin) VALUES
-    ('660e8400-e29b-41d4-a716-446655440999', 'Test', 'Professor', 'ulrichkamsu48@gmail.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456789', 'Test Address', 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJST0xFX0FETUlOIl0sInN1YiI6ImFkbWluQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQ0OTY3MzM1LCJleHAiOjE3NDQ5NjgyMzV9.NVeY4KP8KAM2Nh80NaFXYEJ4__ceTFOPQPe_pGryMQw', 'AWAITING_VALIDATION', FALSE);
+    ('660e8400-e29b-41d4-a716-446655440999', 'Test', 'Professor', 'kemogneprince05@gmail.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456789', 'Test Address', 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJST0xFX0FETUlOIl0sInN1YiI6ImFkbWluQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQ0OTY3MzM1LCJleHAiOjE3NDQ5NjgyMzV9.NVeY4KP8KAM2Nh80NaFXYEJ4__ceTFOPQPe_pGryMQw', 'AWAITING_VALIDATION', FALSE);
 
 INSERT INTO ressources.professeurs (professeurs_id, cni_url_front, cni_url_back, nom_etablissement, nom_classe, matricule_professeur) VALUES
     ('660e8400-e29b-41d4-a716-446655440999', 'http://example.com/cni.jpg', 'http://example.com/cni-back.jpg', 'Test School', 'Test Class', 'PROF-TEST-001');
@@ -98,3 +98,20 @@ INSERT INTO ressources.canaux (id, nom, description, professeur_id, classe_id) V
 ('550e8400-e29b-41d4-a716-446655440500', 'Canal de Mathématiques', 'Canal dédié aux cours de mathématiques', '550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440400'),
 ('550e8400-e29b-41d4-a716-446655440501', 'Canal de Français', 'Canal dédié aux cours de français', '550e8400-e29b-41d4-a716-446655440008', '550e8400-e29b-41d4-a716-446655440400'),
 ('550e8400-e29b-41d4-a716-446655440502', 'Canal de Sciences', 'Canal dédié aux cours de sciences', '550e8400-e29b-41d4-a716-446655440009', '550e8400-e29b-41d4-a716-446655440400');
+
+
+-- Insert initial matieres
+INSERT INTO ressources.matieres (id, nom) VALUES
+('550e8400-e29b-41d4-a716-446655441000', 'MATHEMATIQUES'),
+('550e8400-e29b-41d4-a716-446655441001', 'SCIENCES'),
+('550e8400-e29b-41d4-a716-446655441002', 'HISTOIRE'),
+('550e8400-e29b-41d4-a716-446655441003', 'GEOGRAPHIE'),
+('550e8400-e29b-41d4-a716-446655441004', 'LANGUE');
+
+-- Associate professors with matieres
+INSERT INTO ressources.professeur_matiere (professeur_id, matiere_id) VALUES
+('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655441000'), -- Math
+('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655441001'), -- Sciences
+('550e8400-e29b-41d4-a716-446655440008', '550e8400-e29b-41d4-a716-446655441002'), -- Histoire
+('550e8400-e29b-41d4-a716-446655440008', '550e8400-e29b-41d4-a716-446655441003'), -- Géographie
+('550e8400-e29b-41d4-a716-446655440009', '550e8400-e29b-41d4-a716-446655441004'); -- Langue
