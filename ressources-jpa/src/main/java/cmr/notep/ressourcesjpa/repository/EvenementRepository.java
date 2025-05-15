@@ -8,5 +8,6 @@ import java.util.List;
 
 @Repository
 public interface EvenementRepository extends JpaRepository<EvenementEntity, String> {
+    boolean existsByTitre(String titre);
     List<EvenementEntity> findByCreateurId(String professeurId);
 }

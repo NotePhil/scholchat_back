@@ -3,7 +3,6 @@ package cmr.notep.business.business;
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.interfaces.modeles.Matiere;
-import cmr.notep.modele.NomMatiere;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.MatiereEntity;
 import cmr.notep.ressourcesjpa.repository.MatiereRepository;
@@ -26,6 +25,12 @@ public class MatiereBusiness {
     }
 
     public Matiere creerMatiere(Matiere matiere) {
+        // Check if matiere with same name already exists
+        if (daoAccessorService.getRepository(MatiereRepository.class).existsByNom(matiere.getNom())) {
+            throw new SchoolException(SchoolErrorCode.DUPLICATE_RESOURCE,
+                    "Une matière avec ce nom existe déjà: " + matiere.getNom());
+        }
+
         MatiereEntity entity = dozerMapperBean.map(matiere, MatiereEntity.class);
         MatiereEntity savedEntity = daoAccessorService.getRepository(MatiereRepository.class).save(entity);
         return dozerMapperBean.map(savedEntity, Matiere.class);
@@ -40,9 +45,8 @@ public class MatiereBusiness {
 
     public Matiere obtenirMatiereParNom(String nomMatiere) {
         MatiereEntity entity = daoAccessorService.getRepository(MatiereRepository.class)
-                .findByNom(NomMatiere.valueOf(nomMatiere))
+                .findByNom(nomMatiere)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Matière non trouvée: " + nomMatiere));
         return dozerMapperBean.map(entity, Matiere.class);
     }
-
 }

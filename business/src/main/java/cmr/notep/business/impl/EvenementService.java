@@ -25,7 +25,11 @@ public class EvenementService implements EvenementApi {
         log.info("Création d'un nouvel événement: {}", evenement.getTitre());
         return evenementBusiness.creerEvenement(evenement);
     }
-
+    @Override
+    public List<Evenement> obtenirTousEvenements() {
+        log.info("Récupération de tous les événements");
+        return evenementBusiness.obtenirTousEvenements();
+    }
     @Override
     public Evenement mettreAJourEvenement(@NonNull String id, @NonNull Evenement evenement) {
         log.info("Mise à jour de l'événement avec ID: {}", id);

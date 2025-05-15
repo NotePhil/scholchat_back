@@ -1,6 +1,5 @@
 package cmr.notep.ressourcesjpa.dao;
 
-import cmr.notep.modele.NomMatiere;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,9 +17,8 @@ public class MatiereEntity {
     @Column(name = "id", nullable = false, updatable = false, columnDefinition = "UUID")
     private String id;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "nom", nullable = false, unique = true)
-    private NomMatiere nom;
+    private String nom;  // Changé de NomMatiere à String
 
     @ManyToMany(mappedBy = "matieresEnseignees")
     private List<ProfesseursEntity> professeurs;

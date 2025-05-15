@@ -31,6 +31,10 @@ public class EvenementBusiness {
     }
 
     public Evenement creerEvenement(Evenement evenement) {
+        if (daoAccessorService.getRepository(EvenementRepository.class).existsByTitre(evenement.getTitre())) {
+            throw new SchoolException(SchoolErrorCode.DUPLICATE_RESOURCE,
+                    "Un événement avec ce titre existe déjà: " + evenement.getTitre());
+        }
         // Map the event DTO to entity
         EvenementEntity entity = dozerMapperBean.map(evenement, EvenementEntity.class);
 
@@ -71,6 +75,13 @@ public class EvenementBusiness {
 
         EvenementEntity updated = repo.save(existing);
         return dozerMapperBean.map(updated, Evenement.class);
+    }
+
+    public List<Evenement> obtenirTousEvenements() {
+        return daoAccessorService.getRepository(EvenementRepository.class).findAll()
+                .stream()
+                .map(e -> dozerMapperBean.map(e, Evenement.class))
+                .collect(Collectors.toList());
     }
 
     public void supprimerEvenement(String id) {

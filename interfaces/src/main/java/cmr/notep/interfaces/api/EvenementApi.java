@@ -41,6 +41,12 @@ public interface EvenementApi {
     Evenement obtenirEvenementParId(@NonNull @PathVariable("id") String id);
 
     @GetMapping(
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    List<Evenement> obtenirTousEvenements();
+
+    @GetMapping(
             path = "/professeur/{professeurId}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )

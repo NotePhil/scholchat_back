@@ -3,6 +3,7 @@ package cmr.notep.business.impl;
 import cmr.notep.business.business.EtablissementBusiness;
 import cmr.notep.interfaces.api.EtablissementApi;
 import cmr.notep.interfaces.modeles.Etablissement;
+import cmr.notep.interfaces.modeles.Evenement;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,6 +20,8 @@ public class EtablissementService implements EtablissementApi {
         this.etablissementBusiness = etablissementBusiness;
     }
 
+
+
     @Override
     public Etablissement creerEtablissement(Etablissement etablissement) {
             log.info("Création d'un nouvel établissement: {}", etablissement.getNom());
@@ -30,6 +33,10 @@ public class EtablissementService implements EtablissementApi {
             log.info("Modification de l'établissement avec ID: {}", idEtablissement);
             return etablissementBusiness.modifierEtablissement(idEtablissement, etablissementModifie);
     }
+
+
+
+
 
     @Override
     public void supprimerEtablissement(String idEtablissement) {

@@ -13,6 +13,6 @@ import java.util.List;
 @AllArgsConstructor
 public class Matiere {
     private String id;
-    private Matiere nom;
+    private String nom;
     private List<Professeurs> professeurs;
 }

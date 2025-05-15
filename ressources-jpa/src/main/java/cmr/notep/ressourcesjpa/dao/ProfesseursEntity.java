@@ -38,6 +38,7 @@ public class ProfesseursEntity extends UtilisateursEntity {
     private List<MatiereEntity> matieresEnseignees = new ArrayList<>();
 
     @OneToMany(mappedBy = "createur", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<EvenementEntity> evenementsCrees;
+    private List<EvenementEntity> evenementsCrees = new ArrayList<>();
+
 
 }
