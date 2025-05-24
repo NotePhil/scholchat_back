@@ -220,3 +220,18 @@ CREATE TABLE IF NOT EXISTS ressources.professeur_matiere (
 --evenement_id column to media table
 ALTER TABLE ressources.media ADD COLUMN IF NOT EXISTS evenement_id UUID;
 ALTER TABLE ressources.media ADD CONSTRAINT fk_media_evenement FOREIGN KEY (evenement_id) REFERENCES ressources.evenements(id);
+
+
+CREATE TABLE IF NOT EXISTS ressources.interactions (
+    id VARCHAR(255) PRIMARY KEY,
+    type VARCHAR(50) NOT NULL,
+    content TEXT NOT NULL,
+    creation_date TIMESTAMP NOT NULL,
+    niveau VARCHAR(50),
+    created_by VARCHAR(255) NOT NULL,
+    event_id VARCHAR(255),
+    message_id VARCHAR(255),
+    CONSTRAINT fk_interaction_user FOREIGN KEY (created_by) REFERENCES ressources.utilisateurs(id),
+    CONSTRAINT fk_interaction_event FOREIGN KEY (event_id) REFERENCES ressources.evenements(id),
+    CONSTRAINT fk_interaction_message FOREIGN KEY (message_id) REFERENCES ressources.messages(id)
+    );
