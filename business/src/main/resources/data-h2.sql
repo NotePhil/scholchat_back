@@ -115,3 +115,13 @@ INSERT INTO ressources.professeur_matiere (professeur_id, matiere_id) VALUES
 ('550e8400-e29b-41d4-a716-446655440008', '550e8400-e29b-41d4-a716-446655441002'), -- Histoire
 ('550e8400-e29b-41d4-a716-446655440008', '550e8400-e29b-41d4-a716-446655441003'), -- Géographie
 ('550e8400-e29b-41d4-a716-446655440009', '550e8400-e29b-41d4-a716-446655441004'); -- Langue
+-- Insert initial class rejection reasons
+INSERT INTO ressources.motifs_rejet_classe (id, code, descriptif, date_creation) VALUES
+  ('660e8400-e29b-41d4-a716-446655440600', 'CLASSE_NOM_INVALIDE', 'Nom de classe invalide ou non conforme', CURRENT_TIMESTAMP),
+  ('660e8400-e29b-41d4-a716-446655440601', 'CLASSE_NIVEAU_INVALIDE', 'Niveau de classe non reconnu ou invalide', CURRENT_TIMESTAMP),
+  ('660e8400-e29b-41d4-a716-446655440602', 'CLASSE_ETABLISSEMENT_INCONNU', 'Établissement associé inconnu ou non valide', CURRENT_TIMESTAMP),
+  ('660e8400-e29b-41d4-a716-446655440603', 'CLASSE_CAPACITE_DEPASSEE', 'Capacité maximale d''élèves dépassée', CURRENT_TIMESTAMP),
+  ('660e8400-e29b-41d4-a716-446655440604', 'CLASSE_PROFS_INSUFFISANTS', 'Nombre insuffisant de professeurs assignés', CURRENT_TIMESTAMP),
+  ('660e8400-e29b-41d4-a716-446655440605', 'CLASSE_DOUBLON', 'Classe déjà existante avec les mêmes caractéristiques', CURRENT_TIMESTAMP),
+  ('660e8400-e29b-41d4-a716-446655440606', 'CLASSE_HORAIRE_CONFLIT', 'Conflit d''horaire avec une autre classe', CURRENT_TIMESTAMP),
+  ('660e8400-e29b-41d4-a716-446655440607', 'CLASSE_MATIERES_MANQUANTES', 'Matériel ou matières manquantes pour ce niveau', CURRENT_TIMESTAMP);

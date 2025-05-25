@@ -61,8 +61,7 @@ public class SecurityConfig {
                                 "/auth/users/register",
                                 "/reset-password-request",
                                 "/evenements/**",
-                                "/matieres/**",
-                                "/interactions/**"
+                                "/matieres/**"
                         ).permitAll()
                         .requestMatchers(
                                 "/utilisateurs/professeurs/*/rejet",
