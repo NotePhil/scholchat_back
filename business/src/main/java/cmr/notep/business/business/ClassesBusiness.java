@@ -14,6 +14,7 @@ import cmr.notep.ressourcesjpa.repository.ClassesRepository;
 import cmr.notep.ressourcesjpa.repository.ElevesRepository;
 import cmr.notep.ressourcesjpa.repository.EtablissementRepository;
 import cmr.notep.ressourcesjpa.repository.ParentsRepository;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -24,6 +25,7 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 
 @Component
 @Slf4j
+@Transactional
 public class ClassesBusiness {
 
     private final DaoAccessorService daoAccessorService;

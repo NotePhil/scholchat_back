@@ -6,6 +6,7 @@ import cmr.notep.interfaces.modeles.MotifRejet;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.MotifRejetEntity;
 import cmr.notep.ressourcesjpa.repository.MotifRejetRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -18,7 +19,7 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 
 @Slf4j
 @Component
-
+@Transactional
 public class MotifsRejetBusiness {
     private final DaoAccessorService daoAccessorService;
 

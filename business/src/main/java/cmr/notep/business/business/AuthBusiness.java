@@ -12,6 +12,7 @@ import cmr.notep.interfaces.dto.LoginDto;
 import cmr.notep.interfaces.dto.PasswordResetRequest;
 import cmr.notep.interfaces.modeles.*;
 import cmr.notep.modele.EtatUtilisateur;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,6 +26,7 @@ import java.util.Optional;
 @Component
 
 @Slf4j
+@Transactional
 public class AuthBusiness {
 
     private final PasswordEncoder passwordEncoder;
@@ -68,12 +70,6 @@ public AuthBusiness(PasswordEncoder passwordEncoder, UtilisateursBusiness utilis
         }
 
         // Update user data
-        existingUser.setNom(utilisateur.getNom());
-        existingUser.setPrenom(utilisateur.getPrenom());
-        existingUser.setPasseAccess(utilisateur.getPasseAccess());
-        existingUser.setTelephone(utilisateur.getTelephone());
-        existingUser.setAdresse(utilisateur.getAdresse());
-
         // Encode password before saving
         log.debug("Encoding password for user: {}", utilisateur.getEmail());
         existingUser.setPasseAccess(passwordEncoder.encode(utilisateur.getPasseAccess()));

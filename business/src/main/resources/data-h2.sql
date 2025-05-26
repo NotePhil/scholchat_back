@@ -56,6 +56,7 @@ INSERT INTO ressources.etablissements (id, nom) VALUES
 -- Insert data into parents
 INSERT INTO ressources.parents (parents_id) VALUES
 ('550e8400-e29b-41d4-a716-446655440200'),
+--('550e8400-e29b-41d4-a716-446655440007'),
 ('550e8400-e29b-41d4-a716-446655440201');
 
 -- Insert data into eleves

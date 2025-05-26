@@ -24,14 +24,14 @@ public class RoleService {
         // Type-specific roles
         if (utilisateur instanceof Professeurs) {
             roles.add("ROLE_PROFESSOR");
-            if (utilisateur.getEtat() == EtatUtilisateur.VALIDATED) {
-                roles.add("ROLE_VALIDATED_PROFESSOR");
-            }
-        } else if (utilisateur instanceof Eleves) {
+        }
+        if (utilisateur instanceof Eleves) {
             roles.add("ROLE_STUDENT");
-        } else if (utilisateur instanceof Parents) {
+        }
+        if (utilisateur instanceof Parents) {
             roles.add("ROLE_PARENT");
-        } else if (utilisateur instanceof Repetiteurs) {
+        }
+        if (utilisateur instanceof Repetiteurs) {
             roles.add("ROLE_TUTOR");
         }
 

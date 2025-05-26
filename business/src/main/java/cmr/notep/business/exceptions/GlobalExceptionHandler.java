@@ -39,9 +39,8 @@ public class GlobalExceptionHandler {
     private HttpStatus mapSchoolExceptionToHttpStatus(SchoolErrorCode code) {
         return switch (code) {
             case NOT_FOUND -> HttpStatus.NOT_FOUND;
-            case OPERATION_INTERDITE -> HttpStatus.FORBIDDEN;
+            case OPERATION_INTERDITE, INVALID_STATE, INACTIVE_USER -> HttpStatus.FORBIDDEN;
             case INTERFACE_NON_RESPECTEE -> HttpStatus.BAD_REQUEST;
-            case INVALID_STATE -> HttpStatus.CONFLICT;
             default -> HttpStatus.INTERNAL_SERVER_ERROR;
         };
     }

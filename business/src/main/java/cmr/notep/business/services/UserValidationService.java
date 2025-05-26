@@ -17,15 +17,12 @@ public class UserValidationService {
         validateRequiredFields(utilisateur);
         validateEmailFormat(utilisateur.getEmail());
 
-        if (utilisateur.getPasseAccess() != null && !utilisateur.getPasseAccess().isEmpty()) {
-            validatePasswordStrength(utilisateur.getPasseAccess());
-        }
 
         if (utilisateur.getTelephone() != null && !utilisateur.getTelephone().isEmpty()) {
             validatePhoneNumber(utilisateur.getTelephone());
         }
 
-        validateUserTypeRequirements(utilisateur);
+       // validateUserTypeRequirements(utilisateur);
     }
 
 
@@ -45,9 +42,6 @@ public class UserValidationService {
             throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "First name is required");
         }
 
-        if (utilisateur.getPasseAccess() == null || utilisateur.getPasseAccess().trim().isEmpty()) {
-            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Password is required");
-        }
     }
 
     /**
@@ -63,8 +57,8 @@ public class UserValidationService {
      * Validates password strength requirements
      */
     public void validatePasswordStrength(String password) {
-        // Password must be at least 8 characters
-        if (password.length() < 8) {
+        // Password must be at least 12 characters
+        if (password.length() < 12) {
             throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
                     "Password must be at least 8 characters long");
         }

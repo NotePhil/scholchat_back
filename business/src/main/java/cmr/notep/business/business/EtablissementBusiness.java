@@ -6,6 +6,7 @@ import cmr.notep.interfaces.modeles.Etablissement;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.EtablissementEntity;
 import cmr.notep.ressourcesjpa.repository.EtablissementRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -17,7 +18,7 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 
 @Component
 @Slf4j
-
+@Transactional
 public class EtablissementBusiness {
     private final DaoAccessorService daoAccessorService;
 

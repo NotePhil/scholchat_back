@@ -1,4 +1,5 @@
 package cmr.notep.business.business;
+import cmr.notep.business.exceptions.SchoolErrorEmail;
 import cmr.notep.business.services.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.thymeleaf.TemplateEngine;
@@ -38,7 +39,7 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 
 @Component
 @Slf4j
-@Transactional(noRollbackFor = SchoolException.class)
+@Transactional(noRollbackFor = SchoolErrorEmail.class)
 public class UtilisateursBusiness {
     private final DaoAccessorService daoAccessorService ;
     private final ActivationEmailService activationEmailService;
@@ -74,7 +75,6 @@ public class UtilisateursBusiness {
                 .orElseThrow(()-> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable avec l'ID: " + idUtilisateur)));
     }
 
-    @Transactional
     public Utilisateurs posterUtilisateur(Utilisateurs utilisateur) {
         log.info("Creating new user: {}", utilisateur.getEmail());
 
@@ -160,7 +160,6 @@ public class UtilisateursBusiness {
             return dozerMapperBean.map(utilisateur, UtilisateursEntity.class);
     }
 
-    @Transactional(readOnly = true)
     public Utilisateurs avoirUtilisateurParEmail(String email) {
         log.info("Fetching user with email: {}", email);
         try {
@@ -239,8 +238,8 @@ public class UtilisateursBusiness {
             );
         }
 
-        // Change the state to 'VALIDATED'
-        userEntity.setEtat(EtatUtilisateur.VALIDATED);
+        // Change the state to 'ACTIF'
+        userEntity.setEtat(EtatUtilisateur.ACTIVE);
 
         // Assign the 'ROLE_PROFESSOR' if not already assigned
         if (!userEntity.getAdmin()) {

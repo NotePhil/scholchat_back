@@ -24,7 +24,7 @@ import java.util.UUID;
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 
 @Component
-
+@Transactional
 @Slf4j
 public class RefreshTokenBusiness {
 
