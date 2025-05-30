@@ -18,7 +18,7 @@ public class Media implements Serializable {
     private Long fileSize;
     private String ownerId;
     private LocalDateTime uploadedDate;
-    private String mediaType; // IMAGE, VIDEO, DOCUMENT, etc.
+    private String mediaType;
     private String contentType;
     private String bucketName;
 
