@@ -39,3 +39,5 @@ public class InteractionService implements InteractionApi {
         return interactionBusiness.getInteractionsByUser(userId);
     }
 }
+
+

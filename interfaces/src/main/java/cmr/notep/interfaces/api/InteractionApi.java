@@ -37,3 +37,5 @@ public interface InteractionApi {
     @ResponseStatus(HttpStatus.OK)
     List<Interaction> getInteractionsByUser(@PathVariable String userId);
 }
+
+
