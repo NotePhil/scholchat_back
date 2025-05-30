@@ -114,7 +114,7 @@ public class InteractionBusiness {
 
         if (interactions.isEmpty()) {
             throw new SchoolException(SchoolErrorCode.NOT_FOUND,
-                    "No interactions found for user with this id: " + userId);
+                    "No interactions found for user with id: " + userId);
         }
 
         return interactions.stream()
