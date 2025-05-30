@@ -11,12 +11,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
+
 @Slf4j
 public class ActivationService {
 
     private final UtilisateursBusiness utilisateursBusiness;
     private final JwtUtil jwtUtil;
+
+    public ActivationService(UtilisateursBusiness utilisateursBusiness, JwtUtil jwtUtil) {
+        this.utilisateursBusiness = utilisateursBusiness;
+        this.jwtUtil = jwtUtil;
+    }
 
     public Utilisateurs activerUtilisateur(String activationToken) {
         log.info("Activating user with token: {}", activationToken);

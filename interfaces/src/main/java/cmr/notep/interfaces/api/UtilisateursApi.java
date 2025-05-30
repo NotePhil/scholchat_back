@@ -27,12 +27,6 @@ public interface UtilisateursApi {
     )
     Utilisateurs posterUtilisateur(@NonNull @RequestBody Utilisateurs utilisateur);
 
-    @PostMapping(
-            path = "/generic",
-            produces = MediaType.APPLICATION_JSON_VALUE,
-            consumes = MediaType.APPLICATION_JSON_VALUE
-    )
-    Utilisateurs posterGenericUtilisateur(@RequestBody IUtilisateurs utilisateur);
 
     @PostMapping(
             path = "/regenerate-activation",
@@ -48,6 +42,14 @@ public interface UtilisateursApi {
             @NonNull @PathVariable(name = "professorId") String professorId
     );
 
+    @PostMapping(
+            path = "/professeurs/{professorId}/rejet",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    Utilisateurs rejeterProfesseur(
+            @PathVariable String professorId,
+            @RequestParam String codeErreur,
+            @RequestParam(required = false) String motifSupplementaire);
     @GetMapping(
             path = "/professors/pending",
             produces = MediaType.APPLICATION_JSON_VALUE

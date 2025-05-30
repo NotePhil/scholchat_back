@@ -12,16 +12,20 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.awt.font.TextHitInfo;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
+
 @Slf4j
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UtilisateursBusiness utilisateursBusiness;
 
+    public CustomUserDetailsService(UtilisateursBusiness utilisateursBusiness) {
+        this.utilisateursBusiness = utilisateursBusiness;
+    }
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         log.debug("Loading user by email: {}", email);
