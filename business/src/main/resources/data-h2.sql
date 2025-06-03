@@ -26,8 +26,8 @@ INSERT INTO ressources.utilisateurs (id, nom, prenom, email, passeaccess, teleph
 INSERT INTO ressources.utilisateurs (id, nom, prenom, email, passeaccess, telephone, adresse, activation_token, etat, is_admin) VALUES
     ('660e8400-e29b-41d4-a716-446655440999', 'Test', 'Professor', 'kemogneprince06@yahoo.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456789', 'Test Address', 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJST0xFX0FETUlOIl0sInN1YiI6ImFkbWluQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQ0OTY3MzM1LCJleHAiOjE3NDQ5NjgyMzV9.NVeY4KP8KAM2Nh80NaFXYEJ4__ceTFOPQPe_pGryMQw', 'AWAITING_VALIDATION', FALSE);
 
-INSERT INTO ressources.professeurs (professeurs_id, cni_url_front, cni_url_back, nom_etablissement, nom_classe, matricule_professeur) VALUES
-    ('660e8400-e29b-41d4-a716-446655440999', 'http://example.com/cni.jpg', 'http://example.com/cni-back.jpg', 'Test School', 'Test Class', 'PROF-TEST-001');
+INSERT INTO ressources.professeurs (professeurs_id, cni_url_front, cni_url_back, matricule_professeur) VALUES
+    ('660e8400-e29b-41d4-a716-446655440999', 'http://example.com/cni.jpg', 'http://example.com/cni-back.jpg',  'PROF-TEST-001');
 -- Insert initial rejection reasons
 INSERT INTO ressources.messages (id, contenu, datecreation, datemodification, etat, expediteur_id) VALUES
 ('550e8400-e29b-41d4-a716-446655440010', 'Bonjour, comment ça va?', '2023-10-01', '2023-10-01', 'envoyé', '550e8400-e29b-41d4-a716-446655440000'),
@@ -76,10 +76,10 @@ INSERT INTO ressources.classe_eleves (classe_id, eleve_id) VALUES
 ('550e8400-e29b-41d4-a716-446655440400', '550e8400-e29b-41d4-a716-446655440300');
 
 -- Insert data into professeurs
-INSERT INTO ressources.professeurs (professeurs_id, cni_url_front, cni_url_back, nom_etablissement, nom_classe, matricule_professeur) VALUES
-('550e8400-e29b-41d4-a716-446655440007', 'https://example.com/cni/marie_dupont_front.jpg', 'https://example.com/cni/marie_dupont_back.jpg', 'Lycée Jean Moulin', 'Terminale A', 'PROF-2024-001'),
-('550e8400-e29b-41d4-a716-446655440008', 'https://example.com/cni/lucas_martin_front.jpg', 'https://example.com/cni/lucas_martin_back.jpg', 'Collège Albert Camus', 'Quatrième B', 'PROF-2024-002'),
-('550e8400-e29b-41d4-a716-446655440009', 'https://example.com/cni/isabelle_lefevre_front.jpg', 'https://example.com/cni/isabelle_lefevre_back.jpg', 'École Primaire Victor Hugo', 'CE2', 'PROF-2024-003');
+INSERT INTO ressources.professeurs (professeurs_id, cni_url_front, cni_url_back, matricule_professeur) VALUES
+('550e8400-e29b-41d4-a716-446655440007', 'https://example.com/cni/marie_dupont_front.jpg', 'https://example.com/cni/marie_dupont_back.jpg', 'PROF-2024-001'),
+('550e8400-e29b-41d4-a716-446655440008', 'https://example.com/cni/lucas_martin_front.jpg', 'https://example.com/cni/lucas_martin_back.jpg', 'PROF-2024-002'),
+('550e8400-e29b-41d4-a716-446655440009', 'https://example.com/cni/isabelle_lefevre_front.jpg', 'https://example.com/cni/isabelle_lefevre_back.jpg', 'PROF-2024-003');
 
 -- Insert data into repetiteurs
 INSERT INTO ressources.repetiteurs (repetiteurs_id, cni_url_front, cni_url_back, photo_full_picture, nom_classe) VALUES
