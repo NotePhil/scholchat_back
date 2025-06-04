@@ -25,29 +25,19 @@ public class MediaBusiness {
     @Transactional
     public MediaEntity saveMediaMetadata(String fileName, String filePath,
                                          String contentType, String mediaType, String ownerId) {
-        // Only proceed if we have a valid owner ID
-        if (ownerId == null || ownerId.isEmpty()) {
-            // Skip database save and return a transient entity with the metadata
-            MediaEntity transientMedia = new MediaEntity();
-            transientMedia.setId(UUID.randomUUID().toString()); // Generate ID for reference
-            transientMedia.setFileName(fileName);
-            transientMedia.setFilePath(filePath);
-            transientMedia.setContentType(contentType);
-            transientMedia.setMediaType(mediaType);
-            transientMedia.setUploadedDate(LocalDateTime.now());
-            transientMedia.setBucketName(mediaService.getDefaultBucketName());
-            return transientMedia;
-        }
-
-        // Normal flow for authenticated users
         MediaEntity media = new MediaEntity();
+        media.setId(UUID.randomUUID().toString());
         media.setFileName(fileName);
         media.setFilePath(filePath);
         media.setContentType(contentType);
         media.setMediaType(mediaType);
-        media.setOwnerId(ownerId);
         media.setUploadedDate(LocalDateTime.now());
         media.setBucketName(mediaService.getDefaultBucketName());
+
+        // Only set ownerId if it's not null/empty and not "temp"
+        if (ownerId != null && !ownerId.isEmpty() && !ownerId.equals("temp")) {
+            media.setOwnerId(ownerId);
+        }
 
         return mediaRepository.save(media);
     }
@@ -57,25 +47,15 @@ public class MediaBusiness {
         String sanitizedFileName = fileName.replaceAll("\\s+", "_")
                 .replaceAll("[^a-zA-Z0-9._-]", "");
 
-        // Build file path based on media type and document type
-        String filePath;
-        if (documentType != null && !documentType.isEmpty()) {
-            filePath = String.format("%s/%s/%s/%s",
-                    ownerId,
-                    mediaType,
-                    documentType,
-                    sanitizedFileName);
-        } else {
-            filePath = String.format("%s/%s/%s",
-                    ownerId,
-                    mediaType,
-                    sanitizedFileName);
-        }
+        // Simplify path structure - don't create intermediate folders
+        String filePath = String.format("%s/%s_%s_%s",
+                ownerId != null ? ownerId : "temp",
+                mediaType,
+                documentType,
+                sanitizedFileName);
 
-        // Save metadata (will be handled differently based on ownerId)
         saveMediaMetadata(fileName, filePath, contentType, mediaType, ownerId);
 
-        // Generate the upload URL regardless of whether we saved to database
         return mediaService.generateUploadPresignedUrl(filePath, contentType);
     }
 
@@ -119,5 +99,12 @@ public class MediaBusiness {
 
     public boolean mediaExistsByPath(String filePath) {
         return mediaRepository.findByFilePath(filePath).isPresent();
+    }
+
+    @Transactional
+    public void updateMediaOwner(String mediaId, String newOwnerId) {
+        MediaEntity media = getMediaById(mediaId);
+        media.setOwnerId(newOwnerId);
+        mediaRepository.save(media);
     }
 }

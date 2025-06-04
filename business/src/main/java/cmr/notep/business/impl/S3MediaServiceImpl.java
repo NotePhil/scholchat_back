@@ -49,6 +49,7 @@ public class S3MediaServiceImpl implements MediaService {
 
     private void initializeBucket() {
         try {
+            // Check if bucket exists
             HeadBucketRequest headBucketRequest = HeadBucketRequest.builder()
                     .bucket(s3Config.getBucketName())
                     .build();
@@ -57,24 +58,26 @@ public class S3MediaServiceImpl implements MediaService {
                 s3Client.headBucket(headBucketRequest);
                 log.info("Bucket {} already exists", s3Config.getBucketName());
             } catch (NoSuchBucketException e) {
+                // Create bucket if it doesn't exist
                 CreateBucketRequest createBucketRequest = CreateBucketRequest.builder()
                         .bucket(s3Config.getBucketName())
                         .build();
 
                 s3Client.createBucket(createBucketRequest);
-
-                String policy = String.format(
-                        "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:GetObject\"],\"Resource\":[\"arn:aws:s3:::%s/*\"]}]}",
-                        s3Config.getBucketName());
-
-                PutBucketPolicyRequest putBucketPolicyRequest = PutBucketPolicyRequest.builder()
-                        .bucket(s3Config.getBucketName())
-                        .policy(policy)
-                        .build();
-
-                s3Client.putBucketPolicy(putBucketPolicyRequest);
                 log.info("Created bucket: {}", s3Config.getBucketName());
             }
+
+            // Set bucket policy to allow public read access (if needed)
+            String policy = String.format(
+                    "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:GetObject\",\"s3:PutObject\",\"s3:DeleteObject\"],\"Resource\":[\"arn:aws:s3:::%s/*\"]}]}",
+                    s3Config.getBucketName());
+
+            PutBucketPolicyRequest putBucketPolicyRequest = PutBucketPolicyRequest.builder()
+                    .bucket(s3Config.getBucketName())
+                    .policy(policy)
+                    .build();
+
+            s3Client.putBucketPolicy(putBucketPolicyRequest);
         } catch (Exception e) {
             log.error("Bucket initialization failed", e);
             throw new SchoolException(SchoolErrorCode.INIT_ERROR,
@@ -85,6 +88,7 @@ public class S3MediaServiceImpl implements MediaService {
     @Override
     public String generateUploadPresignedUrl(String filePath, String contentType) {
         try {
+            // No need to check if path exists - just generate the URL
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(s3Config.getBucketName())
                     .key(filePath)

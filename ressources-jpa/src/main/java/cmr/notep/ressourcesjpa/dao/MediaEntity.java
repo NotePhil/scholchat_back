@@ -31,7 +31,7 @@ public class MediaEntity {
     @Column(name = "file_size")
     private Long fileSize;
 
-    @Column(name = "owner_id")
+    @Column(name = "owner_id", nullable = true)
     private String ownerId;
 
     @Column(name = "uploaded_date")

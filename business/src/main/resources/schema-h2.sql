@@ -1,5 +1,6 @@
 -- DROP DATABASE IF EXISTS parcours;
 CREATE SCHEMA IF NOT EXISTS ressources AUTHORIZATION sa;
+
 CREATE TABLE IF NOT EXISTS ressources.messages
 (
     id               VARCHAR(255) NOT NULL,
@@ -10,9 +11,6 @@ CREATE TABLE IF NOT EXISTS ressources.messages
     expediteur_id    VARCHAR(255),
     CONSTRAINT pk_messages PRIMARY KEY (id)
 );
-
-
-
 
 CREATE TABLE IF NOT EXISTS ressources.utilisateurs
 (
@@ -36,15 +34,14 @@ CREATE TABLE IF NOT EXISTS ressources.recevoir
     utilisateur_id VARCHAR(255) NOT NULL
 );
 
-ALTER TABLE  ressources.recevoir
-    ADD CONSTRAINT IF NOT EXISTS  fk_recevoir_on_messages_entity FOREIGN KEY (message_id) REFERENCES ressources.messages (id);
+ALTER TABLE ressources.recevoir
+    ADD CONSTRAINT IF NOT EXISTS fk_recevoir_on_messages_entity FOREIGN KEY (message_id) REFERENCES ressources.messages (id);
 
 ALTER TABLE ressources.recevoir
-    ADD CONSTRAINT IF NOT EXISTS  fk_recevoir_on_utilisateurs_entity FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs (id);
+    ADD CONSTRAINT IF NOT EXISTS fk_recevoir_on_utilisateurs_entity FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs (id);
 
 ALTER TABLE ressources.messages
-    ADD CONSTRAINT IF NOT EXISTS  FK_MESSAGES_ON_EXPEDITEUR FOREIGN KEY (expediteur_id) REFERENCES ressources.utilisateurs (id);
-
+    ADD CONSTRAINT IF NOT EXISTS FK_MESSAGES_ON_EXPEDITEUR FOREIGN KEY (expediteur_id) REFERENCES ressources.utilisateurs (id);
 
 -- Etablissements table
 CREATE TABLE IF NOT EXISTS ressources.etablissements (
@@ -54,17 +51,16 @@ CREATE TABLE IF NOT EXISTS ressources.etablissements (
 
 -- Parents table
 CREATE TABLE IF NOT EXISTS ressources.parents (
-    parents_id VARCHAR(255)  PRIMARY KEY,
+    parents_id VARCHAR(255) PRIMARY KEY,
     CONSTRAINT fk_parents_utilisateurs FOREIGN KEY (parents_id) REFERENCES ressources.utilisateurs(id)
 );
 
 -- Eleves table
 CREATE TABLE IF NOT EXISTS ressources.eleves (
-    eleves_id VARCHAR(255)  PRIMARY KEY,
+    eleves_id VARCHAR(255) PRIMARY KEY,
     niveau VARCHAR(255) NOT NULL,
     CONSTRAINT fk_eleves_utilisateurs FOREIGN KEY (eleves_id) REFERENCES ressources.utilisateurs(id)
-
-    );
+);
 
 -- Classes table
 CREATE TABLE IF NOT EXISTS ressources.classes (
@@ -95,38 +91,19 @@ CREATE TABLE IF NOT EXISTS ressources.classe_eleves (
     CONSTRAINT fk_classe_eleves_classe FOREIGN KEY (classe_id) REFERENCES ressources.classes(id),
     CONSTRAINT fk_classe_eleves_eleve FOREIGN KEY (eleve_id) REFERENCES ressources.eleves(eleves_id)
 );
--- Professeurs table (for table creation)
+
+-- Professeurs table
 CREATE TABLE IF NOT EXISTS ressources.professeurs (
     professeurs_id VARCHAR(255) NOT NULL,
     cni_url_front VARCHAR(255) NOT NULL,
     cni_url_back VARCHAR(255) NOT NULL,
-    matricule_professeur VARCHAR(255) NOT NULL UNIQUE,
+    selfie_url VARCHAR(255),
+    matricule_professeur VARCHAR(255) UNIQUE,
     PRIMARY KEY (professeurs_id),
     CONSTRAINT fk_professeurs_utilisateurs FOREIGN KEY (professeurs_id) REFERENCES ressources.utilisateurs(id)
 );
--- Répétiteurs table
-CREATE TABLE IF NOT EXISTS ressources.repetiteurs (
-    repetiteurs_id VARCHAR(255) NOT NULL,
-    cni_url_front VARCHAR(255) NOT NULL,
-    cni_url_back VARCHAR(255) NOT NULL,
-    photo_full_picture VARCHAR(255) NOT NULL,
-    nom_classe VARCHAR(255) NOT NULL,
-    PRIMARY KEY (repetiteurs_id),
-    CONSTRAINT fk_repetiteurs_utilisateurs FOREIGN KEY (repetiteurs_id) REFERENCES ressources.utilisateurs(id)
-);
--- -- Create professeurs table
--- CREATE TABLE IF NOT EXISTS ressources.professeurs (
---     professeurs_id VARCHAR(255) NOT NULL,
---     cni_url_front VARCHAR(255) NOT NULL,
---     cni_url_back VARCHAR(255) NOT NULL,
---     nom_etablissement VARCHAR(255) NOT NULL,
---     nom_classe VARCHAR(255) NOT NULL,
---     matricule_professeur VARCHAR(255) NOT NULL UNIQUE,
---     PRIMARY KEY (professeurs_id),
---     CONSTRAINT fk_professeurs_utilisateurs FOREIGN KEY (professeurs_id) REFERENCES ressources.utilisateurs(id)
--- );
 
--- Create repetiteurs table
+-- Repetiteurs table (only one definition)
 CREATE TABLE IF NOT EXISTS ressources.repetiteurs (
     repetiteurs_id VARCHAR(255) NOT NULL,
     cni_url_front VARCHAR(255) NOT NULL,
@@ -157,15 +134,60 @@ CREATE TABLE IF NOT EXISTS ressources.refresh_tokens (
     CONSTRAINT fk_refresh_tokens_utilisateur FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id) ON DELETE CASCADE
 );
 
-
 -- Table pour les motifs de rejet
 CREATE TABLE IF NOT EXISTS ressources.motifs_rejet (
     id VARCHAR(255) PRIMARY KEY,
     code VARCHAR(255) NOT NULL UNIQUE,
     descriptif VARCHAR(255) NOT NULL,
     date_creation TIMESTAMP NOT NULL
-    );
+);
 
+-- Matieres table
+CREATE TABLE IF NOT EXISTS ressources.matieres (
+    id UUID PRIMARY KEY,
+    nom VARCHAR(255) NOT NULL UNIQUE
+);
+
+-- Evenements table (created before media table that references it)
+CREATE TABLE IF NOT EXISTS ressources.evenements (
+    id UUID PRIMARY KEY,
+    titre VARCHAR(255) NOT NULL,
+    description TEXT,
+    lieu VARCHAR(255),
+    etat VARCHAR(50) NOT NULL,
+    heure_debut TIMESTAMP NOT NULL,
+    heure_fin TIMESTAMP,
+    createur_id VARCHAR(255) NOT NULL,
+    CONSTRAINT fk_evenement_professeur FOREIGN KEY (createur_id) REFERENCES ressources.professeurs(professeurs_id)
+);
+
+-- Evenement_participants join table
+CREATE TABLE IF NOT EXISTS ressources.evenement_participants (
+    evenement_id UUID NOT NULL,
+    utilisateur_id VARCHAR(255) NOT NULL,
+    PRIMARY KEY (evenement_id, utilisateur_id),
+    CONSTRAINT fk_evenement_participants_evenement FOREIGN KEY (evenement_id) REFERENCES ressources.evenements(id),
+    CONSTRAINT fk_evenement_participants_utilisateur FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id)
+);
+
+-- Professeur_matiere join table
+CREATE TABLE IF NOT EXISTS ressources.professeur_matiere (
+    professeur_id VARCHAR(255) NOT NULL,
+    matiere_id UUID NOT NULL,
+    PRIMARY KEY (professeur_id, matiere_id),
+    CONSTRAINT fk_professeur_matiere_professeur FOREIGN KEY (professeur_id) REFERENCES ressources.professeurs(professeurs_id),
+    CONSTRAINT fk_professeur_matiere_matiere FOREIGN KEY (matiere_id) REFERENCES ressources.matieres(id)
+);
+
+-- Motifs_rejet_classe
+CREATE TABLE IF NOT EXISTS ressources.motifs_rejet_classe (
+    id VARCHAR(255) PRIMARY KEY,
+    code VARCHAR(255) NOT NULL UNIQUE,
+    descriptif VARCHAR(255) NOT NULL,
+    date_creation TIMESTAMP NOT NULL
+);
+
+-- Media table (created after evenements table)
 CREATE TABLE IF NOT EXISTS ressources.media (
     id VARCHAR(255) PRIMARY KEY,
     bucket_name VARCHAR(255) NOT NULL,
@@ -177,55 +199,14 @@ CREATE TABLE IF NOT EXISTS ressources.media (
     media_type VARCHAR(50),
     owner_id VARCHAR(255),
     uploaded_date TIMESTAMP,
-    CONSTRAINT fk_media_owner FOREIGN KEY (owner_id) REFERENCES ressources.utilisateurs(id)
+    evenement_id UUID,
+    CONSTRAINT fk_media_owner FOREIGN KEY (owner_id) REFERENCES ressources.utilisateurs(id) ON DELETE SET NULL,
+    CONSTRAINT fk_media_evenement FOREIGN KEY (evenement_id) REFERENCES ressources.evenements(id)
 );
 
-CREATE TABLE IF NOT EXISTS ressources.matieres (
-    id UUID PRIMARY KEY,
-    nom VARCHAR(255) NOT NULL UNIQUE
-    );
-
--- evenements table
-CREATE TABLE IF NOT EXISTS ressources.evenements (
-    id UUID PRIMARY KEY,
-    titre VARCHAR(255) NOT NULL,
-    description TEXT,
-    lieu VARCHAR(255),
-    etat VARCHAR(50) NOT NULL,
-    heure_debut TIMESTAMP NOT NULL,
-    heure_fin TIMESTAMP,
-    createur_id VARCHAR(255) NOT NULL,
-    CONSTRAINT fk_evenement_professeur FOREIGN KEY (createur_id) REFERENCES ressources.professeurs(professeurs_id)
-    );
---evenement_participants join table
-CREATE TABLE IF NOT EXISTS ressources.evenement_participants (
-                                                                 evenement_id UUID NOT NULL,
-                                                                 utilisateur_id VARCHAR(255) NOT NULL,
-    PRIMARY KEY (evenement_id, utilisateur_id),
-    CONSTRAINT fk_evenement_participants_evenement FOREIGN KEY (evenement_id) REFERENCES ressources.evenements(id),
-    CONSTRAINT fk_evenement_participants_utilisateur FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id)
-    );
-
---professeur_matiere join table
-CREATE TABLE IF NOT EXISTS ressources.professeur_matiere (
-                                                             professeur_id VARCHAR(255) NOT NULL,
-    matiere_id UUID NOT NULL,
-    PRIMARY KEY (professeur_id, matiere_id),
-    CONSTRAINT fk_professeur_matiere_professeur FOREIGN KEY (professeur_id) REFERENCES ressources.professeurs(professeurs_id),
-    CONSTRAINT fk_professeur_matiere_matiere FOREIGN KEY (matiere_id) REFERENCES ressources.matieres(id)
-    );
---motifs_rejet_classe
-CREATE TABLE IF NOT EXISTS ressources.motifs_rejet_classe (
+-- Interactions table
+CREATE TABLE IF NOT EXISTS ressources.interactions (
     id VARCHAR(255) PRIMARY KEY,
-    code VARCHAR(255) NOT NULL UNIQUE,
-    descriptif VARCHAR(255) NOT NULL,
-    date_creation TIMESTAMP NOT NULL
-);
---evenement_id column to media table
-ALTER TABLE ressources.media ADD COLUMN IF NOT EXISTS evenement_id UUID;
-ALTER TABLE ressources.media ADD CONSTRAINT fk_media_evenement FOREIGN KEY (evenement_id) REFERENCES ressources.evenements(id);
-
-CREATE TABLE IF NOT EXISTS ressources.interactions (                                                id VARCHAR(255) PRIMARY KEY,
     type VARCHAR(50) NOT NULL,
     content TEXT NOT NULL,
     creation_date TIMESTAMP NOT NULL,
@@ -236,4 +217,4 @@ CREATE TABLE IF NOT EXISTS ressources.interactions (                            
     CONSTRAINT fk_interaction_user FOREIGN KEY (created_by) REFERENCES ressources.utilisateurs(id),
     CONSTRAINT fk_interaction_event FOREIGN KEY (event_id) REFERENCES ressources.evenements(id),
     CONSTRAINT fk_interaction_message FOREIGN KEY (message_id) REFERENCES ressources.messages(id)
-    );
+);

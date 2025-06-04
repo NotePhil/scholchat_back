@@ -18,13 +18,13 @@ public class S3Config {
     @Value("${s3.endpoint:http://localhost:9000}")  // Your MinIO endpoint
     private String endpoint;
 
-    @Value("${s3.access-key:kemognepenka}")  // Your MinIO root user
+    @Value("${s3.access-key:minioadmin}")  // Your MinIO root user
     private String accessKey;
 
-    @Value("${s3.secret-key:kemogne237}")  // Your MinIO root password
+    @Value("${s3.secret-key:minioadmin}")  // Your MinIO root password
     private String secretKey;
 
-    @Value("${s3.bucket.name:scholchat}")
+    @Value("${s3.bucket.name:temp}")
     private String bucketName;
 
     @Value("${s3.region:us-east-1}")

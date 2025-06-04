@@ -20,9 +20,10 @@ public class ProfesseursEntity extends UtilisateursEntity {
     @Column(name = "cni_url_back", nullable = false)
     private String cniUrlVerso;
 
+    @Column(name = "selfie_url")
+    private String selfieUrl;
 
-    //TODO : vérifier si le matricule est lié à l'établissement uniquement comme dans les collèges
-    @Column(name = "matricule_professeur", nullable = false, unique = true)
+    @Column(name = "matricule_professeur", unique = true)
     private String matriculeProfesseur;
 
     @OneToMany(mappedBy = "professeur", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -36,6 +37,4 @@ public class ProfesseursEntity extends UtilisateursEntity {
 
     @OneToMany(mappedBy = "createur", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EvenementEntity> evenementsCrees = new ArrayList<>();
-
-
 }
