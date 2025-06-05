@@ -29,6 +29,9 @@ public class ProfesseursEntity extends UtilisateursEntity {
     @OneToMany(mappedBy = "professeur", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CanalEntity> canaux = new ArrayList<>();
 
+    @OneToMany(mappedBy = "moderator")
+    private List<ClassesEntity> moderatedClasses = new ArrayList<>();
+
     @ManyToMany
     @JoinTable(name = "professeur_matiere", schema = "ressources",
             joinColumns = @JoinColumn(name = "professeur_id"),

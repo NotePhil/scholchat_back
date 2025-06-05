@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-
 @Setter
 @Getter
 @Entity
@@ -40,6 +39,10 @@ public class ClassesEntity {
     private EtatClasse etat;
 
     @ManyToOne
+    @JoinColumn(name = "moderator_id")
+    private ProfesseursEntity moderator;
+
+    @ManyToOne
     @JoinColumn(name = "etablissement_id")
     @Mapping("etablissement")
     private EtablissementEntity etablissement;
@@ -49,14 +52,14 @@ public class ClassesEntity {
             joinColumns = @JoinColumn(name = "classe_id"),
             inverseJoinColumns = @JoinColumn(name = "parent_id"))
     @Mapping("parents")
-    private List<ParentsEntity> parentsEntities;
-    //TODO : mettre les noms des associations tel que écrit dans le diagramme de classe
+    private List<ParentsEntity> parentsEntities = new ArrayList<>();
+
     @ManyToMany
     @JoinTable(name = "classe_eleves", schema = "ressources",
             joinColumns = @JoinColumn(name = "classe_id"),
             inverseJoinColumns = @JoinColumn(name = "eleve_id"))
     @Mapping("eleves")
-    private List<ElevesEntity> elevesEntities;
+    private List<ElevesEntity> elevesEntities = new ArrayList<>();
 
     @OneToMany(mappedBy = "classe", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CanalEntity> canaux = new ArrayList<>();

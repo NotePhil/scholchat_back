@@ -45,4 +45,44 @@ public interface ClassesApi {
     )
     @ResponseStatus(HttpStatus.OK)
     List<Classes> obtenirToutesLesClasses();
+
+    @PostMapping(
+            path = "/{idClasse}/eleves/{idEleve}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    Classes ajouterEleve(
+            @NonNull @PathVariable("idClasse") String idClasse,
+            @NonNull @PathVariable("idEleve") String idEleve
+    );
+
+    @DeleteMapping(
+            path = "/{idClasse}/eleves/{idEleve}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    Classes supprimerEleve(
+            @NonNull @PathVariable("idClasse") String idClasse,
+            @NonNull @PathVariable("idEleve") String idEleve
+    );
+
+    @PostMapping(
+            path = "/{idClasse}/parents/{idParent}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    Classes ajouterParent(
+            @NonNull @PathVariable("idClasse") String idClasse,
+            @NonNull @PathVariable("idParent") String idParent
+    );
+
+    @DeleteMapping(
+            path = "/{idClasse}/parents/{idParent}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    Classes supprimerParent(
+            @NonNull @PathVariable("idClasse") String idClasse,
+            @NonNull @PathVariable("idParent") String idParent
+    );
 }
