@@ -49,9 +49,11 @@ INSERT INTO ressources.recevoir (message_id, utilisateur_id) VALUES
 ('550e8400-e29b-41d4-a716-446655440013', '550e8400-e29b-41d4-a716-446655440002');
 
 -- Insert data into etablissements
-INSERT INTO ressources.etablissements (id, nom) VALUES
-('550e8400-e29b-41d4-a716-446655440100', 'Etablissement A'),
-('550e8400-e29b-41d4-a716-446655440101', 'Etablissement B');
+INSERT INTO ressources.etablissements
+(id, nom, localisation, pays, email, telephone, option_envoi_mail_classe, option_token_general, code_unique)
+VALUES
+('550e8400-e29b-41d4-a716-446655440100', 'Etablissement A', 'Yaoundé', 'Cameroun', 'contact@etab-a.cm', '23712345678', TRUE, FALSE, TRUE),
+('550e8400-e29b-41d4-a716-446655440101', 'Etablissement B', 'Douala', 'Cameroun', 'info@etab-b.cm', '23787654321', FALSE, TRUE, FALSE);
 
 -- Insert data into parents
 INSERT INTO ressources.parents (parents_id) VALUES
@@ -101,12 +103,14 @@ INSERT INTO ressources.canaux (id, nom, description, professeur_id, classe_id) V
 
 
 -- Insert initial matieres
-INSERT INTO ressources.matieres (id, nom) VALUES
-('550e8400-e29b-41d4-a716-446655441000', 'MATHEMATIQUES'),
-('550e8400-e29b-41d4-a716-446655441001', 'SCIENCES'),
-('550e8400-e29b-41d4-a716-446655441002', 'HISTOIRE'),
-('550e8400-e29b-41d4-a716-446655441003', 'GEOGRAPHIE'),
-('550e8400-e29b-41d4-a716-446655441004', 'LANGUE');
+INSERT INTO ressources.matieres
+(id, nom, description, date_creation, etat)
+VALUES
+('550e8400-e29b-41d4-a716-446655441000', 'MATHEMATIQUES', 'Cours de mathématiques avancées', '2024-01-01 09:00:00', 'ACTIF'),
+('550e8400-e29b-41d4-a716-446655441001', 'SCIENCES', 'Sciences physiques et naturelles', '2024-01-01 09:00:00', 'ACTIF'),
+('550e8400-e29b-41d4-a716-446655441002', 'HISTOIRE', 'Histoire générale et du Cameroun', '2024-01-01 09:00:00', 'ACTIF'),
+('550e8400-e29b-41d4-a716-446655441003', 'GEOGRAPHIE', 'Géographie mondiale et régionale', '2024-01-01 09:00:00', 'ACTIF'),
+('550e8400-e29b-41d4-a716-446655441004', 'LANGUE', 'Langues et littérature', '2024-01-01 09:00:00', 'ACTIF');
 
 -- Associate professors with matieres
 INSERT INTO ressources.professeur_matiere (professeur_id, matiere_id) VALUES
@@ -125,3 +129,6 @@ INSERT INTO ressources.motifs_rejet_classe (id, code, descriptif, date_creation)
   ('660e8400-e29b-41d4-a716-446655440605', 'CLASSE_DOUBLON', 'Classe déjà existante avec les mêmes caractéristiques', CURRENT_TIMESTAMP),
   ('660e8400-e29b-41d4-a716-446655440606', 'CLASSE_HORAIRE_CONFLIT', 'Conflit d''horaire avec une autre classe', CURRENT_TIMESTAMP),
   ('660e8400-e29b-41d4-a716-446655440607', 'CLASSE_MATIERES_MANQUANTES', 'Matériel ou matières manquantes pour ce niveau', CURRENT_TIMESTAMP);
+  INSERT INTO ressources.classe_matieres (matiere_id, classe_id) VALUES
+  ('550e8400-e29b-41d4-a716-446655441000', '550e8400-e29b-41d4-a716-446655440400'), -- Math for Class A
+  ('550e8400-e29b-41d4-a716-446655441001', '550e8400-e29b-41d4-a716-446655440400');

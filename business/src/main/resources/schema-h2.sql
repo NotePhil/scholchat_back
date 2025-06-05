@@ -46,7 +46,14 @@ ALTER TABLE ressources.messages
 -- Etablissements table
 CREATE TABLE IF NOT EXISTS ressources.etablissements (
     id UUID PRIMARY KEY,
-    nom VARCHAR(255) NOT NULL
+    nom VARCHAR(255) NOT NULL,
+    localisation VARCHAR(255),
+    pays VARCHAR(255),
+    email VARCHAR(255),
+    telephone VARCHAR(255),
+    option_envoi_mail_classe BOOLEAN DEFAULT FALSE,
+    option_token_general BOOLEAN DEFAULT FALSE,
+    code_unique BOOLEAN DEFAULT FALSE
 );
 
 -- Parents table
@@ -145,7 +152,10 @@ CREATE TABLE IF NOT EXISTS ressources.motifs_rejet (
 -- Matieres table
 CREATE TABLE IF NOT EXISTS ressources.matieres (
     id UUID PRIMARY KEY,
-    nom VARCHAR(255) NOT NULL UNIQUE
+    nom VARCHAR(255) NOT NULL UNIQUE,
+    description TEXT,
+    date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    etat VARCHAR(50) DEFAULT 'ACTIF'
 );
 
 -- Evenements table (created before media table that references it)
@@ -217,4 +227,11 @@ CREATE TABLE IF NOT EXISTS ressources.interactions (
     CONSTRAINT fk_interaction_user FOREIGN KEY (created_by) REFERENCES ressources.utilisateurs(id),
     CONSTRAINT fk_interaction_event FOREIGN KEY (event_id) REFERENCES ressources.evenements(id),
     CONSTRAINT fk_interaction_message FOREIGN KEY (message_id) REFERENCES ressources.messages(id)
+);
+CREATE TABLE IF NOT EXISTS ressources.classe_matieres (
+    matiere_id UUID NOT NULL,
+    classe_id UUID NOT NULL,
+    PRIMARY KEY (matiere_id, classe_id),
+    CONSTRAINT fk_classe_matieres_matiere FOREIGN KEY (matiere_id) REFERENCES ressources.matieres(id),
+    CONSTRAINT fk_classe_matieres_classe FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
 );
