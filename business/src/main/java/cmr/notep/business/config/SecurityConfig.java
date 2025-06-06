@@ -68,7 +68,9 @@ public class SecurityConfig {
                                 "/professeurs","/professeurs/**",
                                 "/media/**",
                                 "/canaux","/canaux/**",
-                                "/profil-eleves","/profil-eleves/**"
+                                "/profil-eleves","/profil-eleves/**",
+                                "/histo-activations","/histo-activations/**"
+
                         ).permitAll()
                         .requestMatchers(
                                 "/utilisateurs/professeurs/*/rejet",

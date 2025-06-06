@@ -1,5 +1,6 @@
 package cmr.notep.interfaces.modeles;
 
+import cmr.notep.modele.DroitPublication;
 import cmr.notep.modele.EtatClasse;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
@@ -23,6 +24,8 @@ public class Classes implements Serializable {
     private String codeActivation;
     private EtatClasse etat;
     private Etablissement etablissement;
+    private Professeurs moderator;
     private List<Parents> parents;
     private List<Eleves> eleves;
+    private DroitPublication droitdepublie;
 }
