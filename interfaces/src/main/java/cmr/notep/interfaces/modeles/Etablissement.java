@@ -14,4 +14,11 @@ import java.io.Serializable;
 public class Etablissement implements Serializable {
     private String id;
     private String nom;
+    private String localisation;
+    private String pays;
+    private String email;
+    private String telephone;
+    private boolean optionEnvoiMailVersClasse;
+    private boolean optionTokenGeneral;
+    private boolean codeUnique;
 }
