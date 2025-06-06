@@ -325,3 +325,27 @@ CREATE INDEX IF NOT EXISTS idx_classes_moderator ON ressources.classes(moderator
 CREATE INDEX IF NOT EXISTS idx_prof_moderated_classes ON ressources.professeur_classes_moderees(professeur_id);
 CREATE INDEX IF NOT EXISTS idx_classe_etablissement ON ressources.classes(etablissement_id);
 CREATE INDEX IF NOT EXISTS idx_utilisateur_email ON ressources.utilisateurs(email);
+ALTER TABLE ressources.classes ADD COLUMN droit_publication VARCHAR(50);
+
+CREATE TABLE IF NOT EXISTS ressources.histo_activation (
+    id UUID PRIMARY KEY,
+    classe_id UUID NOT NULL,
+    professeur_id VARCHAR(255) NOT NULL,
+    date_activation TIMESTAMP NOT NULL,
+    date_desactivation TIMESTAMP,
+    motif_desactivation VARCHAR(255),
+    is_active BOOLEAN NOT NULL,
+    CONSTRAINT fk_histo_classe FOREIGN KEY (classe_id) REFERENCES ressources.classes(id),
+    CONSTRAINT fk_histo_professeur FOREIGN KEY (professeur_id) REFERENCES ressources.professeurs(professeurs_id)
+);
+CREATE TABLE IF NOT EXISTS ressources.histo_activation (
+    id UUID PRIMARY KEY,
+    classe_id UUID NOT NULL,
+    professeur_id VARCHAR(255) NOT NULL,
+    date_activation TIMESTAMP NOT NULL,
+    date_desactivation TIMESTAMP,
+    motif_desactivation VARCHAR(255),
+    is_active BOOLEAN NOT NULL,
+    CONSTRAINT fk_histo_classe FOREIGN KEY (classe_id) REFERENCES ressources.classes(id),
+    CONSTRAINT fk_histo_professeur FOREIGN KEY (professeur_id) REFERENCES ressources.professeurs(professeurs_id)
+);

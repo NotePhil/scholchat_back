@@ -164,3 +164,14 @@ INSERT INTO ressources.interactions (id, type, content, creation_date, niveau, c
 INSERT INTO ressources.refresh_tokens (token, expiry_date, utilisateur_id) VALUES
 ('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDA5OTkiLCJpYXQiOjE2MTYyMzkwMjIsImV4cCI6MTYxNjMyNTQyMn0.4j5X9v2JwQ7q7Q7q7Q7q7Q7q7Q7q7Q7q7Q7q7Q7q7Q', '2025-12-31 23:59:59', '550e8400-e29b-41d4-a716-446655440999'),
 ('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDA5OTkiLCJpYXQiOjE2MTYyMzkwMjIsImV4cCI6MTYxNjMyNTQyMn0.4j5X9v2JwQ7q7Q7q7Q7q7Q7q7Q7q7Q7q7Q7q7Q7q7Q', '2025-12-31 23:59:59', '660e8400-e29b-41d4-a716-446655440999');
+-- Active activation for Class A by Professor Marie Dupont
+INSERT INTO ressources.histo_activation (id, classe_id, professeur_id, date_activation, is_active)
+VALUES ('550e8400-e29b-41d4-a716-446655445000', '550e8400-e29b-41d4-a716-446655440400', '550e8400-e29b-41d4-a716-446655440007', '2024-11-28 10:00:00', TRUE);
+
+-- Inactive activation for Class B by Professor Lucas Martin
+INSERT INTO ressources.histo_activation (id, classe_id, professeur_id, date_activation, date_desactivation, motif_desactivation, is_active)
+VALUES ('550e8400-e29b-41d4-a716-446655445001', '550e8400-e29b-41d4-a716-446655440401', '550e8400-e29b-41d4-a716-446655440008', '2024-11-28 11:00:00', '2024-12-01 12:00:00', 'Class reassigned', FALSE);
+
+-- Active activation for Class A by Test Professor
+INSERT INTO ressources.histo_activation (id, classe_id, professeur_id, date_activation, is_active)
+VALUES ('660e8400-e29b-41d4-a716-446655445999', '550e8400-e29b-41d4-a716-446655440400', '660e8400-e29b-41d4-a716-446655440999', '2024-12-01 09:00:00', TRUE);

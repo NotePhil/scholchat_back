@@ -1,5 +1,6 @@
 package cmr.notep.ressourcesjpa.dao;
 
+import cmr.notep.modele.DroitPublication;
 import cmr.notep.modele.EtatClasse;
 import jakarta.persistence.*;
 import lombok.*;
@@ -16,7 +17,6 @@ import java.util.List;
 @AllArgsConstructor
 @Table(name = "classes", schema = "ressources")
 public class ClassesEntity {
-
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", nullable = false, updatable = false, columnDefinition = "UUID")
@@ -38,14 +38,19 @@ public class ClassesEntity {
     @Column(name = "etat")
     private EtatClasse etat;
 
-    @ManyToOne
-    @JoinColumn(name = "moderator_id")
-    private ProfesseursEntity moderator;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "droit_publication")
+    private DroitPublication droitPublication;
 
     @ManyToOne
     @JoinColumn(name = "etablissement_id")
     @Mapping("etablissement")
     private EtablissementEntity etablissement;
+
+    @ManyToOne
+    @JoinColumn(name = "moderator_id")
+    @Mapping("moderator")
+    private ProfesseursEntity moderator;
 
     @ManyToMany
     @JoinTable(name = "classe_parents", schema = "ressources",
@@ -61,6 +66,9 @@ public class ClassesEntity {
     @Mapping("eleves")
     private List<ElevesEntity> elevesEntities = new ArrayList<>();
 
-    @OneToMany(mappedBy = "classe", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "classe")
     private List<CanalEntity> canaux = new ArrayList<>();
+
+    @OneToMany(mappedBy = "classe")
+    private List<HistoActivationEntity> activationHistory = new ArrayList<>();
 }
