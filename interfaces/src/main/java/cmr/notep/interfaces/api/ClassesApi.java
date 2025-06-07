@@ -3,6 +3,7 @@ package cmr.notep.interfaces.api;
 import cmr.notep.interfaces.modeles.Classes;
 import cmr.notep.interfaces.modeles.HistoActivation;
 import cmr.notep.modele.DroitPublication;
+import cmr.notep.modele.EtatClasse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +30,20 @@ public interface ClassesApi {
             @PathVariable("idClasse") String idClasse,
             @RequestBody Classes classeModifiee
     );
+
+    @PatchMapping("/{idClasse}/approve")
+    @ResponseStatus(HttpStatus.OK)
+    Classes approuverClasse(@PathVariable("idClasse") String idClasse);
+
+    @PatchMapping("/{idClasse}/reject")
+    @ResponseStatus(HttpStatus.OK)
+    Classes rejeterClasse(
+            @PathVariable("idClasse") String idClasse,
+            @RequestParam String motif);
+
+    @GetMapping(path = "/by-status", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    List<Classes> obtenirClassesParEtat(@RequestParam EtatClasse etat);
 
     @DeleteMapping("/{idClasse}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

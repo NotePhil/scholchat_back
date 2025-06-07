@@ -1,7 +1,9 @@
 package cmr.notep.interfaces.modeles;
 
+import com.fasterxml.jackson.annotation.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+
 import java.util.List;
 
 @Data
@@ -9,13 +11,17 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class Professeurs extends Utilisateurs {
     private String cniUrlRecto;
     private String cniUrlVerso;
     private String selfieUrl;
     private String matriculeProfesseur;
 
-    // Moderator fields
+    @JsonIdentityReference(alwaysAsId = true)
+    private List<Classes> moderatedClasses;
+
+    @JsonIgnore
     private boolean isModerator;
-    private List<String> moderatedClasses; // IDs of classes this professor moderates
 }

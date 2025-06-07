@@ -29,7 +29,8 @@ public class ProfesseursEntity extends UtilisateursEntity {
     @OneToMany(mappedBy = "professeur", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CanalEntity> canaux = new ArrayList<>();
 
-    @OneToMany(mappedBy = "moderator")
+    // Changed fetch type to LAZY to prevent unnecessary loading
+    @OneToMany(mappedBy = "moderator", fetch = FetchType.LAZY)
     private List<ClassesEntity> moderatedClasses = new ArrayList<>();
 
     @ManyToMany

@@ -20,6 +20,7 @@ import cmr.notep.ressourcesjpa.repository.ProfesseursRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import cmr.notep.modele.DroitPublication;
+import cmr.notep.modele.EtatClasse;
 import cmr.notep.ressourcesjpa.dao.HistoActivationEntity;
 import cmr.notep.ressourcesjpa.repository.HistoActivationRepository;
 import java.util.List;
@@ -37,8 +38,16 @@ public class ClassesBusiness {
         this.daoAccessorService = daoAccessorService;
     }
 
+    /**
+     * Creates a new class with default status EN_ATTENTE_APPROBATION
+     */
     public Classes creerClasse(Classes classes) throws SchoolException {
         ClassesEntity classesEntity = dozerMapperBean.map(classes, ClassesEntity.class);
+
+        // Set default status if not provided
+        if (classesEntity.getEtat() == null) {
+            classesEntity.setEtat(EtatClasse.EN_ATTENTE_APPROBATION);
+        }
 
         // Generate a random activation code if not provided
         if (classesEntity.getCodeActivation() == null) {
@@ -52,6 +61,8 @@ public class ClassesBusiness {
                     .findById(classes.getModerator().getId())
                     .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Modérateur introuvable"));
             classesEntity.setModerator(moderator);
+            moderator.getModeratedClasses().add(classesEntity);
+            daoAccessorService.getRepository(ProfesseursRepository.class).save(moderator);
         }
 
         ClassesEntity savedEntity = daoAccessorService.getRepository(ClassesRepository.class)
@@ -60,13 +71,37 @@ public class ClassesBusiness {
         return dozerMapperBean.map(savedEntity, Classes.class);
     }
 
+    /**
+     * Updates class information including status
+     */
     public Classes modifierClasse(String idClasse, Classes classeModifiee) throws SchoolException {
         ClassesRepository classesRepository = daoAccessorService.getRepository(ClassesRepository.class);
 
-        // First, check if the class exists
         ClassesEntity classeExistante = classesRepository.findById(idClasse)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe non trouvée avec l'ID: " + idClasse));
+// Handle moderator update
+        if (classeModifiee.getModerator() != null && classeModifiee.getModerator().getId() != null) {
+            ProfesseursEntity oldModerator = classeExistante.getModerator();
+            if (oldModerator != null) {
+                oldModerator.getModeratedClasses().remove(classeExistante);
+                daoAccessorService.getRepository(ProfesseursRepository.class).save(oldModerator);
+            }
 
+            ProfesseursEntity newModerator = daoAccessorService
+                    .getRepository(ProfesseursRepository.class)
+                    .findById(classeModifiee.getModerator().getId())
+                    .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Modérateur introuvable"));
+
+            classeExistante.setModerator(newModerator);
+            newModerator.getModeratedClasses().add(classeExistante);
+            daoAccessorService.getRepository(ProfesseursRepository.class).save(newModerator);
+        } else if (classeExistante.getModerator() != null) {
+            // Remove moderator if none is specified in the update
+            ProfesseursEntity oldModerator = classeExistante.getModerator();
+            oldModerator.getModeratedClasses().remove(classeExistante);
+            daoAccessorService.getRepository(ProfesseursRepository.class).save(oldModerator);
+            classeExistante.setModerator(null);
+        }
         // Basic field updates
         classeExistante.setNom(classeModifiee.getNom());
         classeExistante.setNiveau(classeModifiee.getNiveau());
@@ -116,15 +151,50 @@ public class ClassesBusiness {
             }
         }
 
-        // Sauvegarde de la classe mise à jour
         ClassesEntity classeSauvegardee = classesRepository.save(classeExistante);
         log.info("Classe modifiée avec succès: {}", idClasse);
         return dozerMapperBean.map(classeSauvegardee, Classes.class);
     }
 
+    /**
+     * Approves a pending class (changes status from EN_ATTENTE_APPROBATION to ACTIF)
+     */
+    public Classes approuverClasse(String idClasse) throws SchoolException {
+        ClassesRepository classesRepository = daoAccessorService.getRepository(ClassesRepository.class);
+        ClassesEntity classe = classesRepository.findById(idClasse)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe non trouvée"));
+
+        if (classe.getEtat() != EtatClasse.EN_ATTENTE_APPROBATION) {
+            throw new SchoolException(SchoolErrorCode.INVALID_STATE,
+                    "Seules les classes en attente peuvent être approuvées");
+        }
+
+        classe.setEtat(EtatClasse.ACTIF);
+        ClassesEntity saved = classesRepository.save(classe);
+        return dozerMapperBean.map(saved, Classes.class);
+    }
+
+    /**
+     * Rejects a pending class (changes status from EN_ATTENTE_APPROBATION to INACTIF)
+     */
+    public Classes rejeterClasse(String idClasse, String motif) throws SchoolException {
+        ClassesRepository classesRepository = daoAccessorService.getRepository(ClassesRepository.class);
+        ClassesEntity classe = classesRepository.findById(idClasse)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe non trouvée"));
+
+        if (classe.getEtat() != EtatClasse.EN_ATTENTE_APPROBATION) {
+            throw new SchoolException(SchoolErrorCode.INVALID_STATE,
+                    "Seules les classes en attente peuvent être rejetées");
+        }
+
+        classe.setEtat(EtatClasse.INACTIF);
+        // You might want to store the rejection reason in a separate table
+        ClassesEntity saved = classesRepository.save(classe);
+        return dozerMapperBean.map(saved, Classes.class);
+    }
+
     public void supprimerClasse(String idClasse) throws SchoolException {
         ClassesRepository classesRepository = daoAccessorService.getRepository(ClassesRepository.class);
-        // Vérifier si la classe existe avant de supprimer
         if (!classesRepository.existsById(idClasse)) {
             throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe non trouvée avec l'ID: " + idClasse);
         }
@@ -135,10 +205,31 @@ public class ClassesBusiness {
     public Classes obtenirClasseParId(String idClasse) throws SchoolException {
         ClassesRepository classesRepository = daoAccessorService.getRepository(ClassesRepository.class);
         ClassesEntity classeEntity = classesRepository.findById(idClasse)
-                .orElseThrow(() -> {
-                    return new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe non trouvée avec l'ID: " + idClasse);
-                });
-        return dozerMapperBean.map(classeEntity, Classes.class);
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe non trouvée avec l'ID: " + idClasse));
+
+        Classes classe = dozerMapperBean.map(classeEntity, Classes.class);
+
+        // Map moderated classes to just IDs to prevent circular references
+        if (classeEntity.getModerator() != null) {
+            Professeurs moderator = new Professeurs();
+            moderator.setId(classeEntity.getModerator().getId());
+            moderator.setNom(classeEntity.getModerator().getNom());
+            moderator.setPrenom(classeEntity.getModerator().getPrenom());
+            classe.setModerator(moderator);
+        }
+
+        return classe;
+    }
+
+    /**
+     * Gets all classes with a specific status
+     */
+    public List<Classes> obtenirClassesParEtat(EtatClasse etat) throws SchoolException {
+        ClassesRepository classesRepository = daoAccessorService.getRepository(ClassesRepository.class);
+        return classesRepository.findByEtat(etat)
+                .stream()
+                .map(c -> dozerMapperBean.map(c, Classes.class))
+                .collect(Collectors.toList());
     }
 
     public List<Classes> obtenirToutesLesClasses() throws SchoolException {
@@ -148,6 +239,7 @@ public class ClassesBusiness {
                 .map(c -> dozerMapperBean.map(c, Classes.class))
                 .collect(Collectors.toList());
     }
+
     public Classes modifierDroitPublication(String idClasse, DroitPublication droitPublication) throws SchoolException {
         ClassesRepository classesRepository = daoAccessorService.getRepository(ClassesRepository.class);
         ClassesEntity classeExistante = classesRepository.findById(idClasse)
@@ -159,7 +251,6 @@ public class ClassesBusiness {
         return dozerMapperBean.map(updatedEntity, Classes.class);
     }
 
-    // Method to generate a random activation code
     private String generateActivationCode() {
         return String.format("%06d", new java.util.Random().nextInt(999999));
     }

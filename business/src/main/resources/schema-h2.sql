@@ -49,7 +49,8 @@ CREATE TABLE IF NOT EXISTS ressources.classes (
     code_activation VARCHAR(50),
     etat VARCHAR(50),
     etablissement_id UUID,
-    moderator_id VARCHAR(255)
+    moderator_id VARCHAR(255),
+    droit_publication VARCHAR(50)
 );
 
 -- 2. Create other tables that depend on the base tables
@@ -196,10 +197,55 @@ CREATE TABLE IF NOT EXISTS ressources.refresh_tokens (
     utilisateur_id UUID NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS ressources.histo_activation (
+    id UUID PRIMARY KEY,
+    classe_id UUID NOT NULL,
+    professeur_id VARCHAR(255) NOT NULL,
+    date_activation TIMESTAMP NOT NULL,
+    date_desactivation TIMESTAMP,
+    motif_desactivation VARCHAR(255),
+    is_active BOOLEAN NOT NULL
+);
+
 -- Re-enable foreign key checks
 SET REFERENTIAL_INTEGRITY TRUE;
 
 -- 4. Add all foreign key constraints after all tables exist
+-- First drop constraints if they exist to avoid duplicates
+ALTER TABLE ressources.classes DROP CONSTRAINT IF EXISTS fk_etablissement;
+ALTER TABLE ressources.classes DROP CONSTRAINT IF EXISTS fk_classes_moderator;
+ALTER TABLE ressources.professeurs DROP CONSTRAINT IF EXISTS fk_professeurs_utilisateurs;
+ALTER TABLE ressources.parents DROP CONSTRAINT IF EXISTS fk_parents_utilisateurs;
+ALTER TABLE ressources.eleves DROP CONSTRAINT IF EXISTS fk_eleves_utilisateurs;
+ALTER TABLE ressources.repetiteurs DROP CONSTRAINT IF EXISTS fk_repetiteurs_utilisateurs;
+ALTER TABLE ressources.professeur_classes_moderees DROP CONSTRAINT IF EXISTS fk_prof_moderateur;
+ALTER TABLE ressources.professeur_classes_moderees DROP CONSTRAINT IF EXISTS fk_classe_moderee;
+ALTER TABLE ressources.classe_parents DROP CONSTRAINT IF EXISTS fk_classe_parents_classe;
+ALTER TABLE ressources.classe_parents DROP CONSTRAINT IF EXISTS fk_classe_parents_parent;
+ALTER TABLE ressources.classe_eleves DROP CONSTRAINT IF EXISTS fk_classe_eleves_classe;
+ALTER TABLE ressources.classe_eleves DROP CONSTRAINT IF EXISTS fk_classe_eleves_eleve;
+ALTER TABLE ressources.canaux DROP CONSTRAINT IF EXISTS fk_canaux_professeurs;
+ALTER TABLE ressources.canaux DROP CONSTRAINT IF EXISTS fk_canaux_classes;
+ALTER TABLE ressources.professeur_matiere DROP CONSTRAINT IF EXISTS fk_professeur_matiere_professeur;
+ALTER TABLE ressources.professeur_matiere DROP CONSTRAINT IF EXISTS fk_professeur_matiere_matiere;
+ALTER TABLE ressources.classe_matieres DROP CONSTRAINT IF EXISTS fk_classe_matieres_matiere;
+ALTER TABLE ressources.classe_matieres DROP CONSTRAINT IF EXISTS fk_classe_matieres_classe;
+ALTER TABLE ressources.evenements DROP CONSTRAINT IF EXISTS fk_evenement_professeur;
+ALTER TABLE ressources.evenement_participants DROP CONSTRAINT IF EXISTS fk_evenement_participants_evenement;
+ALTER TABLE ressources.evenement_participants DROP CONSTRAINT IF EXISTS fk_evenement_participants_utilisateur;
+ALTER TABLE ressources.messages DROP CONSTRAINT IF EXISTS FK_MESSAGES_ON_EXPEDITEUR;
+ALTER TABLE ressources.recevoir DROP CONSTRAINT IF EXISTS fk_recevoir_on_messages_entity;
+ALTER TABLE ressources.recevoir DROP CONSTRAINT IF EXISTS fk_recevoir_on_utilisateurs_entity;
+ALTER TABLE ressources.media DROP CONSTRAINT IF EXISTS fk_media_owner;
+ALTER TABLE ressources.media DROP CONSTRAINT IF EXISTS fk_media_evenement;
+ALTER TABLE ressources.interactions DROP CONSTRAINT IF EXISTS fk_interaction_user;
+ALTER TABLE ressources.interactions DROP CONSTRAINT IF EXISTS fk_interaction_event;
+ALTER TABLE ressources.interactions DROP CONSTRAINT IF EXISTS fk_interaction_message;
+ALTER TABLE ressources.refresh_tokens DROP CONSTRAINT IF EXISTS fk_refresh_tokens_utilisateur;
+ALTER TABLE ressources.histo_activation DROP CONSTRAINT IF EXISTS fk_histo_classe;
+ALTER TABLE ressources.histo_activation DROP CONSTRAINT IF EXISTS fk_histo_professeur;
+
+-- Now add the constraints
 ALTER TABLE ressources.professeurs
     ADD CONSTRAINT fk_professeurs_utilisateurs
     FOREIGN KEY (professeurs_id) REFERENCES ressources.utilisateurs(id);
@@ -320,32 +366,17 @@ ALTER TABLE ressources.refresh_tokens
     ADD CONSTRAINT fk_refresh_tokens_utilisateur
     FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id) ON DELETE CASCADE;
 
--- Create indexes
+ALTER TABLE ressources.histo_activation
+    ADD CONSTRAINT fk_histo_classe
+    FOREIGN KEY (classe_id) REFERENCES ressources.classes(id);
+
+ALTER TABLE ressources.histo_activation
+    ADD CONSTRAINT fk_histo_professeur
+    FOREIGN KEY (professeur_id) REFERENCES ressources.professeurs(professeurs_id);
+
+-- Create indexes (only once)
+CREATE INDEX IF NOT EXISTS idx_classes_etat ON ressources.classes(etat);
 CREATE INDEX IF NOT EXISTS idx_classes_moderator ON ressources.classes(moderator_id);
 CREATE INDEX IF NOT EXISTS idx_prof_moderated_classes ON ressources.professeur_classes_moderees(professeur_id);
 CREATE INDEX IF NOT EXISTS idx_classe_etablissement ON ressources.classes(etablissement_id);
 CREATE INDEX IF NOT EXISTS idx_utilisateur_email ON ressources.utilisateurs(email);
-ALTER TABLE ressources.classes ADD COLUMN droit_publication VARCHAR(50);
-
-CREATE TABLE IF NOT EXISTS ressources.histo_activation (
-    id UUID PRIMARY KEY,
-    classe_id UUID NOT NULL,
-    professeur_id VARCHAR(255) NOT NULL,
-    date_activation TIMESTAMP NOT NULL,
-    date_desactivation TIMESTAMP,
-    motif_desactivation VARCHAR(255),
-    is_active BOOLEAN NOT NULL,
-    CONSTRAINT fk_histo_classe FOREIGN KEY (classe_id) REFERENCES ressources.classes(id),
-    CONSTRAINT fk_histo_professeur FOREIGN KEY (professeur_id) REFERENCES ressources.professeurs(professeurs_id)
-);
-CREATE TABLE IF NOT EXISTS ressources.histo_activation (
-    id UUID PRIMARY KEY,
-    classe_id UUID NOT NULL,
-    professeur_id VARCHAR(255) NOT NULL,
-    date_activation TIMESTAMP NOT NULL,
-    date_desactivation TIMESTAMP,
-    motif_desactivation VARCHAR(255),
-    is_active BOOLEAN NOT NULL,
-    CONSTRAINT fk_histo_classe FOREIGN KEY (classe_id) REFERENCES ressources.classes(id),
-    CONSTRAINT fk_histo_professeur FOREIGN KEY (professeur_id) REFERENCES ressources.professeurs(professeurs_id)
-);

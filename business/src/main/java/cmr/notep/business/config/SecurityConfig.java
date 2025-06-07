@@ -68,6 +68,7 @@ public class SecurityConfig {
                                 "/professeurs","/professeurs/**",
                                 "/media/**",
                                 "/canaux","/canaux/**",
+                                "/histo-activations/**",
                                 "/profil-eleves","/profil-eleves/**",
                                 "/histo-activations","/histo-activations/**"
 

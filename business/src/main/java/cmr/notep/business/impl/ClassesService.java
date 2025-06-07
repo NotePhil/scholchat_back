@@ -6,6 +6,7 @@ import cmr.notep.interfaces.api.ClassesApi;
 import cmr.notep.interfaces.modeles.Classes;
 import cmr.notep.interfaces.modeles.HistoActivation;
 import cmr.notep.modele.DroitPublication;
+import cmr.notep.modele.EtatClasse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
@@ -35,6 +36,30 @@ public class ClassesService implements ClassesApi {
         Classes classeMAJ = classesBusiness.modifierClasse(idClasse, classeModifiee);
         log.info("Classe modifiée avec succès: {}", classeMAJ.getId());
         return classeMAJ;
+    }
+
+    @Override
+    public Classes approuverClasse(@NonNull String idClasse) {
+        log.info("Approbation de la classe avec l'ID: {}", idClasse);
+        Classes classeApprouvee = classesBusiness.approuverClasse(idClasse);
+        log.info("Classe approuvée avec succès: {}", idClasse);
+        return classeApprouvee;
+    }
+
+    @Override
+    public Classes rejeterClasse(@NonNull String idClasse, @NonNull String motif) {
+        log.info("Rejet de la classe avec l'ID: {}", idClasse);
+        Classes classeRejetee = classesBusiness.rejeterClasse(idClasse, motif);
+        log.info("Classe rejetée avec succès: {}", idClasse);
+        return classeRejetee;
+    }
+
+    @Override
+    public List<Classes> obtenirClassesParEtat(@NonNull EtatClasse etat) {
+        log.info("Récupération des classes avec l'état: {}", etat);
+        List<Classes> classes = classesBusiness.obtenirClassesParEtat(etat);
+        log.info("Récupération de {} classes avec l'état {}", classes.size(), etat);
+        return classes;
     }
 
     @Override
