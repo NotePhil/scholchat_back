@@ -2,6 +2,7 @@ package cmr.notep.business.business;
 
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
+import cmr.notep.interfaces.modeles.Classes;
 import cmr.notep.interfaces.modeles.Professeurs;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.ProfesseursEntity;
@@ -24,15 +25,26 @@ public class ProfesseursBusiness {
     }
 
     public Professeurs avoirProfesseur(String idProfesseur) {
-        log.info("avoirProfesseur called");
-        return dozerMapperBean.map(
-                daoAccessorService.getRepository(ProfesseursRepository.class)
-                        .findById(idProfesseur)
-                        .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND,"Professeur introuvable avec l'ID: " + idProfesseur)),
-                Professeurs.class
-        );
-    }
+        ProfesseursEntity entity = daoAccessorService.getRepository(ProfesseursRepository.class)
+                .findById(idProfesseur)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Professeur introuvable avec l'ID: " + idProfesseur));
 
+        Professeurs professeur = dozerMapperBean.map(entity, Professeurs.class);
+
+        // Map moderated classes to simple IDs
+        professeur.setModeratedClasses(
+                entity.getModeratedClasses().stream()
+                        .map(c -> {
+                            Classes cls = new Classes();
+                            cls.setId(c.getId());
+                            cls.setNom(c.getNom());
+                            return cls;
+                        })
+                        .collect(Collectors.toList())
+        );
+
+        return professeur;
+    }
     public Professeurs posterProfesseur(Professeurs professeur) {
         return dozerMapperBean.map(
                 this.daoAccessorService.getRepository(ProfesseursRepository.class)
