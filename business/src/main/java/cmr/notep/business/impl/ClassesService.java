@@ -94,4 +94,20 @@ public class ClassesService implements ClassesApi {
         log.info("Récupération de l'historique d'activation pour la classe: {}", idClasse);
         return histoActivationBusiness.obtenirHistoriqueParClasse(idClasse);
     }
+
+    @Override
+    public Classes assignerModerator(@NonNull String idClasse, @NonNull String idModerator) {
+        log.info("Attribution du modérateur {} à la classe {}", idModerator, idClasse);
+        Classes classeMAJ = classesBusiness.assignerModerator(idClasse, idModerator);
+        log.info("Modérateur assigné avec succès à la classe: {}", idClasse);
+        return classeMAJ;
+    }
+
+    @Override
+    public Classes retirerModerator(@NonNull String idClasse) {
+        log.info("Retrait du modérateur de la classe: {}", idClasse);
+        Classes classeMAJ = classesBusiness.retirerModerator(idClasse);
+        log.info("Modérateur retiré avec succès de la classe: {}", idClasse);
+        return classeMAJ;
+    }
 }
