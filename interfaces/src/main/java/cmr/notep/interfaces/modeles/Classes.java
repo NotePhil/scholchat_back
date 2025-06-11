@@ -14,6 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NONE)
 public class Classes implements Serializable {
     private String id;
     private String nom;
@@ -26,8 +27,7 @@ public class Classes implements Serializable {
     private EtatClasse etat;
     private Etablissement etablissement;
 
-    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
-    @JsonIdentityReference(alwaysAsId = true)
+    // Remove moderatorId and keep only moderator object
     private Professeurs moderator;
 
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")

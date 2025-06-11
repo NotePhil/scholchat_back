@@ -78,4 +78,21 @@ public interface ClassesApi {
     @ResponseStatus(HttpStatus.OK)
     List<HistoActivation> obtenirHistoriqueActivation(
             @PathVariable("idClasse") String idClasse);
+
+    // NEW MODERATOR MANAGEMENT ENDPOINTS
+    @PatchMapping(
+            path = "/{idClasse}/moderator/{idModerator}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    Classes assignerModerator(
+            @PathVariable("idClasse") String idClasse,
+            @PathVariable("idModerator") String idModerator);
+
+    @DeleteMapping(
+            path = "/{idClasse}/moderator",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    Classes retirerModerator(@PathVariable("idClasse") String idClasse);
 }
