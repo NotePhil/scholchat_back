@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+
 @RestController
 @Slf4j
 public class MessagesService implements MessagesApi {
@@ -20,7 +21,7 @@ public class MessagesService implements MessagesApi {
     @Override
     public Messages avoirMessage(@NonNull String idMessage) {
         log.info("Récupération du message avec ID: {}", idMessage);
-            return messagesBusiness.avoirMessage(idMessage);
+        return messagesBusiness.avoirMessage(idMessage);
     }
 
     @Override

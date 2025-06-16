@@ -5,6 +5,7 @@ import cmr.notep.business.business.HistoActivationBusiness;
 import cmr.notep.interfaces.api.ClassesApi;
 import cmr.notep.interfaces.modeles.Classes;
 import cmr.notep.interfaces.modeles.HistoActivation;
+import cmr.notep.interfaces.modeles.Utilisateurs;
 import cmr.notep.modele.DroitPublication;
 import cmr.notep.modele.EtatClasse;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,14 @@ public class ClassesService implements ClassesApi {
         log.info("Classe créée avec succès: {}", nouvelleClasse.getId());
         return nouvelleClasse;
     }
+
+//    @Override
+//    public List<Utilisateurs> obtenirUtilisateursParClasse(String idClasse) {
+//        log.info("Récupération des utilisateurs pour la classe avec l'ID: {}", idClasse);
+//        List<Utilisateurs> utilisateurs = classesBusiness.obtenirUtilisateursParClasse(idClasse);
+//        log.info("Récupération de {} utilisateurs pour la classe avec l'ID: {}", utilisateurs.size(), idClasse);
+//        return utilisateurs;
+//    }
 
     @Override
     public Classes modifierClasse(@NonNull String idClasse, @NonNull Classes classeModifiee) {

@@ -64,4 +64,13 @@ public class UtilisateursEntity {
             inverseJoinColumns = @JoinColumn(name = "message_id"))
     @Mapping("messagesRecus")
     private List<MessagesEntity> messagesRecusEntities;
+
+
+    @ManyToMany
+    @JoinTable(
+            name = "classe_eleves",
+            joinColumns = @JoinColumn(name = "eleve_id"),
+            inverseJoinColumns = @JoinColumn(name = "classe_id")
+    )
+    private List<ClassesEntity> classes;
 }

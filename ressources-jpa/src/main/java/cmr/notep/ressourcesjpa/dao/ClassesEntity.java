@@ -71,4 +71,7 @@ public class ClassesEntity {
 
     @OneToMany(mappedBy = "classe")
     private List<HistoActivationEntity> activationHistory = new ArrayList<>();
+
+    @ManyToMany(mappedBy = "classes")
+    private List<UtilisateursEntity> users;
 }

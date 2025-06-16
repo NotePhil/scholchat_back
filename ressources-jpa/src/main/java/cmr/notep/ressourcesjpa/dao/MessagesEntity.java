@@ -7,7 +7,6 @@ import lombok.Setter;
 import org.dozer.Mapping;
 
 import java.util.List;
-
 @Setter
 @Getter
 @Entity
@@ -29,7 +28,19 @@ public class MessagesEntity {
     @JoinColumn(name = "expediteur_id")
     @Mapping("expediteur")
     private UtilisateursEntity expediteurEntity;
-    @ManyToMany(mappedBy = "messagesRecusEntities")
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "recevoir",
+            joinColumns = @JoinColumn(name = "message_id"),
+            inverseJoinColumns = @JoinColumn(name = "utilisateur_id")
+    )
     @Mapping("destinataires")
     private List<UtilisateursEntity> destinatairesEntities;
+
+    @ElementCollection
+    @CollectionTable(name = "message_classe_ids", joinColumns = @JoinColumn(name = "message_id"))
+    @Column(name = "classe_id")
+    private List<String> classeIds;
+
 }

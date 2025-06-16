@@ -165,23 +165,68 @@ public class UtilisateursBusiness {
         return mapUtilisateursEntityToModele(updatedEntity);
     }
 
-    private static Utilisateurs mapUtilisateursEntityToModele(UtilisateursEntity utilisateurEntity) {
-        if(utilisateurEntity instanceof ProfesseursEntity)
-            return dozerMapperBean.map(utilisateurEntity, Professeurs.class);
-        else if(utilisateurEntity instanceof ElevesEntity)
-            return dozerMapperBean.map(utilisateurEntity, Eleves.class);
-        else if (utilisateurEntity instanceof RepetiteursEntity)
-            return dozerMapperBean.map(utilisateurEntity, Repetiteurs.class);
-        else if (utilisateurEntity instanceof ParentsEntity)
-            return dozerMapperBean.map(utilisateurEntity, Parents.class);
-        else
-            return dozerMapperBean.map(utilisateurEntity, Utilisateurs.class);
+    public static Utilisateurs mapUtilisateursEntityToModele(UtilisateursEntity utilisateurEntity) {
+        Utilisateurs utilisateur;
+        if (utilisateurEntity instanceof ProfesseursEntity) {
+            utilisateur = dozerMapperBean.map(utilisateurEntity, Professeurs.class);
+        } else if (utilisateurEntity instanceof ElevesEntity) {
+            utilisateur = dozerMapperBean.map(utilisateurEntity, Eleves.class);
+        } else if (utilisateurEntity instanceof RepetiteursEntity) {
+            utilisateur = dozerMapperBean.map(utilisateurEntity, Repetiteurs.class);
+        } else if (utilisateurEntity instanceof ParentsEntity) {
+            utilisateur = dozerMapperBean.map(utilisateurEntity, Parents.class);
+        } else {
+            utilisateur = dozerMapperBean.map(utilisateurEntity, Utilisateurs.class);
+        }
+
+        // Custom mapping for messagesEnvoyer and messagesRecus
+        if (utilisateurEntity.getMessagesEnvoyerEntities() != null) {
+            List<Messages> messagesEnvoyer = utilisateurEntity.getMessagesEnvoyerEntities().stream()
+                    .map(messageEntity -> {
+                        Messages message = new Messages();
+                        message.setId(messageEntity.getId());
+                        message.setContenu(messageEntity.getContenu());
+                        message.setDateCreation(messageEntity.getDateCreation());
+                        message.setDateModification(messageEntity.getDateModification());
+                        message.setEtat(messageEntity.getEtat());
+                        message.setExpediteur(messageEntity.getExpediteurEntity().getId());
+                        message.setDestinataires(messageEntity.getDestinatairesEntities().stream()
+                                .map(UtilisateursEntity::getId)
+                                .collect(Collectors.toList()));
+                        message.setClasseIds(messageEntity.getClasseIds());
+                        return message;
+                    })
+                    .collect(Collectors.toList());
+            utilisateur.setMessagesEnvoyer(messagesEnvoyer);
+        }
+
+        if (utilisateurEntity.getMessagesRecusEntities() != null) {
+            List<Messages> messagesRecus = utilisateurEntity.getMessagesRecusEntities().stream()
+                    .map(messageEntity -> {
+                        Messages message = new Messages();
+                        message.setId(messageEntity.getId());
+                        message.setContenu(messageEntity.getContenu());
+                        message.setDateCreation(messageEntity.getDateCreation());
+                        message.setDateModification(messageEntity.getDateModification());
+                        message.setEtat(messageEntity.getEtat());
+                        message.setExpediteur(messageEntity.getExpediteurEntity().getId());
+                        message.setDestinataires(messageEntity.getDestinatairesEntities().stream()
+                                .map(UtilisateursEntity::getId)
+                                .collect(Collectors.toList()));
+                        message.setClasseIds(messageEntity.getClasseIds());
+                        return message;
+                    })
+                    .collect(Collectors.toList());
+            utilisateur.setMessagesRecus(messagesRecus);
+        }
+
+        return utilisateur;
     }
 
-    private static UtilisateursEntity mapUtilisateursModeleToEntity(IUtilisateurs utilisateur) {
-        if(utilisateur instanceof Professeurs)
+    public static UtilisateursEntity mapUtilisateursModeleToEntity(IUtilisateurs utilisateur) {
+        if (utilisateur instanceof Professeurs)
             return dozerMapperBean.map(utilisateur, ProfesseursEntity.class);
-        else if(utilisateur instanceof Eleves)
+        else if (utilisateur instanceof Eleves)
             return dozerMapperBean.map(utilisateur, ElevesEntity.class);
         else if (utilisateur instanceof Repetiteurs)
             return dozerMapperBean.map(utilisateur, RepetiteursEntity.class);
@@ -190,6 +235,7 @@ public class UtilisateursBusiness {
         else
             return dozerMapperBean.map(utilisateur, UtilisateursEntity.class);
     }
+
 
     @Transactional(readOnly = true)
     public Utilisateurs avoirUtilisateurParEmail(String email) {

@@ -2,27 +2,15 @@ package cmr.notep.business.business;
 
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
-import cmr.notep.interfaces.modeles.Classes;
-import cmr.notep.interfaces.modeles.Eleves;
-import cmr.notep.interfaces.modeles.Parents;
-import cmr.notep.interfaces.modeles.Professeurs;
+import cmr.notep.interfaces.modeles.*;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
-import cmr.notep.ressourcesjpa.dao.ClassesEntity;
-import cmr.notep.ressourcesjpa.dao.ElevesEntity;
-import cmr.notep.ressourcesjpa.dao.EtablissementEntity;
-import cmr.notep.ressourcesjpa.dao.ParentsEntity;
-import cmr.notep.ressourcesjpa.dao.ProfesseursEntity;
-import cmr.notep.ressourcesjpa.repository.ClassesRepository;
-import cmr.notep.ressourcesjpa.repository.ElevesRepository;
-import cmr.notep.ressourcesjpa.repository.EtablissementRepository;
-import cmr.notep.ressourcesjpa.repository.ParentsRepository;
-import cmr.notep.ressourcesjpa.repository.ProfesseursRepository;
+import cmr.notep.ressourcesjpa.dao.*;
+import cmr.notep.ressourcesjpa.repository.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import cmr.notep.modele.DroitPublication;
 import cmr.notep.modele.EtatClasse;
-import cmr.notep.ressourcesjpa.dao.HistoActivationEntity;
-import cmr.notep.ressourcesjpa.repository.HistoActivationRepository;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -352,4 +340,21 @@ public class ClassesBusiness {
     private String generateActivationCode() {
         return String.format("%06d", new java.util.Random().nextInt(999999));
     }
+
+//    public List<Utilisateurs> obtenirUtilisateursParClasse(String idClasse) {
+//        log.info("Fetching users for class with ID: {}", idClasse);
+//
+//        // Fetch all users belonging to the class
+//        List<UtilisateursEntity> utilisateursEntities = daoAccessorService.getRepository(UtilisateursRepository.class)
+//                .findByClasseId(idClasse);
+//
+//        log.info("Number of users retrieved: {}", utilisateursEntities.size());
+//
+//        // Map the entities to the Utilisateurs model
+//        return utilisateursEntities.stream()
+//                .map(UtilisateursBusiness::mapUtilisateursEntityToModele)
+//                .collect(Collectors.toList());
+//    }
+
+
 }
