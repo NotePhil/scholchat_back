@@ -4,8 +4,10 @@ import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.interfaces.modeles.Messages;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
+import cmr.notep.ressourcesjpa.dao.ClassesEntity;
 import cmr.notep.ressourcesjpa.dao.MessagesEntity;
 import cmr.notep.ressourcesjpa.dao.UtilisateursEntity;
+import cmr.notep.ressourcesjpa.repository.ClassesRepository;
 import cmr.notep.ressourcesjpa.repository.MessagesRepository;
 import cmr.notep.ressourcesjpa.repository.UtilisateursRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -39,30 +41,57 @@ public class MessagesBusiness {
                 .findById(message.getExpediteur())
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Expediteur introuvable avec l'ID: " + message.getExpediteur()));
 
-        // Fetch destinataires by IDs if they are provided
-        List<UtilisateursEntity> destinatairesEntities = new ArrayList<>();
-        if (message.getDestinataires() != null && !message.getDestinataires().isEmpty()) {
-            destinatairesEntities = message.getDestinataires().stream()
-                    .map(destinataireId -> daoAccessorService.getRepository(UtilisateursRepository.class)
-                            .findById(destinataireId)
-                            .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Destinataire introuvable avec l'ID: " + destinataireId)))
-                    .collect(Collectors.toList());
-        }
-
-        // Create and save the message
+        // Create message entity
         MessagesEntity messageEntity = new MessagesEntity();
         messageEntity.setContenu(message.getContenu());
         messageEntity.setDateCreation(message.getDateCreation());
         messageEntity.setDateModification(message.getDateModification());
         messageEntity.setEtat(message.getEtat());
         messageEntity.setExpediteurEntity(expediteurEntity);
-        messageEntity.setDestinatairesEntities(destinatairesEntities);
         messageEntity.setClasseIds(message.getClasseIds());
 
-        // Save the message first to generate ID
+        // Get all users from the classes (students, parents, moderator)
+        List<UtilisateursEntity> destinatairesEntities = new ArrayList<>();
+        if (message.getClasseIds() != null && !message.getClasseIds().isEmpty()) {
+            ClassesRepository classesRepository = daoAccessorService.getRepository(ClassesRepository.class);
+            for (String classeId : message.getClasseIds()) {
+                ClassesEntity classe = classesRepository.findById(classeId)
+                        .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe introuvable avec l'ID: " + classeId));
+
+                // Add students
+                if (classe.getElevesEntities() != null) {
+                    destinatairesEntities.addAll(classe.getElevesEntities());
+                }
+
+                // Add parents
+                if (classe.getParentsEntities() != null) {
+                    destinatairesEntities.addAll(classe.getParentsEntities());
+                }
+
+                // Add moderator if exists
+                if (classe.getModerator() != null) {
+                    destinatairesEntities.add(classe.getModerator());
+                }
+            }
+        }
+
+        // Add explicit recipients if provided
+        if (message.getDestinataires() != null && !message.getDestinataires().isEmpty()) {
+            for (String destinataireId : message.getDestinataires()) {
+                UtilisateursEntity destinataire = daoAccessorService.getRepository(UtilisateursRepository.class)
+                        .findById(destinataireId)
+                        .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Destinataire introuvable avec l'ID: " + destinataireId));
+                if (!destinatairesEntities.contains(destinataire)) {
+                    destinatairesEntities.add(destinataire);
+                }
+            }
+        }
+
+        // Set recipients and save message
+        messageEntity.setDestinatairesEntities(destinatairesEntities);
         MessagesEntity savedMessageEntity = daoAccessorService.getRepository(MessagesRepository.class).save(messageEntity);
 
-        // Update the recipients' messagesRecusEntities
+        // Update recipients' messagesRecusEntities
         for (UtilisateursEntity destinataire : destinatairesEntities) {
             if (destinataire.getMessagesRecusEntities() == null) {
                 destinataire.setMessagesRecusEntities(new ArrayList<>());
@@ -72,19 +101,22 @@ public class MessagesBusiness {
         }
 
         // Map back to Messages
-        Messages savedMessage = new Messages();
-        savedMessage.setId(savedMessageEntity.getId());
-        savedMessage.setContenu(savedMessageEntity.getContenu());
-        savedMessage.setDateCreation(savedMessageEntity.getDateCreation());
-        savedMessage.setDateModification(savedMessageEntity.getDateModification());
-        savedMessage.setEtat(savedMessageEntity.getEtat());
-        savedMessage.setExpediteur(savedMessageEntity.getExpediteurEntity().getId());
-        savedMessage.setDestinataires(savedMessageEntity.getDestinatairesEntities().stream()
+        return mapMessageEntityToModel(savedMessageEntity);
+    }
+
+    private Messages mapMessageEntityToModel(MessagesEntity entity) {
+        Messages message = new Messages();
+        message.setId(entity.getId());
+        message.setContenu(entity.getContenu());
+        message.setDateCreation(entity.getDateCreation());
+        message.setDateModification(entity.getDateModification());
+        message.setEtat(entity.getEtat());
+        message.setExpediteur(entity.getExpediteurEntity().getId());
+        message.setDestinataires(entity.getDestinatairesEntities().stream()
                 .map(UtilisateursEntity::getId)
                 .collect(Collectors.toList()));
-        savedMessage.setClasseIds(savedMessageEntity.getClasseIds());
-
-        return savedMessage;
+        message.setClasseIds(entity.getClasseIds());
+        return message;
     }
 
     public List<Messages> avoirToutMessages() {

@@ -1,5 +1,6 @@
 package cmr.notep.business.business;
 import cmr.notep.business.services.*;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
@@ -65,10 +66,17 @@ public class UtilisateursBusiness {
 
     public Utilisateurs avoirUtilisateur(String idUtilisateur) {
         log.info("Récupération de l'utilisateur avec ID: {}", idUtilisateur);
-        return mapUtilisateursEntityToModele(daoAccessorService.getRepository(UtilisateursRepository.class)
+        UtilisateursEntity utilisateurEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .findById(idUtilisateur)
-                .orElseThrow(()-> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable avec l'ID: " + idUtilisateur)));
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable avec l'ID: " + idUtilisateur));
+
+        // Force loading of received messages
+        Hibernate.initialize(utilisateurEntity.getMessagesEnvoyerEntities());
+        Hibernate.initialize(utilisateurEntity.getMessagesRecusEntities());
+
+        return mapUtilisateursEntityToModele(utilisateurEntity);
     }
+
 
     public Utilisateurs posterUtilisateur(Utilisateurs utilisateur) {
         log.info("Création d'un nouvel utilisateur");
@@ -222,6 +230,7 @@ public class UtilisateursBusiness {
 
         return utilisateur;
     }
+
 
     public static UtilisateursEntity mapUtilisateursModeleToEntity(IUtilisateurs utilisateur) {
         if (utilisateur instanceof Professeurs)
