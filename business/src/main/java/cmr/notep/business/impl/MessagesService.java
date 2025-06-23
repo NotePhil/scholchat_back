@@ -19,20 +19,26 @@ public class MessagesService implements MessagesApi {
     }
 
     @Override
-    public Messages avoirMessage(@NonNull String idMessage) {
-        log.info("Récupération du message avec ID: {}", idMessage);
-        return messagesBusiness.avoirMessage(idMessage);
+    public Messages getMessage(@NonNull String idMessage) {
+        log.info("Fetching message with ID: {}", idMessage);
+        return messagesBusiness.getMessage(idMessage);
     }
 
     @Override
-    public List<Messages> avoirToutMessages() {
-        log.info("Récupération de tous les messages");
-        return messagesBusiness.avoirToutMessages();
+    public List<Messages> getAllMessages() {
+        log.info("Fetching all messages");
+        return messagesBusiness.getAllMessages();
     }
 
     @Override
-    public Messages posterMessage(@NonNull Messages message) {
-        log.info("Envoi d'un nouveau message");
-        return messagesBusiness.posterMessage(message);
+    public Messages sendIndividualMessage(@NonNull Messages message) {
+        log.info("Sending individual message");
+        return messagesBusiness.sendIndividualMessage(message);
+    }
+
+    @Override
+    public Messages sendClassGroupMessage(@NonNull Messages message) {
+        log.info("Sending class group message");
+        return messagesBusiness.sendClassGroupMessage(message);
     }
 }

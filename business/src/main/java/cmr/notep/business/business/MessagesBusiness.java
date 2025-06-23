@@ -4,18 +4,18 @@ import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.interfaces.modeles.Messages;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
+import cmr.notep.ressourcesjpa.dao.AccederEntity;
 import cmr.notep.ressourcesjpa.dao.ClassesEntity;
 import cmr.notep.ressourcesjpa.dao.MessagesEntity;
 import cmr.notep.ressourcesjpa.dao.UtilisateursEntity;
+import cmr.notep.ressourcesjpa.repository.AccederRepository;
 import cmr.notep.ressourcesjpa.repository.ClassesRepository;
 import cmr.notep.ressourcesjpa.repository.MessagesRepository;
 import cmr.notep.ressourcesjpa.repository.UtilisateursRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
@@ -29,125 +29,160 @@ public class MessagesBusiness {
         this.daoAccessorService = daoAccessorService;
     }
 
-    public Messages avoirMessage(String idMessage) {
-        return dozerMapperBean.map(daoAccessorService.getRepository(MessagesRepository.class)
+    // Get single message
+    public Messages getMessage(String idMessage) {
+        MessagesEntity entity = daoAccessorService.getRepository(MessagesRepository.class)
                 .findById(idMessage)
-                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Message introuvable avec l'ID: " + idMessage)), Messages.class);
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND,
+                        "Message not found with ID: " + idMessage));
+
+        return dozerMapperBean.map(entity, Messages.class);
     }
 
-    public Messages posterMessage(Messages message) {
-        // Fetch expediteur by ID
-        UtilisateursEntity expediteurEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
-                .findById(message.getExpediteur())
-                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Expediteur introuvable avec l'ID: " + message.getExpediteur()));
+    // Send message to individual users
+    public Messages sendIndividualMessage(Messages message) throws SchoolException {
+        log.info("Sending individual message from user {}", message.getExpediteur());
 
-        // Create message entity
-        MessagesEntity messageEntity = new MessagesEntity();
-        messageEntity.setContenu(message.getContenu());
-        messageEntity.setDateCreation(message.getDateCreation());
-        messageEntity.setDateModification(message.getDateModification());
-        messageEntity.setEtat(message.getEtat());
-        messageEntity.setExpediteurEntity(expediteurEntity);
-        messageEntity.setClasseIds(message.getClasseIds());
+        // Validate sender exists
+        UtilisateursEntity sender = validateUserExists(message.getExpediteur());
 
-        // Get all users from the classes (students, parents, moderator)
-        List<UtilisateursEntity> destinatairesEntities = new ArrayList<>();
-        if (message.getClasseIds() != null && !message.getClasseIds().isEmpty()) {
-            ClassesRepository classesRepository = daoAccessorService.getRepository(ClassesRepository.class);
-            for (String classeId : message.getClasseIds()) {
-                ClassesEntity classe = classesRepository.findById(classeId)
-                        .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe introuvable avec l'ID: " + classeId));
+        // Validate all recipients exist
+        List<UtilisateursEntity> recipients = validateRecipientsExist(message.getDestinataires());
 
-                // Add students
-                if (classe.getElevesEntities() != null) {
-                    destinatairesEntities.addAll(classe.getElevesEntities());
-                }
+        // Create and save message
+        MessagesEntity messageEntity = createMessageEntity(message, sender, recipients);
+        MessagesEntity savedMessage = saveMessage(messageEntity);
 
-                // Add parents
-                if (classe.getParentsEntities() != null) {
-                    destinatairesEntities.addAll(classe.getParentsEntities());
-                }
+        // Update recipients
+        updateRecipients(recipients, savedMessage);
 
-                // Add moderator if exists
-                if (classe.getModerator() != null) {
-                    destinatairesEntities.add(classe.getModerator());
-                }
-            }
-        }
-
-        // Add explicit recipients if provided
-        if (message.getDestinataires() != null && !message.getDestinataires().isEmpty()) {
-            for (String destinataireId : message.getDestinataires()) {
-                UtilisateursEntity destinataire = daoAccessorService.getRepository(UtilisateursRepository.class)
-                        .findById(destinataireId)
-                        .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Destinataire introuvable avec l'ID: " + destinataireId));
-                if (!destinatairesEntities.contains(destinataire)) {
-                    destinatairesEntities.add(destinataire);
-                }
-            }
-        }
-
-        // Set recipients and save message
-        messageEntity.setDestinatairesEntities(destinatairesEntities);
-        MessagesEntity savedMessageEntity = daoAccessorService.getRepository(MessagesRepository.class).save(messageEntity);
-
-        // Update recipients' messagesRecusEntities
-        for (UtilisateursEntity destinataire : destinatairesEntities) {
-            if (destinataire.getMessagesRecusEntities() == null) {
-                destinataire.setMessagesRecusEntities(new ArrayList<>());
-            }
-            destinataire.getMessagesRecusEntities().add(savedMessageEntity);
-            daoAccessorService.getRepository(UtilisateursRepository.class).save(destinataire);
-        }
-
-        // Map back to Messages
-        return mapMessageEntityToModel(savedMessageEntity);
+        log.info("Individual message sent successfully with ID: {}", savedMessage.getId());
+        return dozerMapperBean.map(savedMessage, Messages.class);
     }
 
-    private Messages mapMessageEntityToModel(MessagesEntity entity) {
-        Messages message = new Messages();
-        message.setId(entity.getId());
-        message.setContenu(entity.getContenu());
-        message.setDateCreation(entity.getDateCreation());
-        message.setDateModification(entity.getDateModification());
-        message.setEtat(entity.getEtat());
-        message.setExpediteur(entity.getExpediteurEntity().getId());
-        message.setDestinataires(entity.getDestinatairesEntities().stream()
-                .map(UtilisateursEntity::getId)
-                .collect(Collectors.toList()));
-        message.setClasseIds(entity.getClasseIds());
-        return message;
+    // Send message to class groups
+    public Messages sendClassGroupMessage(Messages message) throws SchoolException {
+        log.info("Sending class group message from user {}", message.getExpediteur());
+
+        // Validate sender exists
+        UtilisateursEntity sender = validateUserExists(message.getExpediteur());
+
+        // Verify sender has access to all classes they're trying to message
+        verifySenderHasAccessToClasses(message.getExpediteur(), message.getClasseIds());
+
+        // Get all recipients from classes
+        List<UtilisateursEntity> recipients = getClassRecipients(message.getExpediteur(), message.getClasseIds());
+
+        // Create and save message
+        MessagesEntity messageEntity = createMessageEntity(message, sender, recipients);
+        MessagesEntity savedMessage = saveMessage(messageEntity);
+
+        // Update recipients
+        updateRecipients(recipients, savedMessage);
+
+        log.info("Class group message sent successfully with ID: {}", savedMessage.getId());
+        return dozerMapperBean.map(savedMessage, Messages.class);
     }
 
-    public List<Messages> avoirToutMessages() {
+    // Get all messages
+    public List<Messages> getAllMessages() {
         return daoAccessorService.getRepository(MessagesRepository.class).findAll()
                 .stream()
-                .map(msg -> {
-                    Messages message = new Messages();
-                    message.setId(msg.getId());
-                    message.setContenu(msg.getContenu());
-                    message.setDateCreation(msg.getDateCreation());
-                    message.setDateModification(msg.getDateModification());
-                    message.setEtat(msg.getEtat());
-                    message.setExpediteur(msg.getExpediteurEntity().getId());
-
-                    // Log destinatairesEntities
-                    List<String> destinatairesIds = msg.getDestinatairesEntities() != null ?
-                            msg.getDestinatairesEntities().stream()
-                                    .map(UtilisateursEntity::getId)
-                                    .collect(Collectors.toList()) : Collections.emptyList();
-                    log.info("Destinataires IDs for message {}: {}", msg.getId(), destinatairesIds);
-                    message.setDestinataires(destinatairesIds);
-
-                    // Log classeIds
-                    List<String> classeIds = msg.getClasseIds() != null ?
-                            msg.getClasseIds() : Collections.emptyList();
-                    log.info("Classe IDs for message {}: {}", msg.getId(), classeIds);
-                    message.setClasseIds(classeIds);
-
-                    return message;
-                })
+                .map(entity -> dozerMapperBean.map(entity, Messages.class))
                 .collect(Collectors.toList());
     }
 
+    // Helper methods
+    private UtilisateursEntity validateUserExists(String userId) throws SchoolException {
+        return daoAccessorService.getRepository(UtilisateursRepository.class)
+                .findById(userId)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND,
+                        "User not found with ID: " + userId));
+    }
+
+    private List<UtilisateursEntity> validateRecipientsExist(List<String> recipientIds) throws SchoolException {
+        if (recipientIds == null || recipientIds.isEmpty()) {
+            throw new SchoolException(SchoolErrorCode.NOT_FOUND,
+                    "At least one recipient is required for individual messaging");
+        }
+
+        List<UtilisateursEntity> recipients = new ArrayList<>();
+        for (String recipientId : recipientIds) {
+            recipients.add(validateUserExists(recipientId));
+        }
+        return recipients;
+    }
+
+    private void verifySenderHasAccessToClasses(String senderId, List<String> classeIds) throws SchoolException {
+        if (classeIds == null || classeIds.isEmpty()) {
+            throw new SchoolException(SchoolErrorCode.NOT_FOUND,
+                    "At least one class ID is required for group messaging");
+        }
+
+        AccederRepository accederRepository = daoAccessorService.getRepository(AccederRepository.class);
+        for (String classeId : classeIds) {
+            if (!accederRepository.existsByUtilisateurIdAndClasseId(senderId, classeId)) {
+                throw new SchoolException(SchoolErrorCode.FORBIDDEN,
+                        "Sender doesn't have access to class " + classeId);
+            }
+        }
+    }
+
+    private List<UtilisateursEntity> getClassRecipients(String senderId, List<String> classeIds) {
+        Set<UtilisateursEntity> recipients = new HashSet<>();
+        AccederRepository accederRepository = daoAccessorService.getRepository(AccederRepository.class);
+
+        for (String classeId : classeIds) {
+            List<AccederEntity> accessList = accederRepository.findByClasseId(classeId);
+            accessList.forEach(access -> {
+                if (!access.getUtilisateurId().equals(senderId)) {
+                    recipients.add(access.getUtilisateur());
+                }
+            });
+        }
+
+        return new ArrayList<>(recipients);
+    }
+
+    private MessagesEntity createMessageEntity(Messages message, UtilisateursEntity sender, List<UtilisateursEntity> recipients) {
+        MessagesEntity entity = new MessagesEntity();
+        entity.setId(message.getId());
+        entity.setContenu(message.getContenu());
+        entity.setDateCreation(message.getDateCreation());
+        entity.setDateModification(message.getDateModification());
+        entity.setEtat(message.getEtat());
+        entity.setExpediteurEntity(sender);
+        entity.setDestinatairesEntities(recipients);
+
+        // Map the list of String IDs to a list of ClassesEntity
+        List<ClassesEntity> classesEntities = message.getClasseIds().stream()
+                .map(classeId -> {
+                    ClassesEntity classe = new ClassesEntity();
+                    classe.setId(classeId);
+                    return classe;
+                })
+                .collect(Collectors.toList());
+
+        entity.setClasseIds(classesEntities);
+
+        return entity;
+    }
+
+
+
+    private MessagesEntity saveMessage(MessagesEntity messageEntity) {
+        return daoAccessorService.getRepository(MessagesRepository.class).save(messageEntity);
+    }
+
+    private void updateRecipients(List<UtilisateursEntity> recipients, MessagesEntity message) {
+        UtilisateursRepository utilisateursRepository = daoAccessorService.getRepository(UtilisateursRepository.class);
+
+        for (UtilisateursEntity recipient : recipients) {
+            if (recipient.getMessagesRecusEntities() == null) {
+                recipient.setMessagesRecusEntities(new ArrayList<>());
+            }
+            recipient.getMessagesRecusEntities().add(message);
+            utilisateursRepository.save(recipient);
+        }
+    }
 }

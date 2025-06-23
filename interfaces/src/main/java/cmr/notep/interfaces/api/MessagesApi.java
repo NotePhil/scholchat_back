@@ -13,16 +13,24 @@ public interface MessagesApi {
             path = "/{idMessage}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    Messages avoirMessage(@NonNull @PathVariable(name ="idMessage") String idMessage);
+    Messages getMessage(@NonNull @PathVariable(name ="idMessage") String idMessage);
 
     @GetMapping(
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    List<Messages> avoirToutMessages();
+    List<Messages> getAllMessages();
 
     @PostMapping(
+            path = "/individual",
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    Messages posterMessage(@NonNull @RequestBody Messages message);
+    Messages sendIndividualMessage(@NonNull @RequestBody Messages message);
+
+    @PostMapping(
+            path = "/group",
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    Messages sendClassGroupMessage(@NonNull @RequestBody Messages message);
 }

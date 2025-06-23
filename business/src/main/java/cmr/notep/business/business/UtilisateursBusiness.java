@@ -201,7 +201,10 @@ public class UtilisateursBusiness {
                         message.setDestinataires(messageEntity.getDestinatairesEntities().stream()
                                 .map(UtilisateursEntity::getId)
                                 .collect(Collectors.toList()));
-                        message.setClasseIds(messageEntity.getClasseIds());
+                        // Ensure classeIds is a list of String IDs
+                        message.setClasseIds(messageEntity.getClasseIds().stream()
+                                .map(ClassesEntity::getId)
+                                .collect(Collectors.toList()));
                         return message;
                     })
                     .collect(Collectors.toList());
@@ -221,7 +224,10 @@ public class UtilisateursBusiness {
                         message.setDestinataires(messageEntity.getDestinatairesEntities().stream()
                                 .map(UtilisateursEntity::getId)
                                 .collect(Collectors.toList()));
-                        message.setClasseIds(messageEntity.getClasseIds());
+                        // Ensure classeIds is a list of String IDs
+                        message.setClasseIds(messageEntity.getClasseIds().stream()
+                                .map(ClassesEntity::getId)
+                                .collect(Collectors.toList()));
                         return message;
                     })
                     .collect(Collectors.toList());

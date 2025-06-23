@@ -28,13 +28,13 @@ public interface UtilisateursRepository extends JpaRepository<UtilisateursEntity
     @Query("SELECT u FROM UtilisateursEntity u JOIN u.classes c WHERE c.id = :classeId")
     List<UtilisateursEntity> findByClasseId(@Param("classeId") String classeId);
 
-    @Query("SELECT DISTINCT m FROM MessagesEntity m " +
-            "JOIN m.destinatairesEntities d " +
-            "WHERE d.id = :userId " +
-            "OR EXISTS (SELECT 1 FROM m.classeIds cid JOIN ClassesEntity c ON c.id = cid " +
-            "WHERE :userId IN (SELECT e.id FROM c.elevesEntities e) " +
-            "OR :userId IN (SELECT p.id FROM c.parentsEntities p) " +
-            "OR :userId = c.moderator.id)")
-    List<MessagesEntity> findMessagesForUser(@Param("userId") String userId);
+//    @Query("SELECT DISTINCT m FROM MessagesEntity m " +
+//            "JOIN m.destinatairesEntities d " +
+//            "WHERE d.id = :userId " +
+//            "OR EXISTS (SELECT 1 FROM m.classeIds cid JOIN ClassesEntity c ON c.id = cid " +
+//            "WHERE :userId IN (SELECT e.id FROM c.elevesEntities e) " +
+//            "OR :userId IN (SELECT p.id FROM c.parentsEntities p) " +
+//            "OR :userId = c.moderator.id)")
+//    List<MessagesEntity> findMessagesForUser(@Param("userId") String userId);
 
 }

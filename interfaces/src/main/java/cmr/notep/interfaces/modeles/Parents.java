@@ -10,9 +10,9 @@ import java.util.List;
 @Data
 @SuperBuilder
 @AllArgsConstructor
-@NoArgsConstructor
+//@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Parents extends Utilisateurs {
-    List<Classes> classes;
+//    List<Classes> classes;
 }
