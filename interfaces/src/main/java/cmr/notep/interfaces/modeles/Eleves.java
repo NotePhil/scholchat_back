@@ -13,5 +13,5 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 public class Eleves extends Utilisateurs {
     private String niveau;
-    private List<Classes> classes;
+//    private List<Classes> classes;
 }

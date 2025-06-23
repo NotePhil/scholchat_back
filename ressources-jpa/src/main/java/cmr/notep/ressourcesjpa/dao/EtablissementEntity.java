@@ -1,6 +1,6 @@
 package cmr.notep.ressourcesjpa.dao;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -44,6 +44,6 @@ public class EtablissementEntity {
     private boolean codeUnique;
 
     @OneToMany(mappedBy = "etablissement", cascade = CascadeType.ALL)
-    @JsonIgnore
+
     private List<ClassesEntity> classes = new ArrayList<>();
 }

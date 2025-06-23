@@ -21,8 +21,8 @@ public enum SchoolErrorCode {
     FORBIDDEN("Access forbidden"),
     DUPLICATE_RESOURCE("Resource already exists"),
     OPERATION_FAILURE("Operation failed"),
-    INIT_ERROR("Initialization error");
-
+    INIT_ERROR("Initialization error"),
+    ALREADY_EXISTS("Existing entity");
     private final String message;
 
     SchoolErrorCode(String message) {

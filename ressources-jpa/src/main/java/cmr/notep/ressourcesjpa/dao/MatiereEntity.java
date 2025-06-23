@@ -1,7 +1,7 @@
 package cmr.notep.ressourcesjpa.dao;
 
 import cmr.notep.modele.EtatMatieres;
-import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -38,12 +38,12 @@ public class MatiereEntity {
     @JoinTable(name = "classe_matieres", schema = "ressources",
             joinColumns = @JoinColumn(name = "matiere_id"),
             inverseJoinColumns = @JoinColumn(name = "classe_id"))
-    @JsonBackReference
+
     @Mapping("classes")
     private List<ClassesEntity> classes = new ArrayList<>();
 
     @ManyToMany(mappedBy = "matieresEnseignees")
-    @JsonBackReference
+
     @Mapping("professeurs")
     private List<ProfesseursEntity> professeurs = new ArrayList<>();
 

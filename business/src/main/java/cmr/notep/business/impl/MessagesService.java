@@ -2,10 +2,11 @@ package cmr.notep.business.impl;
 
 import cmr.notep.business.business.MessagesBusiness;
 import cmr.notep.interfaces.api.MessagesApi;
+import cmr.notep.interfaces.dto.ClassMessageDto;
 import cmr.notep.interfaces.modeles.Messages;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -34,5 +35,18 @@ public class MessagesService implements MessagesApi {
     public Messages posterMessage(@NonNull Messages message) {
         log.info("Envoi d'un nouveau message");
         return messagesBusiness.posterMessage(message);
+    }
+
+    @Override
+    public Messages posterMessageClasse(ClassMessageDto classMessageDto, @RequestHeader("X-User-Id") String senderId) {
+        log.info("Envoi d'un message de classe par l'utilisateur {}", senderId);
+        return messagesBusiness.posterMessageClasse(classMessageDto, senderId);
+    }
+
+    @Override
+    public Messages posterMessageMultiClasses(ClassMessageDto classMessageDto,
+                                              @RequestHeader("X-User-Id") String senderId) {
+        log.info("Envoi d'un message à plusieurs classes par l'utilisateur {}", senderId);
+        return messagesBusiness.posterMessageMultiClasses(classMessageDto, senderId);
     }
 }
