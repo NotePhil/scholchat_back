@@ -1,6 +1,5 @@
 package cmr.notep.interfaces.api;
 
-import cmr.notep.interfaces.dto.ClassMessageDto;
 import cmr.notep.interfaces.modeles.Messages;
 import lombok.NonNull;
 import org.springframework.http.MediaType;
@@ -26,23 +25,4 @@ public interface MessagesApi {
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
     Messages posterMessage(@NonNull @RequestBody Messages message);
-
-    @PostMapping(
-            path = "/class",
-            produces = MediaType.APPLICATION_JSON_VALUE,
-            consumes = MediaType.APPLICATION_JSON_VALUE
-    )
-    Messages posterMessageClasse(
-            @RequestBody ClassMessageDto classMessageDto,
-            @RequestHeader("X-User-Id") String senderId);
-
-    @PostMapping(
-            path = "/multi-class",
-            produces = MediaType.APPLICATION_JSON_VALUE,
-            consumes = MediaType.APPLICATION_JSON_VALUE
-    )
-    Messages posterMessageMultiClasses(
-            @RequestBody ClassMessageDto classMessageDto,
-            @RequestHeader("X-User-Id") String senderId);
-
 }
