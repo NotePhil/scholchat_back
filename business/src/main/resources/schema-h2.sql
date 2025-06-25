@@ -200,11 +200,12 @@ CREATE TABLE IF NOT EXISTS ressources.refresh_tokens (
 CREATE TABLE IF NOT EXISTS ressources.histo_activation (
     id UUID PRIMARY KEY,
     classe_id UUID NOT NULL,
-    professeur_id VARCHAR(255) NOT NULL,
+    utilisateur_id VARCHAR(255) NOT NULL,
     date_activation TIMESTAMP NOT NULL,
     date_desactivation TIMESTAMP,
     motif_desactivation VARCHAR(255),
-    is_active BOOLEAN NOT NULL
+    is_active BOOLEAN NOT NULL,
+    etat_classe VARCHAR(50)
 );
 
 
@@ -257,8 +258,6 @@ ALTER TABLE ressources.interactions DROP CONSTRAINT IF EXISTS fk_interaction_use
 ALTER TABLE ressources.interactions DROP CONSTRAINT IF EXISTS fk_interaction_event;
 ALTER TABLE ressources.interactions DROP CONSTRAINT IF EXISTS fk_interaction_message;
 ALTER TABLE ressources.refresh_tokens DROP CONSTRAINT IF EXISTS fk_refresh_tokens_utilisateur;
-ALTER TABLE ressources.histo_activation DROP CONSTRAINT IF EXISTS fk_histo_classe;
-ALTER TABLE ressources.histo_activation DROP CONSTRAINT IF EXISTS fk_histo_professeur;
 
 -- Now add the constraints
 ALTER TABLE ressources.professeurs
@@ -380,17 +379,6 @@ ALTER TABLE ressources.interactions
 ALTER TABLE ressources.refresh_tokens
     ADD CONSTRAINT fk_refresh_tokens_utilisateur
     FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id) ON DELETE CASCADE;
-
-ALTER TABLE ressources.histo_activation
-    ADD CONSTRAINT fk_histo_classe
-    FOREIGN KEY (classe_id) REFERENCES ressources.classes(id);
-
-ALTER TABLE ressources.histo_activation
-    ADD CONSTRAINT fk_histo_professeur
-    FOREIGN KEY (professeur_id) REFERENCES ressources.professeurs(professeurs_id);
-ALTER TABLE ressources.acceder
-    ADD CONSTRAINT fk_acceder_utilisateur
-        FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id);
 
 ALTER TABLE ressources.acceder
     ADD CONSTRAINT fk_acceder_classe

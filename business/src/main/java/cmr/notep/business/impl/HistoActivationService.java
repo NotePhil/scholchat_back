@@ -3,6 +3,7 @@ package cmr.notep.business.impl;
 import cmr.notep.business.business.HistoActivationBusiness;
 import cmr.notep.interfaces.api.HistoActivationApi;
 import cmr.notep.interfaces.modeles.HistoActivation;
+import cmr.notep.modele.EtatClasse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
@@ -14,7 +15,6 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 public class HistoActivationService implements HistoActivationApi {
-
     private final HistoActivationBusiness histoActivationBusiness;
 
     @Override
@@ -36,14 +36,20 @@ public class HistoActivationService implements HistoActivationApi {
     }
 
     @Override
-    public List<HistoActivation> obtenirHistoriqueParProfesseur(@NonNull String professeurId) {
-        log.info("Récupération de l'historique d'activation pour le professeur: {}", professeurId);
-        return histoActivationBusiness.obtenirHistoriqueParProfesseur(professeurId);
+    public List<HistoActivation> obtenirHistoriqueParUtilisateur(@NonNull String utilisateurId) {
+        log.info("Récupération de l'historique d'activation pour l'utilisateur: {}", utilisateurId);
+        return histoActivationBusiness.obtenirHistoriqueParUtilisateur(utilisateurId);
     }
 
     @Override
     public List<HistoActivation> obtenirActivationsActives() {
         log.info("Récupération des activations actives");
         return histoActivationBusiness.obtenirActivationsActives();
+    }
+
+    @Override
+    public List<HistoActivation> obtenirParEtatClasse(EtatClasse etatClasse) {
+        log.info("Récupération des activations par état de classe: {}", etatClasse);
+        return histoActivationBusiness.obtenirParEtatClasse(etatClasse);
     }
 }
