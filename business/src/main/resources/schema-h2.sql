@@ -207,6 +207,21 @@ CREATE TABLE IF NOT EXISTS ressources.histo_activation (
     is_active BOOLEAN NOT NULL
 );
 
+
+CREATE TABLE IF NOT EXISTS ressources.message_classes (
+                                                          message_id VARCHAR(255) NOT NULL,
+    classe_id UUID NOT NULL,
+    PRIMARY KEY (message_id, classe_id),
+    CONSTRAINT fk_message_classes_message FOREIGN KEY (message_id) REFERENCES ressources.messages(id),
+    CONSTRAINT fk_message_classes_classe FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
+    );
+CREATE TABLE IF NOT EXISTS ressources.acceder (
+                                                  utilisateur_id VARCHAR(255) NOT NULL,
+    classe_id UUID NOT NULL,
+    date_acces TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (utilisateur_id, classe_id)
+    );
 -- Re-enable foreign key checks
 SET REFERENTIAL_INTEGRITY TRUE;
 
@@ -373,6 +388,13 @@ ALTER TABLE ressources.histo_activation
 ALTER TABLE ressources.histo_activation
     ADD CONSTRAINT fk_histo_professeur
     FOREIGN KEY (professeur_id) REFERENCES ressources.professeurs(professeurs_id);
+ALTER TABLE ressources.acceder
+    ADD CONSTRAINT fk_acceder_utilisateur
+        FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id);
+
+ALTER TABLE ressources.acceder
+    ADD CONSTRAINT fk_acceder_classe
+        FOREIGN KEY (classe_id) REFERENCES ressources.classes(id);
 
 -- Create indexes (only once)
 CREATE INDEX IF NOT EXISTS idx_classes_etat ON ressources.classes(etat);
@@ -380,3 +402,5 @@ CREATE INDEX IF NOT EXISTS idx_classes_moderator ON ressources.classes(moderator
 CREATE INDEX IF NOT EXISTS idx_prof_moderated_classes ON ressources.professeur_classes_moderees(professeur_id);
 CREATE INDEX IF NOT EXISTS idx_classe_etablissement ON ressources.classes(etablissement_id);
 CREATE INDEX IF NOT EXISTS idx_utilisateur_email ON ressources.utilisateurs(email);
+CREATE INDEX IF NOT EXISTS idx_acceder_classe ON ressources.acceder(classe_id);
+CREATE INDEX IF NOT EXISTS idx_acceder_utilisateur ON ressources.acceder(utilisateur_id);

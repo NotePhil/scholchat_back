@@ -341,20 +341,7 @@ public class ClassesBusiness {
         return String.format("%06d", new java.util.Random().nextInt(999999));
     }
 
-//    public List<Utilisateurs> obtenirUtilisateursParClasse(String idClasse) {
-//        log.info("Fetching users for class with ID: {}", idClasse);
-//
-//        // Fetch all users belonging to the class
-//        List<UtilisateursEntity> utilisateursEntities = daoAccessorService.getRepository(UtilisateursRepository.class)
-//                .findByClasseId(idClasse);
-//
-//        log.info("Number of users retrieved: {}", utilisateursEntities.size());
-//
-//        // Map the entities to the Utilisateurs model
-//        return utilisateursEntities.stream()
-//                .map(UtilisateursBusiness::mapUtilisateursEntityToModele)
-//                .collect(Collectors.toList());
-//    }
+
 
 
 }

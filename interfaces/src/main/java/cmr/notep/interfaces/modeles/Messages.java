@@ -21,5 +21,4 @@ public class Messages implements Serializable {
     private String etat;
     private Utilisateurs expediteur;
     private List<Utilisateurs> destinataires;
-    private Classes classe;
 }

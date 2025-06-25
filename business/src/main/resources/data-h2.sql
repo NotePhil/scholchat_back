@@ -1,21 +1,29 @@
--- First insert users
 INSERT INTO ressources.utilisateurs (id, nom, prenom, email, passeaccess, telephone, adresse, activation_token, etat, is_admin) VALUES
+-- Add admin user
 ('550e8400-e29b-41d4-a716-446655440999', 'Admin', 'Super', 'admin@example.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456777', 'Admin Office', 'pepe', 'ACTIVE', TRUE),
-('660e8400-e29b-41d4-a716-446655440999', 'Test', 'Professor', 'kemogneprince06@yahoo.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456789', 'Test Address', 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJST0xFX0FETUlOIl0sInN1YiI6ImFkbWluQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQ0OTY3MzM1LCJleHAiOjE3NDQ5NjgyMzV9.NVeY4KP8KAM2Nh80NaFXYEJ4__ceTFOPQPe_pGryMQw', 'AWAITING_VALIDATION', FALSE),
-('550e8400-e29b-41d4-a716-446655440000', 'Dupont', 'Jean', 'jean.dupont@example.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456789', '123 Rue de Paris', 'abc123activationcode1', 'ACTIVE', FALSE),
-('550e8400-e29b-41d4-a716-446655440001', 'Martin', 'Marie', 'marie.martin@example.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456788', '456 Avenue de Lyon', 'abc123activationcode2', 'ACTIVE', FALSE),
-('550e8400-e29b-41d4-a716-446655440002', 'Durand', 'Pierre', 'pierre.durand@example.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456787', '789 Boulevard de Nice', 'abc123activationcode3', 'ACTIVE', FALSE),
-('550e8400-e29b-41d4-a716-446655440003', 'Lefevre', 'Sophie', 'sophie.lefevre@example.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456786', '101 Rue de Marseille', 'abc123activationcode4', 'ACTIVE', FALSE),
-('550e8400-e29b-41d4-a716-446655440004', 'Durand', 'Paul', 'paul.durand@example.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456785', '111 Rue de Lille', 'abc123activationcode5', 'ACTIVE', FALSE),
-('550e8400-e29b-41d4-a716-446655440007', 'Marie', 'Dupont', 'marie.dupont@example.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456789', '123 Rue de Paris', 'abc123activationcode6', 'ACTIVE', FALSE),
-('550e8400-e29b-41d4-a716-446655440008', 'Lucas', 'Martin', 'lucas.martin@example.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456788', '456 Avenue de Lyon', 'abc123activationcode7', 'ACTIVE', FALSE),
-('550e8400-e29b-41d4-a716-446655440009', 'Isabelle', 'Lefevre', 'isabelle.lefevre@example.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456787', '789 Boulevard de Nice', 'abc123activationcode8', 'ACTIVE', FALSE),
-('550e8400-e29b-41d4-a716-446655440010', 'Paul', 'Durand', 'paul.durand@example.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456786', '111 Rue de Lille', 'abc123activationcode9', 'ACTIVE', FALSE),
-('550e8400-e29b-41d4-a716-446655440200', 'Parent A', 'FirstNameA', 'parenta@example.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456780', 'AddressA', 'abc123activationcode10', 'ACTIVE', FALSE),
-('550e8400-e29b-41d4-a716-446655440201', 'Parent B', 'FirstNameB', 'parentb@example.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456781', 'AddressB', 'abc123activationcode11', 'ACTIVE', FALSE),
-('550e8400-e29b-41d4-a716-446655440300', 'Eleve A', 'Jean', 'jean.elevea@example.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456700', '10 Rue des Écoles', 'abc123activationcode12', 'ACTIVE', FALSE),
-('550e8400-e29b-41d4-a716-446655440301', 'Eleve B', 'Marie', 'marie.eleveb@example.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456701', '20 Rue des Lycées', 'abc123activationcode13', 'ACTIVE', FALSE),
-('550e8400-e29b-41d4-a716-446655440302', 'Eleve C', 'Paul', 'paul.elevec@example.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456702', '30 Boulevard Université', 'abc123activationcode14', 'ACTIVE', FALSE);
+
+
+-- Regular users (existing data)
+('550e8400-e29b-41d4-a716-446655440000', 'Dupont', 'Jean', 'jean.dupont@example.com', 'password123', '0123456789', '123 Rue de Paris', 'abc123activationcode1', 'ACTIVE', FALSE),
+('550e8400-e29b-41d4-a716-446655440001', 'Martin', 'Marie', 'marie.martin@example.com', 'password123', '0123456788', '456 Avenue de Lyon', 'abc123activationcode2', 'ACTIVE', FALSE),
+('550e8400-e29b-41d4-a716-446655440002', 'Durand', 'Pierre', 'pierre.durand@example.com', 'password123', '0123456787', '789 Boulevard de Nice', 'abc123activationcode3', 'ACTIVE', FALSE),
+('550e8400-e29b-41d4-a716-446655440003', 'Lefevre', 'Sophie', 'sophie.lefevre@example.com', 'password123', '0123456786', '101 Rue de Marseille', 'abc123activationcode4', 'ACTIVE', FALSE),
+('550e8400-e29b-41d4-a716-446655440004', 'Durand', 'Paul', 'paul.durand@example.com', 'password123', '0123456785', '111 Rue de Lille', 'abc123activationcode5', 'ACTIVE', FALSE),
+('550e8400-e29b-41d4-a716-446655440007', 'Marie', 'Dupont', 'marie.dupont@example.com', 'password123', '0123456789', '123 Rue de Paris', 'abc123activationcode6', 'ACTIVE', FALSE),
+('550e8400-e29b-41d4-a716-446655440008', 'Lucas', 'Martin', 'lucas.martin@example.com', 'password123', '0123456788', '456 Avenue de Lyon', 'abc123activationcode7', 'ACTIVE', FALSE),
+('550e8400-e29b-41d4-a716-446655440009', 'Isabelle', 'Lefevre', 'isabelle.lefevre@example.com', 'password123', '0123456787', '789 Boulevard de Nice', 'abc123activationcode8', 'ACTIVE', FALSE),
+('550e8400-e29b-41d4-a716-446655440010', 'Paul', 'Durand', 'paul.durand@example.com', 'password123', '0123456786', '111 Rue de Lille', 'abc123activationcode9', 'ACTIVE', FALSE),
+('550e8400-e29b-41d4-a716-446655440200', 'Parent A', 'FirstNameA', 'parenta@example.com', 'password123', '0123456780', 'AddressA', 'abc123activationcode10', 'ACTIVE', FALSE),
+('550e8400-e29b-41d4-a716-446655440201', 'Parent B', 'FirstNameB', 'parentb@example.com', 'password123', '0123456781', 'AddressB', 'abc123activationcode11', 'ACTIVE', FALSE),
+('550e8400-e29b-41d4-a716-446655440300', 'Eleve A', 'Jean', 'jean.elevea@example.com', 'password123', '0123456700', '10 Rue des Écoles', 'abc123activationcode12', 'ACTIVE', FALSE),
+('550e8400-e29b-41d4-a716-446655440301', 'Eleve B', 'Marie', 'marie.eleveb@example.com', 'password123', '0123456701', '20 Rue des Lycées', 'abc123activationcode13', 'ACTIVE', FALSE),
+('550e8400-e29b-41d4-a716-446655440302', 'Eleve C', 'Paul', 'paul.elevec@example.com', 'password123', '0123456702', '30 Boulevard Université', 'abc123activationcode14', 'ACTIVE', FALSE);
+-- Insert data into messages
+
+
+-- Add test professor with your email
+INSERT INTO ressources.utilisateurs (id, nom, prenom, email, passeaccess, telephone, adresse, activation_token, etat, is_admin) VALUES
+    ('660e8400-e29b-41d4-a716-446655440999', 'Test', 'Professor', 'ulrichkamsu48@gmail.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456789', 'Test Address', 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJST0xFX0FETUlOIl0sInN1YiI6ImFkbWluQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQ0OTY3MzM1LCJleHAiOjE3NDQ5NjgyMzV9.NVeY4KP8KAM2Nh80NaFXYEJ4__ceTFOPQPe_pGryMQw', 'AWAITING_VALIDATION', FALSE);
 
 -- Insert schools
 INSERT INTO ressources.etablissements (id, nom, localisation, pays, email, telephone, option_envoi_mail_classe, option_token_general, code_unique) VALUES
@@ -175,3 +183,20 @@ VALUES ('550e8400-e29b-41d4-a716-446655445000', '550e8400-e29b-41d4-a716-4466554
 ('550e8400-e29b-41d4-a716-446655445004', '550e8400-e29b-41d4-a716-446655440404', '550e8400-e29b-41d4-a716-446655440007', '2024-11-20 08:00:00', FALSE),
 ('550e8400-e29b-41d4-a716-446655445005', '550e8400-e29b-41d4-a716-446655440405', '550e8400-e29b-41d4-a716-446655440008', '2024-11-21 09:00:00', FALSE),
 ('660e8400-e29b-41d4-a716-446655445999', '550e8400-e29b-41d4-a716-446655440400', '660e8400-e29b-41d4-a716-446655440999', '2024-12-01 09:00:00', TRUE);
+
+
+INSERT INTO ressources.acceder (utilisateur_id, classe_id, date_acces) VALUES
+                                                                           -- Students in Class A
+                                                                           ('550e8400-e29b-41d4-a716-446655440300', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00'),
+                                                                           ('550e8400-e29b-41d4-a716-446655440301', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00'),
+
+                                                                           -- Students in Class B
+                                                                           ('550e8400-e29b-41d4-a716-446655440302', '550e8400-e29b-41d4-a716-446655440401', '2024-01-01 09:00:00'),
+
+                                                                           -- Parents with access to classes
+                                                                           ('550e8400-e29b-41d4-a716-446655440200', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00'), -- Parent A to Class A
+                                                                           ('550e8400-e29b-41d4-a716-446655440201', '550e8400-e29b-41d4-a716-446655440401', '2024-01-01 09:00:00'), -- Parent B to Class B
+
+                                                                           -- Professors moderating classes automatically have access
+                                                                           ('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00'), -- Professor Marie Dupont to Class A
+                                                                           ('550e8400-e29b-41d4-a716-446655440008', '550e8400-e29b-41d4-a716-446655440401', '2024-01-01 09:00:00'); -- Professor Lucas Martin to Class B

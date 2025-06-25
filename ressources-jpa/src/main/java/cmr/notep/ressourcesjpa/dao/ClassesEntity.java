@@ -52,7 +52,8 @@ public class ClassesEntity {
     @Mapping("moderator")
     private ProfesseursEntity moderator;
 
-
+    @ManyToMany(mappedBy = "classes")
+    private List<MessagesEntity> messages;
 
     @OneToMany(mappedBy = "classe")
     private List<CanalEntity> canaux = new ArrayList<>();

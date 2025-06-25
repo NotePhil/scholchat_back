@@ -1,12 +1,12 @@
 package cmr.notep.ressourcesjpa.dao;
 
-
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.dozer.Mapping;
 
 import java.util.List;
+
 @Setter
 @Getter
 @Entity
@@ -16,20 +16,25 @@ public class MessagesEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", nullable = false, updatable = false, columnDefinition = "UUID")
     private String id;
+
     @Column(name = "contenu")
     private String contenu;
+
     @Column(name = "datecreation")
     private String dateCreation;
+
     @Column(name = "datemodification")
     private String dateModification;
+
     @Column(name = "etat")
     private String etat;
+
     @ManyToOne
     @JoinColumn(name = "expediteur_id")
     @Mapping("expediteur")
     private UtilisateursEntity expediteurEntity;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.EAGER) // Changed to EAGER loading
     @JoinTable(
             name = "recevoir",
             joinColumns = @JoinColumn(name = "message_id"),
@@ -38,9 +43,12 @@ public class MessagesEntity {
     @Mapping("destinataires")
     private List<UtilisateursEntity> destinatairesEntities;
 
-    @ElementCollection
-    @CollectionTable(name = "message_classe_ids", joinColumns = @JoinColumn(name = "message_id"))
-    @Column(name = "classe_id")
-    private List<String> classeIds;
-
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "message_classes",
+            schema = "ressources",
+            joinColumns = @JoinColumn(name = "message_id"),
+            inverseJoinColumns = @JoinColumn(name = "classe_id")
+    )
+    private List<ClassesEntity> classes;
 }

@@ -1,12 +1,12 @@
 package cmr.notep.business.impl;
 
 import cmr.notep.business.business.MessagesBusiness;
+import cmr.notep.interfaces.dto.GroupMessageDto;
 import cmr.notep.interfaces.api.MessagesApi;
-import cmr.notep.interfaces.dto.ClassMessageDto;
 import cmr.notep.interfaces.modeles.Messages;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -38,15 +38,8 @@ public class MessagesService implements MessagesApi {
     }
 
     @Override
-    public Messages posterMessageClasse(ClassMessageDto classMessageDto, @RequestHeader("X-User-Id") String senderId) {
-        log.info("Envoi d'un message de classe par l'utilisateur {}", senderId);
-        return messagesBusiness.posterMessageClasse(classMessageDto, senderId);
-    }
-
-    @Override
-    public Messages posterMessageMultiClasses(ClassMessageDto classMessageDto,
-                                              @RequestHeader("X-User-Id") String senderId) {
-        log.info("Envoi d'un message à plusieurs classes par l'utilisateur {}", senderId);
-        return messagesBusiness.posterMessageMultiClasses(classMessageDto, senderId);
+    public Messages posterMessageGroupe(@NonNull GroupMessageDto groupMessageDto) {
+        log.info("Envoi d'un message de groupe à la classe {}", groupMessageDto.getClassId());
+        return messagesBusiness.posterMessageGroupe(groupMessageDto);
     }
 }
