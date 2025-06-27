@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Accès à la classe confirmé</title>
+    <style>
+        /* Similar styling to your existing email templates */
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="header">
+        <h1>Accès à la classe confirmé</h1>
+    </div>
+    <div class="content">
+        <p>Bonjour <span th:text="${user.prenom + ' ' + user.nom}"></span>,</p>
+
+        <p>Votre demande d'accès à la classe <strong th:text="${classe.nom}"></strong> a été approuvée.</p>
+
+        <p>Vous pouvez maintenant accéder à toutes les fonctionnalités de cette classe.</p>
+
+
+    </div>
+    <div class="footer">
+        <p>© 2025 ScholChat. Tous droits réservés.</p>
+    </div>
+</div>
+</body>
+</html>

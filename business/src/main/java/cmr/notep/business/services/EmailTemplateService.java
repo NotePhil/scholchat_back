@@ -38,6 +38,21 @@ public class EmailTemplateService {
 
         return templateEngine.process(templateName, context);
     }
+    public String generateAccessConfirmationEmail(Utilisateurs utilisateur, Classes classe) {
+        Context context = new Context();
+        context.setVariable("user", utilisateur);
+        context.setVariable("classe", classe);
+
+        return templateEngine.process("email/access-confirmation-email", context);
+    }
+
+    public String generateAccessRejectionEmail(Utilisateurs utilisateur, Classes classe, String motifRejet) {
+        Context context = new Context();
+        context.setVariable("user", utilisateur);
+        context.setVariable("classe", classe);
+        context.setVariable("motifRejet", motifRejet);
+        return templateEngine.process("email/access-rejection-email", context);
+    }
 
     public String generateRejectionEmail(ProfesseursEntity professeur, MotifRejetEntity motif, String motifSupplementaire) {
         Context context = new Context();
