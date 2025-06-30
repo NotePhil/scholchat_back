@@ -57,6 +57,7 @@ public class SecurityConfig {
                                 "/utilisateurs", "/utilisateurs/",
                                 "/auth/reset-password-request",  // Keep this public
                                 "/auth/reset-password",
+                                "/auth/registerPassword", "/auth/registerPassword/",
                                 "/auth/users/byEmail",
                                 "/auth/users/register",
                                 "/etablissements","/etablissements/**",

@@ -8,6 +8,7 @@ import cmr.notep.business.services.PasswordResetEmailService;
 import cmr.notep.business.utils.JwtUtil;
 import cmr.notep.interfaces.dto.LoginDto;
 import cmr.notep.interfaces.dto.PasswordResetRequest;
+import cmr.notep.interfaces.dto.PasswordSetupRequest;
 import cmr.notep.interfaces.modeles.*;
 import cmr.notep.modele.EtatUtilisateur;
 import lombok.RequiredArgsConstructor;
@@ -81,6 +82,27 @@ public AuthBusiness(PasswordEncoder passwordEncoder, UtilisateursBusiness utilis
 
         log.info("User registration completed successfully for: {}", utilisateur.getEmail());
         return updatedUser;
+    }
+    public void registerPassword(PasswordSetupRequest request) {
+        log.info("Processing password setup for: {}", request.getEmail());
+
+        // Get user by email
+        Utilisateurs user = utilisateursBusiness.avoirUtilisateurParEmail(request.getEmail());
+        if (user == null) {
+            throw new SchoolException(SchoolErrorCode.NOT_FOUND, "User not found");
+        }
+
+        // Validate password strength
+        validatePasswordStrength(request.getPasseAccess());
+
+        // Update password and activate account
+        user.setPasseAccess(passwordEncoder.encode(request.getPasseAccess()));
+        user.setEtat(EtatUtilisateur.ACTIVE);
+
+        // Save user
+        utilisateursBusiness.mettreUtilisateurAJour(user);
+
+        log.info("Password set successfully for: {}", request.getEmail());
     }
     /**
      * Authenticate a user and generate tokens

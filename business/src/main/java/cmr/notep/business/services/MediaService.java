@@ -6,4 +6,6 @@ public interface MediaService {
     void deleteMedia(String filePath);
     boolean doesObjectExist(String filePath);
     String getDefaultBucketName();
+    void moveMedia(String sourcePath, String destinationPath);
+    void ensureFolderExists(String folderPath);
 }

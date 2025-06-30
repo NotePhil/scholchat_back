@@ -200,3 +200,18 @@ INSERT INTO ressources.acceder (utilisateur_id, classe_id, date_acces) VALUES
                                                                            -- Professors moderating classes automatically have access
                                                                            ('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00'), -- Professor Marie Dupont to Class A
                                                                            ('550e8400-e29b-41d4-a716-446655440008', '550e8400-e29b-41d4-a716-446655440401', '2024-01-01 09:00:00'); -- Professor Lucas Martin to Class B
+INSERT INTO ressources.droit_publication
+ (utilisateur_id, classe_id, date_attribution, peut_publier, peut_moderer)
+ VALUES
+ -- Professor Marie Dupont can publish and moderate in Class A
+ ('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00', TRUE, TRUE),
+
+ -- Professor Lucas Martin can publish and moderate in Class B
+ ('550e8400-e29b-41d4-a716-446655440008', '550e8400-e29b-41d4-a716-446655440401', '2024-01-01 09:00:00', TRUE, TRUE),
+
+ -- Test Professor can publish but not moderate in Class C
+ ('660e8400-e29b-41d4-a716-446655440999', '550e8400-e29b-41d4-a716-446655440402', '2024-01-01 09:00:00', TRUE, FALSE),
+
+ -- Student Jean can publish in Class A (but not moderate)
+ ('550e8400-e29b-41d4-a716-446655440300', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00', TRUE, FALSE);
+

@@ -35,12 +35,10 @@ public class MediaServiceImpl {
         log.debug("Generating upload URL for file: {}", request.getFileName());
 
         try {
-            // Sanitize filename
             String sanitizedFileName = request.getFileName()
                     .replaceAll("\\s+", "_")
                     .replaceAll("[^a-zA-Z0-9._-]", "");
 
-            // Generate URL and save metadata
             String presignedUrl = mediaBusiness.generateUploadUrl(
                     sanitizedFileName,
                     request.getContentType(),
@@ -48,12 +46,12 @@ public class MediaServiceImpl {
                     request.getOwnerId(),
                     request.getDocumentType());
 
-            // Return response
             Map<String, String> response = new HashMap<>();
             response.put("url", presignedUrl);
             response.put("fileName", sanitizedFileName);
             response.put("mediaType", request.getMediaType());
             response.put("documentType", request.getDocumentType());
+            response.put("ownerId", request.getOwnerId());
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -71,7 +69,8 @@ public class MediaServiceImpl {
         return ResponseEntity.ok(Map.of(
                 "url", presignedUrl,
                 "fileName", media.getFileName(),
-                "contentType", media.getContentType()
+                "contentType", media.getContentType(),
+                "ownerId", media.getOwnerId()
         ));
     }
 
@@ -113,16 +112,13 @@ public class MediaServiceImpl {
         return ResponseEntity.ok(convertToDto(updatedMedia));
     }
 
-    @GetMapping("/download-by-path")
-    public ResponseEntity<Map<String, String>> generateDownloadUrlByPath(
-            @RequestParam String filePath) {
-        String presignedUrl = mediaService.generateDownloadPresignedUrl(filePath);
-        String fileName = filePath.substring(filePath.lastIndexOf('/') + 1);
-
-        return ResponseEntity.ok(Map.of(
-                "url", presignedUrl,
-                "fileName", fileName
-        ));
+    @PostMapping("/{mediaId}/transfer-ownership")
+    public ResponseEntity<MediaDto> transferOwnership(
+            @PathVariable String mediaId,
+            @RequestParam String newOwnerId) {
+        mediaBusiness.updateMediaOwner(mediaId, newOwnerId);
+        MediaEntity media = mediaBusiness.getMediaById(mediaId);
+        return ResponseEntity.ok(convertToDto(media));
     }
 
     private MediaDto convertToDto(MediaEntity entity) {
@@ -147,6 +143,7 @@ public class MediaServiceImpl {
         private String ownerId;
         private String documentType;
 
+        // Getters and setters
         public String getFileName() { return fileName; }
         public void setFileName(String fileName) { this.fileName = fileName; }
         public String getContentType() { return contentType; }
@@ -163,6 +160,7 @@ public class MediaServiceImpl {
         private Long fileSize;
         private String mediaType;
 
+        // Getters and setters
         public Long getFileSize() { return fileSize; }
         public void setFileSize(Long fileSize) { this.fileSize = fileSize; }
         public String getMediaType() { return mediaType; }
