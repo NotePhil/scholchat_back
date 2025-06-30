@@ -223,6 +223,20 @@ CREATE TABLE IF NOT EXISTS ressources.acceder (
 
     PRIMARY KEY (utilisateur_id, classe_id)
     );
+
+CREATE TABLE IF NOT EXISTS ressources.demandes_acces (
+                                                         id VARCHAR(255) PRIMARY KEY,
+    utilisateur_id VARCHAR(255) NOT NULL,
+    classe_id VARCHAR(255) NOT NULL,
+    code_activation VARCHAR(255) NOT NULL,
+    etat VARCHAR(50) NOT NULL,
+    date_demande TIMESTAMP NOT NULL,
+    date_traitement TIMESTAMP,
+    motif_rejet VARCHAR(255),
+    FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id),
+    FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
+    );
+
 -- Re-enable foreign key checks
 SET REFERENTIAL_INTEGRITY TRUE;
 

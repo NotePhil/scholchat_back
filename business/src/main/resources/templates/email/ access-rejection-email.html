@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Demande d'accès refusée</title>
+    <style>
+        /* Similar styling to your existing email templates */
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="header">
+        <h1>Demande d'accès refusée</h1>
+    </div>
+    <div class="content">
+        <p>Bonjour <span th:text="${user.prenom + ' ' + user.nom}"></span>,</p>
+
+        <p>Votre demande d'accès à la classe <strong th:text="${classe.nom}"></strong> a été refusée.</p>
+
+        <p th:if="${motifRejet != null}">Motif: <span th:text="${motifRejet}"></span></p>
+
+        <p>Si vous pensez qu'il s'agit d'une erreur, vous pouvez contacter l'administrateur de la classe.</p>
+    </div>
+    <div class="footer">
+        <p>© 2025 ScholChat. Tous droits réservés.</p>
+    </div>
+</div>
+</body>
+</html>

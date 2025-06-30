@@ -18,9 +18,21 @@ public class AccederService implements AccederApi {
     private final AccederBusiness accederBusiness;
 
     @Override
-    public void donnerAcces(String utilisateurId, String classeId) {
-        log.info("API - Donner accès à l'utilisateur {} à la classe {}", utilisateurId, classeId);
-        accederBusiness.donnerAcces(utilisateurId, classeId);
+    public void demanderAcces(String utilisateurId, String classeId, String codeActivation) {
+        log.info("API - Demande d'accès de l'utilisateur {} à la classe {}", utilisateurId, classeId);
+        accederBusiness.demanderAcces(utilisateurId, classeId, codeActivation);
+    }
+
+    @Override
+    public void validerDemandeAcces(String demandeId) {
+        log.info("API - Validation de la demande d'accès {}", demandeId);
+        accederBusiness.validerDemandeAcces(demandeId);
+    }
+
+    @Override
+    public void rejeterDemandeAcces(String demandeId, String motifRejet) {
+        log.info("API - Rejet de la demande d'accès {}", demandeId);
+        accederBusiness.rejeterDemandeAcces(demandeId, motifRejet);
     }
 
     @Override

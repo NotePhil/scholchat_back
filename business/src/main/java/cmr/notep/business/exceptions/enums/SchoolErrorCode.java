@@ -22,7 +22,8 @@ public enum SchoolErrorCode {
     DUPLICATE_RESOURCE("Resource already exists"),
     OPERATION_FAILURE("Operation failed"),
     INIT_ERROR("Initialization error"),
-    ALREADY_EXISTS("Existing entity");
+    ALREADY_EXISTS("Existing entity"),
+    INVALID_CODE("Code d'activation invalide"),;
     private final String message;
 
     SchoolErrorCode(String message) {

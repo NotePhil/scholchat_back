@@ -11,16 +11,36 @@ import java.util.List;
 @RestController
 @RequestMapping("/acceder")
 public interface AccederApi {
-
     @PostMapping(
-            path = "/{utilisateurId}/{classeId}",
+            path = "/demandes",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @ResponseStatus(HttpStatus.CREATED)
-    void donnerAcces(
-            @PathVariable String utilisateurId,
-            @PathVariable String classeId
+    void demanderAcces(
+            @RequestParam String utilisateurId,
+            @RequestParam String classeId,
+            @RequestParam String codeActivation
     );
+
+    @PostMapping(
+            path = "/demandes/{demandeId}/approve",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    void validerDemandeAcces(
+            @PathVariable String demandeId
+    );
+
+    @PostMapping(
+            path = "/demandes/{demandeId}/reject",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    void rejeterDemandeAcces(
+            @PathVariable String demandeId,
+            @RequestParam String motifRejet
+    );
+
 
     @DeleteMapping(
             path = "/{utilisateurId}/{classeId}",
