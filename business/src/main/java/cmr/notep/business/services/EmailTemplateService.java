@@ -51,7 +51,7 @@ public class EmailTemplateService {
         context.setVariable("user", utilisateur);
         context.setVariable("classe", classe);
         context.setVariable("motifRejet", motifRejet);
-        return templateEngine.process("email/access-rejection-email", context);
+        return templateEngine.process("email/access-rejection", context);
     }
 
     public String generateRejectionEmail(ProfesseursEntity professeur, MotifRejetEntity motif, String motifSupplementaire) {
