@@ -223,6 +223,20 @@ CREATE TABLE IF NOT EXISTS ressources.acceder (
 
     PRIMARY KEY (utilisateur_id, classe_id)
     );
+
+CREATE TABLE IF NOT EXISTS ressources.demandes_acces (
+                                                         id VARCHAR(255) PRIMARY KEY,
+    utilisateur_id VARCHAR(255) NOT NULL,
+    classe_id VARCHAR(255) NOT NULL,
+    code_activation VARCHAR(255) NOT NULL,
+    etat VARCHAR(50) NOT NULL,
+    date_demande TIMESTAMP NOT NULL,
+    date_traitement TIMESTAMP,
+    motif_rejet VARCHAR(255),
+    FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id),
+    FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
+    );
+
 -- Re-enable foreign key checks
 SET REFERENTIAL_INTEGRITY TRUE;
 
@@ -392,25 +406,3 @@ CREATE INDEX IF NOT EXISTS idx_classe_etablissement ON ressources.classes(etabli
 CREATE INDEX IF NOT EXISTS idx_utilisateur_email ON ressources.utilisateurs(email);
 CREATE INDEX IF NOT EXISTS idx_acceder_classe ON ressources.acceder(classe_id);
 CREATE INDEX IF NOT EXISTS idx_acceder_utilisateur ON ressources.acceder(utilisateur_id);
-
-CREATE TABLE IF NOT EXISTS ressources.droit_publication (
-    utilisateur_id VARCHAR(255) NOT NULL,
-    classe_id UUID NOT NULL,
-    date_attribution TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    peut_publier BOOLEAN DEFAULT FALSE,
-    peut_moderer BOOLEAN DEFAULT FALSE,
-
-    PRIMARY KEY (utilisateur_id, classe_id),
-
-    CONSTRAINT fk_droit_pub_utilisateur
-        FOREIGN KEY (utilisateur_id)
-        REFERENCES ressources.utilisateurs(id),
-
-    CONSTRAINT fk_droit_pub_classe
-        FOREIGN KEY (classe_id)
-        REFERENCES ressources.classes(id)
-);
-
--- Create indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_droit_pub_classe ON ressources.droit_publication(classe_id);
-CREATE INDEX IF NOT EXISTS idx_droit_pub_utilisateur ON ressources.droit_publication(utilisateur_id);
