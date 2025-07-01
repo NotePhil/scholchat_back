@@ -40,4 +40,11 @@ public interface MediaApi {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     void deleteMedia(@PathVariable String mediaId);
+
+    @PostMapping(
+            path = "/{mediaId}/transfer",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    MediaDto transferMediaOwnership(@PathVariable String mediaId,
+                                    @RequestParam String newOwnerId);
 }
