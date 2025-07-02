@@ -1,6 +1,7 @@
 package cmr.notep.interfaces.api;
 
 import cmr.notep.interfaces.modeles.Classes;
+import cmr.notep.interfaces.modeles.DemandeAccesDto;
 import cmr.notep.interfaces.modeles.Utilisateurs;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -41,7 +42,6 @@ public interface AccederApi {
             @RequestParam String motifRejet
     );
 
-
     @DeleteMapping(
             path = "/{utilisateurId}/{classeId}",
             produces = MediaType.APPLICATION_JSON_VALUE
@@ -68,5 +68,14 @@ public interface AccederApi {
     @ResponseStatus(HttpStatus.OK)
     List<Classes> obtenirClassesAccessibles(
             @PathVariable String utilisateurId
+    );
+
+    @GetMapping(
+            path = "/classes/{classeId}/demandes",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    List<DemandeAccesDto> obtenirDemandesAccesPourClasse(
+            @PathVariable String classeId
     );
 }

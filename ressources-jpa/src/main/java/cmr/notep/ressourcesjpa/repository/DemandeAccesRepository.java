@@ -14,4 +14,8 @@ public interface DemandeAccesRepository extends JpaRepository<DemandeAccesEntity
     List<DemandeAccesEntity> findByClasseId(String classeId);
     Optional<DemandeAccesEntity> findByUtilisateurIdAndClasseId(String utilisateurId, String classeId);
     List<DemandeAccesEntity> findByEtat(EtatDemandeAcces etat);
+
+    // J'ajoute ces méthodes car elles n'existaient pas
+    List<DemandeAccesEntity> findByClasseIdAndEtat(String classeId, EtatDemandeAcces etat);
+    boolean existsByUtilisateurIdAndClasseId(String utilisateurId, String classeId);
 }

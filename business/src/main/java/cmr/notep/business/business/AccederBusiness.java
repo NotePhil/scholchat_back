@@ -5,6 +5,7 @@ import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.AccessConfirmationEmailService;
 import cmr.notep.business.services.AccessRejectionEmailService;
 import cmr.notep.interfaces.modeles.Classes;
+import cmr.notep.interfaces.modeles.DemandeAccesDto;
 import cmr.notep.interfaces.modeles.Utilisateurs;
 import cmr.notep.modele.EtatClasse;
 import cmr.notep.modele.EtatDemandeAcces;
@@ -85,6 +86,7 @@ public class AccederBusiness {
         demande.setUtilisateur(utilisateur);
         demande.setClasse(classe);
         demande.setCodeActivation(codeActivation);
+        demande.setDateDemande(new Date());
         demande.setEtat(EtatDemandeAcces.EN_ATTENTE);
 
         daoAccessorService.getRepository(DemandeAccesRepository.class).save(demande);
@@ -155,7 +157,6 @@ public class AccederBusiness {
         log.info("Demande d'accès rejetée avec succès");
     }
 
-
     public void retirerAcces(String utilisateurId, String classeId) throws SchoolException {
         log.info("Retirer l'accès de l'utilisateur {} à la classe {}", utilisateurId, classeId);
 
@@ -197,6 +198,53 @@ public class AccederBusiness {
                 .findByUtilisateurId(utilisateurId)
                 .stream()
                 .map(acceder -> dozerMapperBean.map(acceder.getClasse(), Classes.class))
+                .collect(Collectors.toList());
+    }
+
+    public List<DemandeAccesDto> obtenirDemandesAccesPourClasse(String classeId) throws SchoolException {
+        log.info("Obtenir toutes les demandes d'accès pour la classe {}", classeId);
+
+        // Verify class exists
+        if (!daoAccessorService.getRepository(ClassesRepository.class).existsById(classeId)) {
+            throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe introuvable");
+        }
+
+        return daoAccessorService.getRepository(DemandeAccesRepository.class)
+                .findByClasseId(classeId)
+                .stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    private DemandeAccesDto convertToDto(DemandeAccesEntity entity) {
+        return DemandeAccesDto.builder()
+                .id(entity.getId())
+                .utilisateurId(entity.getUtilisateur().getId())
+                .utilisateurNom(entity.getUtilisateur().getNom())
+                .utilisateurPrenom(entity.getUtilisateur().getPrenom())
+                .utilisateurEmail(entity.getUtilisateur().getEmail())
+                .classeId(entity.getClasse().getId())
+                .classeNom(entity.getClasse().getNom())
+                .codeActivation(entity.getCodeActivation())
+                .etat(entity.getEtat().name())
+                .dateDemande(entity.getDateDemande())
+                .dateTraitement(entity.getDateTraitement())
+                .motifRejet(entity.getMotifRejet())
+                .build();
+    }
+
+    public List<DemandeAccesDto> obtenirDemandesAccesEnAttentePourClasse(String classeId) throws SchoolException {
+        log.info("Obtenir les demandes d'accès en attente pour la classe {}", classeId);
+
+        // Verify class exists
+        if (!daoAccessorService.getRepository(ClassesRepository.class).existsById(classeId)) {
+            throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe introuvable");
+        }
+
+        return daoAccessorService.getRepository(DemandeAccesRepository.class)
+                .findByClasseIdAndEtat(classeId, EtatDemandeAcces.EN_ATTENTE)
+                .stream()
+                .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 }

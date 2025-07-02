@@ -3,6 +3,7 @@ package cmr.notep.business.impl;
 import cmr.notep.business.business.AccederBusiness;
 import cmr.notep.interfaces.api.AccederApi;
 import cmr.notep.interfaces.modeles.Classes;
+import cmr.notep.interfaces.modeles.DemandeAccesDto;
 import cmr.notep.interfaces.modeles.Utilisateurs;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,5 +52,11 @@ public class AccederService implements AccederApi {
     public List<Classes> obtenirClassesAccessibles(String utilisateurId) {
         log.info("API - Obtenir les classes accessibles par l'utilisateur {}", utilisateurId);
         return accederBusiness.obtenirClassesAccessibles(utilisateurId);
+    }
+
+    @Override
+    public List<DemandeAccesDto> obtenirDemandesAccesPourClasse(String classeId) {
+        log.info("API - Obtenir les demandes d'accès pour la classe {}", classeId);
+        return accederBusiness.obtenirDemandesAccesPourClasse(classeId);
     }
 }
