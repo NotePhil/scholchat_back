@@ -28,7 +28,11 @@ public class UtilisateursService implements UtilisateursApi {
         log.info("Récupération de l'utilisateur avec ID: {}", idUtilisateur);
             return utilisateursBusiness.avoirUtilisateur(idUtilisateur);
     }
-
+    @Override
+    public Utilisateurs patcherUtilisateur(@NonNull String idUtilisateur, @NonNull Utilisateurs partialUpdate) {
+        log.info("Patching user with ID: {}", idUtilisateur);
+        return utilisateursBusiness.patcherUtilisateur(idUtilisateur, partialUpdate);
+    }
     @Override
     public List<Utilisateurs> avoirToutUtilisateurs() {
         log.info("Récupération de tous les utilisateurs");

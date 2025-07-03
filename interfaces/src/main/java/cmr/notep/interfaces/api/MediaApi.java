@@ -22,17 +22,7 @@ public interface MediaApi {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     MediaDto getMediaById(@PathVariable String mediaId);
-
-    @GetMapping(
-            path = "/download/{mediaId}",
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
     MediaDto generateDownloadUrl(@PathVariable String mediaId);
-
-    @GetMapping(
-            path = "/user/{userId}",
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
     List<MediaDto> getMediaByUserId(@PathVariable String userId);
 
     @DeleteMapping(
@@ -40,7 +30,11 @@ public interface MediaApi {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     void deleteMedia(@PathVariable String mediaId);
-
+    @GetMapping(
+            path = "/download-by-path",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    MediaDto generateDownloadUrlByPath(@RequestParam String filePath);
     @PostMapping(
             path = "/{mediaId}/transfer",
             produces = MediaType.APPLICATION_JSON_VALUE

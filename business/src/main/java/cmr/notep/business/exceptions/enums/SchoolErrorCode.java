@@ -23,7 +23,8 @@ public enum SchoolErrorCode {
     OPERATION_FAILURE("Operation failed"),
     INIT_ERROR("Initialization error"),
     ALREADY_EXISTS("Existing entity"),
-    INVALID_CODE("Code d'activation invalide"),;
+    INVALID_CODE("Code d'activation invalide"),
+    CONFLICT("Utilisateur existe deja");
     private final String message;
 
     SchoolErrorCode(String message) {

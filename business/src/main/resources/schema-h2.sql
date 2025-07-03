@@ -34,8 +34,8 @@ CREATE TABLE IF NOT EXISTS ressources.etablissements (
 
 CREATE TABLE IF NOT EXISTS ressources.professeurs (
     professeurs_id VARCHAR(255) NOT NULL,
-    cni_url_front VARCHAR(255) NOT NULL,
-    cni_url_back VARCHAR(255) NOT NULL,
+    cni_url_front VARCHAR(255) ,
+    cni_url_back VARCHAR(255) ,
     selfie_url VARCHAR(255),
     matricule_professeur VARCHAR(255) UNIQUE,
     PRIMARY KEY (professeurs_id)

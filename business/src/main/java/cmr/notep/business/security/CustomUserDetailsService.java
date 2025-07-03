@@ -81,7 +81,7 @@ public class CustomUserDetailsService implements UserDetailsService {
             authorities.add(new SimpleGrantedAuthority("ROLE_PROFESSOR"));
 
             // Add extra role if professor is validated
-            if (utilisateur.getEtat() == EtatUtilisateur.VALIDATED) {
+            if (utilisateur.getEtat() == EtatUtilisateur.PENDING) {
                 authorities.add(new SimpleGrantedAuthority("ROLE_VALIDATED_PROFESSOR"));
             }
         } else if (utilisateur instanceof Eleves) {

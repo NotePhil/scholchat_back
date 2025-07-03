@@ -41,6 +41,15 @@ public interface UtilisateursApi {
     Utilisateurs validerProfesseur(
             @NonNull @PathVariable(name = "professorId") String professorId
     );
+    @PatchMapping(
+            path = "/{idUtilisateur}",
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    Utilisateurs patcherUtilisateur(
+            @NonNull @PathVariable(name = "idUtilisateur") String idUtilisateur,
+            @NonNull @RequestBody Utilisateurs partialUpdate
+    );
 
     @PostMapping(
             path = "/professeurs/{professorId}/rejet",

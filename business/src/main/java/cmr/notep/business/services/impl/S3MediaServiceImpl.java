@@ -9,12 +9,10 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.*;
 
 import java.time.Duration;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -35,7 +33,7 @@ public class S3MediaServiceImpl implements MediaService {
                     .build();
 
             PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
-                    .signatureDuration(Duration.ofSeconds(s3Config.getPresignedUrlExpiry()))
+                    .signatureDuration(Duration.ofMinutes(15)) // 15 minutes expiry
                     .putObjectRequest(putObjectRequest)
                     .build();
 
@@ -56,7 +54,7 @@ public class S3MediaServiceImpl implements MediaService {
                     .build();
 
             GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-                    .signatureDuration(Duration.ofSeconds(s3Config.getPresignedUrlExpiry()))
+                    .signatureDuration(Duration.ofHours(1)) // 1 hour expiry
                     .getObjectRequest(getObjectRequest)
                     .build();
 
@@ -94,9 +92,12 @@ public class S3MediaServiceImpl implements MediaService {
 
             s3Client.headObject(headObjectRequest);
             return true;
-        } catch (Exception e) {
+        } catch (NoSuchKeyException e) {
             log.debug("File does not exist: {}", filePath);
             return false;
+        } catch (Exception e) {
+            log.error("Error checking file existence: {}", filePath, e);
+            throw new RuntimeException("Failed to check file existence", e);
         }
     }
 
@@ -108,40 +109,45 @@ public class S3MediaServiceImpl implements MediaService {
     @Override
     public void moveMedia(String sourcePath, String destinationPath) {
         try {
-            if (!doesObjectExist(sourcePath)) {
-                throw new RuntimeException("Source file does not exist: " + sourcePath);
-            }
-
-            CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
+            // First copy the object
+            CopyObjectRequest copyRequest = CopyObjectRequest.builder()
                     .sourceBucket(s3Config.getBucketName())
                     .sourceKey(sourcePath)
                     .destinationBucket(s3Config.getBucketName())
                     .destinationKey(destinationPath)
                     .build();
 
-            s3Client.copyObject(copyObjectRequest);
+            s3Client.copyObject(copyRequest);
+
+            // Then delete the original
             deleteMedia(sourcePath);
+
+            log.info("Successfully moved file from {} to {}", sourcePath, destinationPath);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to move media from " + sourcePath + " to " + destinationPath, e);
+            log.error("Error moving file from {} to {}", sourcePath, destinationPath, e);
+            throw new RuntimeException("Failed to move media", e);
         }
     }
 
     @Override
     public void ensureFolderExists(String folderPath) {
         try {
-            String normalizedPath = folderPath.endsWith("/") ? folderPath : folderPath + "/";
-            String folderMarker = normalizedPath + ".folder-marker";
+            // S3 doesn't actually have folders, but we can create a placeholder object
+            String folderKey = folderPath.endsWith("/") ? folderPath : folderPath + "/";
+            folderKey += ".keep";
 
-            if (!doesObjectExist(folderMarker)) {
-                PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+            if (!doesObjectExist(folderKey)) {
+                PutObjectRequest putRequest = PutObjectRequest.builder()
                         .bucket(s3Config.getBucketName())
-                        .key(folderMarker)
+                        .key(folderKey)
                         .build();
 
-                s3Client.putObject(putObjectRequest, RequestBody.empty());
+                s3Client.putObject(putRequest, RequestBody.fromString(""));
+                log.info("Created folder placeholder: {}", folderKey);
             }
         } catch (Exception e) {
-            throw new RuntimeException("Failed to create folder: " + folderPath, e);
+            log.error("Error ensuring folder exists: {}", folderPath, e);
+            throw new RuntimeException("Failed to create folder", e);
         }
     }
 }

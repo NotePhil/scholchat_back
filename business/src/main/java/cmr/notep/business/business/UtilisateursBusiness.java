@@ -29,6 +29,7 @@ import cmr.notep.ressourcesjpa.repository.MotifRejetRepository;
 import cmr.notep.ressourcesjpa.repository.ProfesseursRepository;
 
 
+import java.net.URI;
 import java.time.LocalDateTime;
 
 import java.util.ArrayList;
@@ -63,7 +64,105 @@ public class UtilisateursBusiness {
         this.mailService = mailService;
         this.rejectionEmailService = rejectionEmailService;
     }
+    public Utilisateurs patcherUtilisateur(String idUtilisateur, Utilisateurs partialUpdate) {
+        log.info("Patching user with ID: {}", idUtilisateur);
 
+        // 1. Fetch and validate existing user
+        UtilisateursEntity existingEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
+                .findById(idUtilisateur)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND,
+                        "Utilisateur introuvable avec l'ID: " + idUtilisateur));
+
+        // 2. Map to model for easier manipulation
+        Utilisateurs existingUser = mapUtilisateursEntityToModele(existingEntity);
+
+        // 4. Update common fields with null checks
+        updateCommonFields(existingUser, partialUpdate);
+
+        // 5. Handle type-specific updates
+        if (existingUser instanceof Professeurs && partialUpdate instanceof Professeurs) {
+            handleProfessorUpdates((Professeurs) existingUser, (Professeurs) partialUpdate);
+        } else if (existingUser instanceof Eleves && partialUpdate instanceof Eleves) {
+            handleStudentUpdates((Eleves) existingUser, (Eleves) partialUpdate);
+        }
+
+        // 6. Map back to entity and save
+        UtilisateursEntity updatedEntity = mapUtilisateursModeleToEntity(existingUser);
+        updatedEntity = daoAccessorService.getRepository(UtilisateursRepository.class).save(updatedEntity);
+
+        // 7. Return updated model
+        return mapUtilisateursEntityToModele(updatedEntity);
+    }
+
+    private void updateCommonFields(Utilisateurs existing, Utilisateurs updates) {
+        if (updates.getNom() != null && !updates.getNom().isBlank()) {
+            existing.setNom(updates.getNom().trim());
+        }
+        if (updates.getPrenom() != null && !updates.getPrenom().isBlank()) {
+            existing.setPrenom(updates.getPrenom().trim());
+        }
+        if (updates.getEmail() != null && !updates.getEmail().isBlank()) {
+            existing.setEmail(updates.getEmail().trim().toLowerCase());
+        }
+        if (updates.getTelephone() != null && !updates.getTelephone().isBlank()) {
+            existing.setTelephone(updates.getTelephone().trim());
+        }
+        if (updates.getAdresse() != null && !updates.getAdresse().isBlank()) {
+            existing.setAdresse(updates.getAdresse().trim());
+        }
+        if (updates.getEtat() != null) {
+            existing.setEtat(updates.getEtat());
+        }
+    }
+
+    private void handleProfessorUpdates(Professeurs existingProf, Professeurs updateProf) {
+        // Validate and update CNI Recto
+        if (updateProf.getCniUrlRecto() != null) {
+            validateMediaUrl(updateProf.getCniUrlRecto());
+            existingProf.setCniUrlRecto(updateProf.getCniUrlRecto());
+        }
+
+        // Validate and update CNI Verso
+        if (updateProf.getCniUrlVerso() != null) {
+            validateMediaUrl(updateProf.getCniUrlVerso());
+            existingProf.setCniUrlVerso(updateProf.getCniUrlVerso());
+        }
+
+        // Validate and update Selfie
+        if (updateProf.getSelfieUrl() != null) {
+            validateMediaUrl(updateProf.getSelfieUrl());
+            existingProf.setSelfieUrl(updateProf.getSelfieUrl());
+        }
+
+        // Update matricule if provided
+        if (updateProf.getMatriculeProfesseur() != null && !updateProf.getMatriculeProfesseur().isBlank()) {
+            existingProf.setMatriculeProfesseur(updateProf.getMatriculeProfesseur().trim());
+        }
+    }
+
+    private void handleStudentUpdates(Eleves existingEleve, Eleves updateEleve) {
+        if (updateEleve.getNiveau() != null && !updateEleve.getNiveau().isBlank()) {
+            existingEleve.setNiveau(updateEleve.getNiveau().trim());
+        }
+    }
+
+    private void validateMediaUrl(String url) {
+        if (url == null || url.isBlank()) {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "L'URL du média ne peut pas être vide");
+        }
+
+        try {
+            new URI(url).toURL(); // Validate URL format
+        } catch (Exception e) {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
+                    "L'URL du média n'est pas valide: " + url);
+        }
+
+        // Optionally verify the URL points to your Minio storage
+        if (!url.startsWith("http://localhost:9000") && !url.startsWith("https://your-minio-domain")) {
+            log.warn("Media URL points to external storage: {}", url);
+        }
+    }
     public Utilisateurs avoirUtilisateur(String idUtilisateur) {
         log.info("Récupération de l'utilisateur avec ID: {}", idUtilisateur);
         UtilisateursEntity utilisateurEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
@@ -304,7 +403,7 @@ public class UtilisateursBusiness {
         }
 
         // Change the state to 'VALIDATED'
-        userEntity.setEtat(EtatUtilisateur.VALIDATED);
+        userEntity.setEtat(EtatUtilisateur.PENDING);
 
         // Assign the 'ROLE_PROFESSOR' if not already assigned
         if (!userEntity.getAdmin()) {
