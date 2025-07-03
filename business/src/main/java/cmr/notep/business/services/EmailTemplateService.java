@@ -54,6 +54,14 @@ public class EmailTemplateService {
         return templateEngine.process("email/access-rejection", context);
     }
 
+    public String generateAwaitingValidationEmail(Utilisateurs utilisateur) {
+        Context context = new Context();
+        context.setVariable("userName", utilisateur.getNom());
+        context.setVariable("userEmail", utilisateur.getEmail());
+
+        return templateEngine.process("email/professor-awaiting-validation", context);
+    }
+
     public String generateRejectionEmail(ProfesseursEntity professeur, MotifRejetEntity motif, String motifSupplementaire) {
         Context context = new Context();
         if (professeur == null) {
