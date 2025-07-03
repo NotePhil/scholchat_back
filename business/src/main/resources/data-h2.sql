@@ -187,7 +187,7 @@ VALUES
 ('660e8400-e29b-41d4-a716-446655445999', '550e8400-e29b-41d4-a716-446655440400', '660e8400-e29b-41d4-a716-446655440999', '2024-12-01 09:00:00', NULL, TRUE, 'ACTIF', NULL);
 INSERT INTO ressources.acceder (utilisateur_id, classe_id, date_acces) VALUES
 -- Active users in active classes
-('550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00'), -- User 1 in Class A
+-- ('550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00'), -- User 1 in Class A
 ('550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440401', '2024-01-01 09:00:00'), -- User 2 in Class B
 ('550e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00'), -- User 3 in Class A
 ('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00'), -- Professor Marie Dupont to Class A
@@ -203,3 +203,19 @@ INSERT INTO ressources.demandes_acces (id, utilisateur_id, classe_id, code_activ
 
 -- Rejected request
 ('660e8400-e29b-41d4-a716-446655440003', '550e8400-e29b-41d4-a716-446655440003', '550e8400-e29b-41d4-a716-446655440401', '234567', 'REJETEE', '2024-01-01 13:00:00');
+
+
+
+-- Supprimer les demandes d'accès existantes pour les professeurs
+DELETE FROM ressources.demandes_acces
+WHERE utilisateur_id IN (
+    SELECT professeurs_id FROM ressources.professeurs
+);
+
+-- Supprimer les accès directs pour les professeurs (ils doivent passer par droits de publication)
+DELETE FROM ressources.acceder
+WHERE utilisateur_id IN (
+    SELECT professeurs_id FROM ressources.professeurs
+);
+
+

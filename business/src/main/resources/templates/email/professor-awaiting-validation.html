@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Compte en attente de validation</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #f8f9fa; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        .footer { margin-top: 20px; padding: 10px; text-align: center; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Votre compte professeur est en attente de validation</h1>
+    </div>
+    <div class="content">
+        <p>Bonjour <span th:text="${userName}"></span>,</p>
+
+        <p>Votre compte professeur a été créé avec succès et est maintenant en attente de validation par notre équipe administrative.</p>
+
+        <p>Nous examinerons votre demande dans les plus brefs délais. Vous recevrez un email une fois votre compte validé.</p>
+
+        <p>Merci pour votre patience.</p>
+
+        <p>Cordialement,<br>L'équipe ScholChat</p>
+    </div>
+    <div class="footer">
+        <p>© 2025 ScholChat. Tous droits réservés.</p>
+    </div>
+</div>
+</body>
+</html>

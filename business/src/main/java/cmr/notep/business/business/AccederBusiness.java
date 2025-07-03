@@ -11,13 +11,11 @@ import cmr.notep.modele.EtatClasse;
 import cmr.notep.modele.EtatDemandeAcces;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.*;
-import cmr.notep.ressourcesjpa.repository.AccederRepository;
-import cmr.notep.ressourcesjpa.repository.ClassesRepository;
-import cmr.notep.ressourcesjpa.repository.DemandeAccesRepository;
-import cmr.notep.ressourcesjpa.repository.UtilisateursRepository;
+import cmr.notep.ressourcesjpa.repository.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -65,6 +63,12 @@ public class AccederBusiness {
                 .findById(utilisateurId)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable"));
 
+        // Empêcher les professeurs de faire des demandes d'accès
+        if (utilisateur instanceof ProfesseursEntity) {
+            throw new SchoolException(SchoolErrorCode.INVALID_OPERATION,
+                    "Les professeurs ne peuvent pas faire de demandes d'accès. Utilisez les droits de publication.");
+        }
+
         // Check if access already exists
         if (daoAccessorService.getRepository(AccederRepository.class)
                 .existsByUtilisateurIdAndClasseId(utilisateurId, classeId)) {
@@ -105,20 +109,23 @@ public class AccederBusiness {
                     "Seules les demandes EN_ATTENTE peuvent être validées");
         }
 
-        // Grant access
-        AccederEntity acceder = new AccederEntity();
-        acceder.setUtilisateurId(demande.getUtilisateur().getId());
-        acceder.setClasseId(demande.getClasse().getId());
-        acceder.setUtilisateur(demande.getUtilisateur());
-        acceder.setClasse(demande.getClasse());
-        acceder.setDateAcces(new Date());
+        // Vérifier si l'utilisateur est un professeur
+        boolean isProfesseur = demande.getUtilisateur() instanceof ProfesseursEntity;
 
-        daoAccessorService.getRepository(AccederRepository.class).save(acceder);
+        if (!isProfesseur) {
+            // Grant access seulement pour les non-professeurs
+            AccederEntity acceder = new AccederEntity();
+            acceder.setUtilisateurId(demande.getUtilisateur().getId());
+            acceder.setClasseId(demande.getClasse().getId());
+            acceder.setUtilisateur(demande.getUtilisateur());
+            acceder.setClasse(demande.getClasse());
+            acceder.setDateAcces(new Date());
 
-        // Update request status
-        demande.setEtat(EtatDemandeAcces.APPROUVEE);
-        demande.setDateTraitement(new Date());
-        daoAccessorService.getRepository(DemandeAccesRepository.class).save(demande);
+            daoAccessorService.getRepository(AccederRepository.class).save(acceder);
+        }
+
+        // Supprimer la demande d'accès
+        daoAccessorService.getRepository(DemandeAccesRepository.class).delete(demande);
 
         // Send confirmation email
         accessConfirmationEmailService.sendConfirmationEmail(
@@ -139,6 +146,24 @@ public class AccederBusiness {
         if (demande.getEtat() != EtatDemandeAcces.EN_ATTENTE) {
             throw new SchoolException(SchoolErrorCode.INVALID_STATE,
                     "Seules les demandes EN_ATTENTE peuvent être rejetées");
+        }
+
+        // Vérifier si l'utilisateur a déjà accès (uniquement pour les non-professeurs)
+        boolean isProfesseur = demande.getUtilisateur() instanceof ProfesseursEntity;
+        boolean hasAccess = false;
+
+        if (!isProfesseur) {
+            hasAccess = daoAccessorService.getRepository(AccederRepository.class)
+                    .existsByUtilisateurIdAndClasseId(demande.getUtilisateur().getId(), demande.getClasse().getId());
+        } else {
+            // Pour les professeurs, vérifier s'ils ont des droits de publication
+            hasAccess = daoAccessorService.getRepository(DroitPublicationRepository.class)
+                    .existsByUtilisateurIdAndClasseId(demande.getUtilisateur().getId(), demande.getClasse().getId());
+        }
+
+        if (hasAccess) {
+            throw new SchoolException(SchoolErrorCode.ALREADY_EXISTS,
+                    "L'utilisateur a déjà accès à cette classe, vous ne pouvez pas rejeter la demande");
         }
 
         // Update request status
@@ -171,6 +196,39 @@ public class AccederBusiness {
         log.info("Accès retiré avec succès");
     }
 
+//    public List<Utilisateurs> obtenirUtilisateursAvecAcces(String classeId) throws SchoolException {
+//        log.info("Obtenir tous les utilisateurs ayant accès à la classe {}", classeId);
+//
+//        // Verify class exists
+//        if (!daoAccessorService.getRepository(ClassesRepository.class).existsById(classeId)) {
+//            throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe introuvable");
+//        }
+//
+//        // Récupérer les utilisateurs avec accès direct
+//        List<Utilisateurs> utilisateursAcces = daoAccessorService.getRepository(AccederRepository.class)
+//                .findByClasseId(classeId)
+//                .stream()
+//                .map(acceder -> dozerMapperBean.map(acceder.getUtilisateur(), Utilisateurs.class))
+//                .collect(Collectors.toList());
+//
+//        // Récupérer les professeurs avec droits de publication
+//        List<Utilisateurs> professeursAvecDroits = daoAccessorService.getRepository(DroitPublicationRepository.class)
+//                .findByClasseId(classeId)
+//                .stream()
+//                .map(droit -> dozerMapperBean.map(droit.getUtilisateur(), Utilisateurs.class))
+//                .collect(Collectors.toList());
+//
+//        // Fusionner les listes et supprimer les doublons
+//        List<Utilisateurs> result = new ArrayList<>();
+//        result.addAll(utilisateursAcces);
+//        result.addAll(professeursAvecDroits);
+//
+//        return result.stream()
+//                .distinct()
+//                .collect(Collectors.toList());
+//    }
+
+
     public List<Utilisateurs> obtenirUtilisateursAvecAcces(String classeId) throws SchoolException {
         log.info("Obtenir tous les utilisateurs ayant accès à la classe {}", classeId);
 
@@ -185,7 +243,6 @@ public class AccederBusiness {
                 .map(acceder -> dozerMapperBean.map(acceder.getUtilisateur(), Utilisateurs.class))
                 .collect(Collectors.toList());
     }
-
     public List<Classes> obtenirClassesAccessibles(String utilisateurId) throws SchoolException {
         log.info("Obtenir toutes les classes accessibles par l'utilisateur {}", utilisateurId);
 

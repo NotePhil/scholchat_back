@@ -47,7 +47,7 @@ public class UtilisateursBusiness {
     private final JwtUtil jwtUtil;
     private final MailServiceInterface mailService;
     private final IRejectionEmailService rejectionEmailService;
-
+    private final AwaitingValidationEmailService awaitingValidationEmailService;
 
 
     @Autowired
@@ -57,12 +57,14 @@ public class UtilisateursBusiness {
                                 ActivationEmailService activationEmailService,
                                 JwtUtil jwtUtil,
                                 MailServiceInterface mailService,
-                                IRejectionEmailService rejectionEmailService) {
+                                IRejectionEmailService rejectionEmailService,
+                                AwaitingValidationEmailService awaitingValidationEmailService) {
         this.daoAccessorService = daoAccessorService;
         this.activationEmailService = activationEmailService;
         this.jwtUtil = jwtUtil;
         this.mailService = mailService;
         this.rejectionEmailService = rejectionEmailService;
+        this.awaitingValidationEmailService = awaitingValidationEmailService;
     }
     public Utilisateurs patcherUtilisateur(String idUtilisateur, Utilisateurs partialUpdate) {
         log.info("Patching user with ID: {}", idUtilisateur);
@@ -201,11 +203,9 @@ public class UtilisateursBusiness {
         }
 
         // Set role information here:
-        // If the user is a professor, mark them as a professor and ensure they aren't an admin by default
         if (utilisateur instanceof Professeurs) {
-            userEntity.setAdmin(false);  // Professors are not admins by default, unless explicitly set
+            userEntity.setAdmin(false);
         } else {
-            // If not a professor, handle based on type and admin flag
             userEntity.setAdmin(utilisateur.isAdmin());
         }
 
@@ -213,9 +213,14 @@ public class UtilisateursBusiness {
         UtilisateursEntity savedUserEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .save(userEntity);
 
-        // Only generate token and send email for non-professor users
-        if (!(savedUserEntity instanceof ProfesseursEntity)) {
-            // Here we handle the roles based on user type and admin status
+        // Handle email sending based on user type
+        if (savedUserEntity instanceof ProfesseursEntity) {
+            // For professors in AWAITING_VALIDATION state, send awaiting validation email
+            Utilisateurs savedUtilisateur = mapUtilisateursEntityToModele(savedUserEntity);
+            awaitingValidationEmailService.sendAwaitingValidationEmail(savedUtilisateur);
+            log.info("Awaiting validation email sent for professor {}", savedUserEntity.getEmail());
+        } else {
+            // For all other users, proceed with normal activation process
             List<String> roles = new ArrayList<>();
             if (savedUserEntity.getAdmin()) {
                 roles.add("ROLE_ADMIN");
@@ -223,14 +228,15 @@ public class UtilisateursBusiness {
                 roles.add("ROLE_USER");
             }
 
-            // Add user type as a role, e.g., "ROLE_PROFESSOR", "ROLE_STUDENT", etc.
-            if (savedUserEntity instanceof ProfesseursEntity) {
-                roles.add("ROLE_PROFESSOR");
-            } else if (savedUserEntity instanceof ElevesEntity) {
+            // Add user type specific roles
+            if (savedUserEntity instanceof ElevesEntity) {
                 roles.add("ROLE_STUDENT");
+            } else if (savedUserEntity instanceof ParentsEntity) {
+                roles.add("ROLE_PARENT");
+            } else if (savedUserEntity instanceof RepetiteursEntity) {
+                roles.add("ROLE_TUTOR");
             }
 
-            // Generate token with the roles included
             String activationToken = jwtUtil.generateAccessToken(savedUserEntity.getEmail(), roles);
             savedUserEntity.setActivationToken(activationToken);
             savedUserEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
@@ -239,7 +245,7 @@ public class UtilisateursBusiness {
             // Send activation email
             Utilisateurs savedUtilisateur = mapUtilisateursEntityToModele(savedUserEntity);
             activationEmailService.sendActivationEmail(savedUtilisateur, activationToken);
-            log.info("Activation email process triggered successfully for {}", savedUserEntity.getEmail());
+            log.info("Activation email sent for user {}", savedUserEntity.getEmail());
         }
 
         // Return the saved user model

@@ -30,6 +30,16 @@ public class DroitPublicationBusiness {
     public void attribuerDroitPublication(String utilisateurId, String classeId, boolean peutPublier, boolean peutModerer) throws SchoolException {
         log.info("Attribuer droit de publication à l'utilisateur {} pour la classe {}", utilisateurId, classeId);
 
+        // Vérifier si l'utilisateur est un professeur
+        UtilisateursEntity utilisateur = daoAccessorService.getRepository(UtilisateursRepository.class)
+                .findById(utilisateurId)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable"));
+
+        if (!(utilisateur instanceof ProfesseursEntity)) {
+            throw new SchoolException(SchoolErrorCode.INVALID_OPERATION,
+                    "Seuls les professeurs peuvent avoir des droits de publication");
+        }
+
         // Vérifier si le droit existe déjà
         Optional<DroitPublicationEntity> droitExist = daoAccessorService.getRepository(DroitPublicationRepository.class)
                 .findByUtilisateurIdAndClasseId(utilisateurId, classeId);
@@ -39,11 +49,7 @@ public class DroitPublicationBusiness {
                     "L'utilisateur a déjà des droits de publication pour cette classe");
         }
 
-        // Vérifier l'existence de l'utilisateur et de la classe
-        UtilisateursEntity utilisateur = daoAccessorService.getRepository(UtilisateursRepository.class)
-                .findById(utilisateurId)
-                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable"));
-
+        // Vérifier l'existence de la classe
         ClassesEntity classe = daoAccessorService.getRepository(ClassesRepository.class)
                 .findById(classeId)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe introuvable"));
