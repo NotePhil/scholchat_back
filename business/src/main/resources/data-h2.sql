@@ -195,7 +195,7 @@ INSERT INTO ressources.acceder (utilisateur_id, classe_id, date_acces) VALUES
 -- Insert access requests
 INSERT INTO ressources.demandes_acces (id, utilisateur_id, classe_id, code_activation, etat, date_demande) VALUES
 -- Pending requests
--- ('660e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440400', '123456', 'EN_ATTENTE', '2024-01-01 10:00:00'),
+('660e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440400', '123456', 'EN_ATTENTE', '2024-01-01 10:00:00'),
 ('660e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440401', '234567', 'EN_ATTENTE', '2024-01-01 11:00:00'),
 
 -- Approved request
