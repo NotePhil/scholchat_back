@@ -408,18 +408,15 @@ public class UtilisateursBusiness {
             );
         }
 
-        // Change the state to 'VALIDATED'
+        // Change the state to 'PENDING' (not 'VALIDATED' directly)
         userEntity.setEtat(EtatUtilisateur.PENDING);
 
-        // Assign the 'ROLE_PROFESSOR' if not already assigned
-        if (!userEntity.getAdmin()) {
-            List<String> roles = new ArrayList<>();
-            roles.add("ROLE_PROFESSOR");
+        // Generate activation token with professor's email, not admin's
+        List<String> roles = new ArrayList<>();
+        roles.add("ROLE_PROFESSOR");
 
-            // Assuming `generateAccessToken` now handles roles, we pass the email and roles
-            String activationToken = jwtUtil.generateAccessToken(userEntity.getEmail(), roles);
-            userEntity.setActivationToken(activationToken);
-        }
+        String activationToken = jwtUtil.generateAccessToken(userEntity.getEmail(), roles); // Utilisez l'email du professeur ici
+        userEntity.setActivationToken(activationToken);
 
         // Save the validated professor entity
         userEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
@@ -427,11 +424,10 @@ public class UtilisateursBusiness {
 
         // Convert the entity to model and send activation email
         Utilisateurs utilisateur = mapUtilisateursEntityToModele(userEntity);
-        activationEmailService.sendActivationEmail(utilisateur, userEntity.getActivationToken());
+        activationEmailService.sendActivationEmail(utilisateur, activationToken);
 
         log.info("Professor {} validated successfully", professorId);
 
-        // Return the updated professor
         return utilisateur;
     }
 
