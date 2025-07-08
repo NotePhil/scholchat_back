@@ -59,4 +59,10 @@ public class AccederService implements AccederApi {
         log.info("API - Obtenir les demandes d'accès pour la classe {}", classeId);
         return accederBusiness.obtenirDemandesAccesPourClasse(classeId);
     }
+
+    @Override
+    public List<Utilisateurs> obtenirUtilisateursAvecAcces(List<String> classeIds) {
+        log.info("API - Obtenir les utilisateurs ayant accès aux classes {}", classeIds);
+        return accederBusiness.obtenirUtilisateursAvecAcces(classeIds);
+    }
 }

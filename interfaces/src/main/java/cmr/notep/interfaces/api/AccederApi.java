@@ -53,6 +53,15 @@ public interface AccederApi {
     );
 
     @GetMapping(
+            path = "/classes/utilisateurs",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    List<Utilisateurs> obtenirUtilisateursAvecAcces(
+            @RequestParam List<String> classeIds
+    );
+
+    @GetMapping(
             path = "/classes/{classeId}/utilisateurs",
             produces = MediaType.APPLICATION_JSON_VALUE
     )

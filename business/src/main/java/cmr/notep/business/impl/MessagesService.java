@@ -39,7 +39,14 @@ public class MessagesService implements MessagesApi {
 
     @Override
     public Messages posterMessageGroupe(@NonNull GroupMessageDto groupMessageDto) {
-        log.info("Envoi d'un message de groupe à la classe {}", groupMessageDto.getClassId());
+        log.info("Envoi d'un message de groupe aux classes {}", groupMessageDto.getClassIds());
         return messagesBusiness.posterMessageGroupe(groupMessageDto);
     }
+
+    @Override
+    public List<Messages> obtenirMessagesParUtilisateur(String utilisateurId) {
+        log.info("Obtenir tous les messages pour l'utilisateur {}", utilisateurId);
+        return messagesBusiness.obtenirMessagesParUtilisateur(utilisateurId);
+    }
+
 }

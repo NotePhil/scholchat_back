@@ -11,8 +11,10 @@ import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
@@ -49,15 +51,6 @@ public class MessagesBusiness {
     }
 
     public Messages posterMessageGroupe(GroupMessageDto groupMessageDto) {
-        // Get the class
-        ClassesEntity classe = daoAccessorService.getRepository(ClassesRepository.class)
-                .findById(groupMessageDto.getClassId())
-                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe non trouvée"));
-
-        // Get all users who have access to the class
-        List<AccederEntity> accessList = daoAccessorService.getRepository(AccederRepository.class)
-                .findByClasseId(groupMessageDto.getClassId());
-
         // Get sender
         UtilisateursEntity sender = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .findById(groupMessageDto.getSenderId())
@@ -70,14 +63,35 @@ public class MessagesBusiness {
         messageEntity.setDateCreation(new Date().toString());
         messageEntity.setEtat("envoyé");
 
-        // Set recipients (all users who have access to the class)
-        List<UtilisateursEntity> recipients = accessList.stream()
-                .map(AccederEntity::getUtilisateur)
+        // Get all classes
+        List<ClassesEntity> classes = groupMessageDto.getClassIds().stream()
+                .map(classId -> daoAccessorService.getRepository(ClassesRepository.class)
+                        .findById(classId)
+                        .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe non trouvée avec l'ID: " + classId)))
                 .collect(Collectors.toList());
-        messageEntity.setDestinatairesEntities(recipients);
 
-        // Associate with the class
-        messageEntity.setClasses(List.of(classe));
+        // Get all users who have access to the classes (excluding sender)
+        List<UtilisateursEntity> recipients = new ArrayList<>();
+        for (ClassesEntity classe : classes) {
+            List<AccederEntity> accessList = daoAccessorService.getRepository(AccederRepository.class)
+                    .findByClasseId(classe.getId().toString());
+
+            // Filter out null users and the sender
+            recipients.addAll(accessList.stream()
+                    .map(AccederEntity::getUtilisateur)
+                    .filter(Objects::nonNull) // Filter out null users
+                    .filter(user -> !user.getId().equals(sender.getId())) // Exclude sender
+                    .collect(Collectors.toList()));
+        }
+
+        // Remove duplicates (in case a user is in multiple classes)
+        recipients = recipients.stream()
+                .filter(Objects::nonNull) // Additional null check
+                .distinct()
+                .collect(Collectors.toList());
+
+        messageEntity.setDestinatairesEntities(recipients);
+        messageEntity.setClasses(classes);
 
         // Save the message
         MessagesEntity savedEntity = daoAccessorService.getRepository(MessagesRepository.class).save(messageEntity);
@@ -86,6 +100,40 @@ public class MessagesBusiness {
         savedEntity.getDestinatairesEntities().size();
 
         return dozerMapperBean.map(savedEntity, Messages.class);
+    }
+
+
+    public List<Messages> obtenirMessagesParUtilisateur(String utilisateurId) {
+        log.info("Obtenir tous les messages pour l'utilisateur {}", utilisateurId);
+
+        // Verify user exists
+        if (!daoAccessorService.getRepository(UtilisateursRepository.class).existsById(utilisateurId)) {
+            throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable");
+        }
+
+        // Get sent messages
+        List<MessagesEntity> sentMessages = daoAccessorService.getRepository(MessagesRepository.class)
+                .findByExpediteurEntityId(utilisateurId);
+
+        // Get received messages
+        List<MessagesEntity> receivedMessages = daoAccessorService.getRepository(MessagesRepository.class)
+                .findByDestinatairesEntitiesId(utilisateurId);
+
+        // Combine and map to DTO
+        List<MessagesEntity> allMessages = new ArrayList<>();
+        allMessages.addAll(sentMessages);
+        allMessages.addAll(receivedMessages);
+
+        // Force loading of recipients for each message
+        allMessages.forEach(msg -> {
+            if (msg.getDestinatairesEntities() != null) {
+                msg.getDestinatairesEntities().size();
+            }
+        });
+
+        return allMessages.stream()
+                .map(msg -> dozerMapperBean.map(msg, Messages.class))
+                .collect(Collectors.toList());
     }
 
     public List<Messages> avoirToutMessages() {

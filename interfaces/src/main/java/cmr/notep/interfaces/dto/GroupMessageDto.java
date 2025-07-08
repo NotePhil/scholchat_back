@@ -2,9 +2,11 @@ package cmr.notep.interfaces.dto;
 
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class GroupMessageDto {
-    private String classId;
+    private List<String> classIds;
     private String content;
     private String senderId;
 }

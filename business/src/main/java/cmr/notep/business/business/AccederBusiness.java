@@ -15,10 +15,7 @@ import cmr.notep.ressourcesjpa.repository.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
@@ -255,6 +252,39 @@ public class AccederBusiness {
                 .findByUtilisateurId(utilisateurId)
                 .stream()
                 .map(acceder -> dozerMapperBean.map(acceder.getClasse(), Classes.class))
+                .collect(Collectors.toList());
+    }
+
+    public List<Utilisateurs> obtenirUtilisateursAvecAcces(List<String> classeIds) throws SchoolException {
+        log.info("Obtenir les utilisateurs ayant accès aux classes {}", classeIds);
+
+        if (classeIds == null || classeIds.isEmpty()) {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Au moins un ID de classe doit être fourni");
+        }
+
+        // Verify all classes exist
+        for (String classeId : classeIds) {
+            if (!daoAccessorService.getRepository(ClassesRepository.class).existsById(classeId)) {
+                throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe introuvable avec l'ID: " + classeId);
+            }
+        }
+
+        // Get users with access to any of the classes
+        List<AccederEntity> accesList = daoAccessorService.getRepository(AccederRepository.class)
+                .findByClasseIdIn(classeIds);
+
+        // Map to Utilisateurs and remove duplicates
+        return accesList.stream()
+                .map(acceder -> {
+                    if (acceder.getUtilisateur() == null) {
+                        // Handle case where user is not found
+                        log.warn("Utilisateur non trouvé pour l'accès: {}", acceder);
+                        return null;
+                    }
+                    return dozerMapperBean.map(acceder.getUtilisateur(), Utilisateurs.class);
+                })
+                .filter(Objects::nonNull) // Remove null entries
+                .distinct()
                 .collect(Collectors.toList());
     }
 
