@@ -140,7 +140,7 @@ INSERT INTO ressources.evenement_participants (evenement_id, utilisateur_id) VAL
 
 -- Insert messages
 INSERT INTO ressources.messages (id, contenu, datecreation, datemodification, etat, expediteur_id) VALUES
-('550e8400-e29b-41d4-a716-446655440010', 'Bonjour, comment ça va?', '2023-10-01', '2023-10-01', 'envoyé', '550e8400-e29b-41d4-a716-446655440000'),
+('550e8400-e29b-41d4-a716-446655440010', 'Bonjour, comment ça va?', '2023-10-01', '2023-10-01', 'envoyé', '550e8400-e29b-41d4-a716-446655440999'),
 ('550e8400-e29b-41d4-a716-446655440011', 'Réunion à 10h demain.', '2023-10-02', '2023-10-02', 'envoyé', '550e8400-e29b-41d4-a716-446655440001'),
 ('550e8400-e29b-41d4-a716-446655440012', 'Merci pour votre aide.', '2023-10-03', '2023-10-03', 'envoyé', '550e8400-e29b-41d4-a716-446655440002'),
 ('550e8400-e29b-41d4-a716-446655440013', 'Veuillez trouver ci-joint le document.', '2023-10-04', '2023-10-04', 'envoyé', '550e8400-e29b-41d4-a716-446655440003'),
@@ -155,7 +155,7 @@ INSERT INTO ressources.recevoir (message_id, utilisateur_id) VALUES
 ('550e8400-e29b-41d4-a716-446655440012', '550e8400-e29b-41d4-a716-446655440002'),
 ('550e8400-e29b-41d4-a716-446655440012', '550e8400-e29b-41d4-a716-446655440003'),
 ('550e8400-e29b-41d4-a716-446655440013', '550e8400-e29b-41d4-a716-446655440002'),
-('550e8400-e29b-41d4-a716-446655440014', '550e8400-e29b-41d4-a716-446655440000');
+('550e8400-e29b-41d4-a716-446655440014', '550e8400-e29b-41d4-a716-446655440999');
 
 -- Insert media
 INSERT INTO ressources.media (id, bucket_name, content_type, file_name, file_path, file_size, file_type, media_type, owner_id, uploaded_date, evenement_id) VALUES
@@ -229,3 +229,6 @@ UPDATE ressources.messages SET objet = 'Réunion importante' WHERE id = '550e840
 UPDATE ressources.messages SET objet = 'Remerciements' WHERE id = '550e8400-e29b-41d4-a716-446655440012';
 UPDATE ressources.messages SET objet = 'Document partagé' WHERE id = '550e8400-e29b-41d4-a716-446655440013';
 UPDATE ressources.messages SET objet = 'Prochaine réunion' WHERE id = '550e8400-e29b-41d4-a716-446655440014';
+
+
+
