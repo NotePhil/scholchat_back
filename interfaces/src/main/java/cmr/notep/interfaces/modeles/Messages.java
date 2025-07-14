@@ -8,13 +8,13 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 import java.util.List;
 
-
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Messages implements Serializable {
     private String id;
+    private String objet;
     private String contenu;
     private String dateCreation;
     private String dateModification;

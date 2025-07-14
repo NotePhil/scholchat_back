@@ -7,6 +7,7 @@ import java.util.List;
 @Data
 public class GroupMessageDto {
     private List<String> classIds;
+    private String objet;
     private String content;
     private String senderId;
 }

@@ -223,3 +223,9 @@ WHERE utilisateur_id IN (
 );
 
 
+-- Update existing messages to include subjects
+UPDATE ressources.messages SET objet = 'Salutation' WHERE id = '550e8400-e29b-41d4-a716-446655440010';
+UPDATE ressources.messages SET objet = 'Réunion importante' WHERE id = '550e8400-e29b-41d4-a716-446655440011';
+UPDATE ressources.messages SET objet = 'Remerciements' WHERE id = '550e8400-e29b-41d4-a716-446655440012';
+UPDATE ressources.messages SET objet = 'Document partagé' WHERE id = '550e8400-e29b-41d4-a716-446655440013';
+UPDATE ressources.messages SET objet = 'Prochaine réunion' WHERE id = '550e8400-e29b-41d4-a716-446655440014';

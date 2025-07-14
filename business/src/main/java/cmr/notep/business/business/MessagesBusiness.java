@@ -41,16 +41,20 @@ public class MessagesBusiness {
     }
 
     public Messages posterMessage(Messages message) {
+        if (message.getObjet() == null || message.getObjet().isBlank()) {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "L'objet du message est obligatoire");
+        }
+
         MessagesEntity messageEntity = dozerMapperBean.map(message, MessagesEntity.class);
         MessagesEntity savedEntity = daoAccessorService.getRepository(MessagesRepository.class).save(messageEntity);
-
-        // Force loading of recipients
         savedEntity.getDestinatairesEntities().size();
-
         return dozerMapperBean.map(savedEntity, Messages.class);
     }
-
     public Messages posterMessageGroupe(GroupMessageDto groupMessageDto) {
+        if (groupMessageDto.getObjet() == null || groupMessageDto.getObjet().isBlank()) {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "L'objet du message est obligatoire");
+        }
+
         // Get sender
         UtilisateursEntity sender = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .findById(groupMessageDto.getSenderId())

@@ -17,6 +17,9 @@ public class MessagesEntity {
     @Column(name = "id", nullable = false, updatable = false, columnDefinition = "UUID")
     private String id;
 
+    @Column(name = "objet")
+    private String objet;
+
     @Column(name = "contenu")
     private String contenu;
 
@@ -34,7 +37,7 @@ public class MessagesEntity {
     @Mapping("expediteur")
     private UtilisateursEntity expediteurEntity;
 
-    @ManyToMany(fetch = FetchType.EAGER) // Changed to EAGER loading
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "recevoir",
             joinColumns = @JoinColumn(name = "message_id"),

@@ -398,6 +398,9 @@ ALTER TABLE ressources.acceder
     ADD CONSTRAINT fk_acceder_classe
         FOREIGN KEY (classe_id) REFERENCES ressources.classes(id);
 
+
+ALTER TABLE ressources.messages ADD COLUMN IF NOT EXISTS objet VARCHAR(255);
+
 -- Create indexes (only once)
 CREATE INDEX IF NOT EXISTS idx_classes_etat ON ressources.classes(etat);
 CREATE INDEX IF NOT EXISTS idx_classes_moderator ON ressources.classes(moderator_id);
