@@ -29,6 +29,12 @@ public class AccederService implements AccederApi {
         log.info("API - Validation de la demande d'accès {}", demandeId);
         accederBusiness.validerDemandeAcces(demandeId);
     }
+    // Dans AccederService.java
+    @Override
+    public List<DemandeAccesDto> obtenirDemandesAccesPourModerateur(String moderatorId) {
+        log.info("API - Obtenir les demandes d'accès pour le modérateur {}", moderatorId);
+        return accederBusiness.obtenirDemandesAccesPourModerateur(moderatorId);
+    }
 
     @Override
     public void rejeterDemandeAcces(String demandeId, String motifRejet) {

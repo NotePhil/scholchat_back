@@ -4,6 +4,7 @@ import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.AccessConfirmationEmailService;
 import cmr.notep.business.services.AccessRejectionEmailService;
+import cmr.notep.business.services.MailServiceInterface;
 import cmr.notep.interfaces.modeles.Classes;
 import cmr.notep.interfaces.modeles.DemandeAccesDto;
 import cmr.notep.interfaces.modeles.Utilisateurs;
@@ -27,13 +28,16 @@ public class AccederBusiness {
     private final DaoAccessorService daoAccessorService;
     private final AccessConfirmationEmailService accessConfirmationEmailService;
     private final AccessRejectionEmailService accessRejectionEmailService;
+    private final MailServiceInterface mailService; // Add this
 
     public AccederBusiness(DaoAccessorService daoAccessorService,
                            AccessConfirmationEmailService accessConfirmationEmailService,
-                           AccessRejectionEmailService accessRejectionEmailService) {
+                           AccessRejectionEmailService accessRejectionEmailService,
+                           MailServiceInterface mailService) { // Add this parameter
         this.daoAccessorService = daoAccessorService;
         this.accessConfirmationEmailService = accessConfirmationEmailService;
         this.accessRejectionEmailService = accessRejectionEmailService;
+        this.mailService = mailService; // Initialize it
     }
 
     public void demanderAcces(String utilisateurId, String classeId, String codeActivation) throws SchoolException {
@@ -92,7 +96,56 @@ public class AccederBusiness {
 
         daoAccessorService.getRepository(DemandeAccesRepository.class).save(demande);
         log.info("Demande d'accès créée avec succès");
+
+        // Envoyer une notification au modérateur
+        if (classe.getModerator() != null) {
+            try {
+                Utilisateurs moderateur = dozerMapperBean.map(classe.getModerator(), Utilisateurs.class);
+                Classes classeDto = dozerMapperBean.map(classe, Classes.class);
+                Utilisateurs demandeur = dozerMapperBean.map(utilisateur, Utilisateurs.class);
+
+                // Créer le contenu de l'email
+                String subject = "Nouvelle demande d'accès à votre classe " + classe.getNom();
+                String content = "L'utilisateur " + demandeur.getPrenom() + " " + demandeur.getNom() +
+                        " a demandé l'accès à votre classe " + classe.getNom() +
+                        ". Veuillez traiter cette demande dans votre interface modérateur.";
+
+                mailService.sendEmail(moderateur.getEmail(), subject, content);
+                log.info("Notification envoyée au modérateur {}", moderateur.getEmail());
+            } catch (Exception e) {
+                log.error("Erreur lors de l'envoi de la notification au modérateur: {}", e.getMessage());
+            }
+        }
     }
+    public List<DemandeAccesDto> obtenirDemandesAccesPourModerateur(String moderateurId) throws SchoolException {
+        log.info("Obtenir toutes les demandes d'accès pour les classes modérées par {}", moderateurId);
+
+        // Vérifier si l'utilisateur est un professeur
+        UtilisateursEntity utilisateur = daoAccessorService.getRepository(UtilisateursRepository.class)
+                .findById(moderateurId)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable"));
+
+        if (!(utilisateur instanceof ProfesseursEntity)) {
+            throw new SchoolException(SchoolErrorCode.INVALID_OPERATION,
+                    "Seuls les professeurs peuvent être modérateurs de classe");
+        }
+
+        // Récupérer les classes modérées par ce professeur
+        List<ClassesEntity> classesModerees = ((ProfesseursEntity) utilisateur).getModeratedClasses();
+        if (classesModerees == null || classesModerees.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Récupérer les demandes pour ces classes
+        List<String> classeIds = classesModerees.stream().map(ClassesEntity::getId).collect(Collectors.toList());
+
+        return daoAccessorService.getRepository(DemandeAccesRepository.class)
+                .findByClasseIdInAndEtat(classeIds, EtatDemandeAcces.EN_ATTENTE)
+                .stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
 
     public void validerDemandeAcces(String demandeId) throws SchoolException {
         log.info("Validation de la demande d'accès {}", demandeId);

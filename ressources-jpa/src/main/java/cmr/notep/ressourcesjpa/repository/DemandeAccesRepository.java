@@ -18,4 +18,8 @@ public interface DemandeAccesRepository extends JpaRepository<DemandeAccesEntity
     // J'ajoute ces méthodes car elles n'existaient pas
     List<DemandeAccesEntity> findByClasseIdAndEtat(String classeId, EtatDemandeAcces etat);
     boolean existsByUtilisateurIdAndClasseId(String utilisateurId, String classeId);
+
+    // Dans DemandeAccesRepository.java
+    List<DemandeAccesEntity> findByClasseIdInAndEtat(List<String> classeIds, EtatDemandeAcces etat);
+
 }

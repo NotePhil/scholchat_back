@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
+import java.util.Date;
+
 @Service
 
 public class EmailTemplateService {
@@ -44,6 +46,17 @@ public class EmailTemplateService {
         context.setVariable("classe", classe);
 
         return templateEngine.process("email/access-confirmation-email", context);
+    }
+
+    public String generateAccessRequestNotification(Utilisateurs moderator, Utilisateurs demandeur, Classes classe, Date dateDemande) {
+        Context context = new Context();
+        context.setVariable("moderator", moderator);
+        context.setVariable("demandeur", demandeur);
+        context.setVariable("classe", classe);
+        context.setVariable("dateDemande", dateDemande);
+        context.setVariable("dashboardUrl", "http://your-frontend-url.com/moderator/dashboard");
+
+        return templateEngine.process("email/access-request-notification", context);
     }
 
     public String generateAccessRejectionEmail(Utilisateurs utilisateur, Classes classe, String motifRejet) {

@@ -32,6 +32,16 @@ public interface AccederApi {
             @PathVariable String demandeId
     );
 
+    // Dans AccederApi.java
+    @GetMapping(
+            path = "/moderator/{moderatorId}/demandes",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    List<DemandeAccesDto> obtenirDemandesAccesPourModerateur(
+            @PathVariable String moderatorId
+    );
+
     @PostMapping(
             path = "/demandes/{demandeId}/reject",
             produces = MediaType.APPLICATION_JSON_VALUE
