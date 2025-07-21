@@ -25,7 +25,6 @@ import java.util.Optional;
 
 @Slf4j
 public class AuthBusiness {
-
     private final PasswordEncoder passwordEncoder;
     private final UtilisateursBusiness utilisateursBusiness;
     private final RefreshTokenBusiness refreshTokenBusiness;
@@ -33,18 +32,21 @@ public class AuthBusiness {
     private final JwtConfig jwtConfig;
     private final ActivationEmailService activationEmailService;
     private final PasswordResetEmailService passwordResetEmailService;
+    private final UserValidationService userValidationService;
+    private final RoleService roleService;
 
 
-public AuthBusiness(PasswordEncoder passwordEncoder, UtilisateursBusiness utilisateursBusiness, JwtUtil jwtUtil, JwtConfig jwtConfig, ActivationEmailService activationEmailService, RefreshTokenBusiness refreshTokenBusiness, PasswordResetEmailService passwordResetEmailService) {
-    this.passwordEncoder = passwordEncoder;
-    this.utilisateursBusiness = utilisateursBusiness;
-    this.jwtUtil = jwtUtil;
-    this.jwtConfig = jwtConfig;
-    this.activationEmailService = activationEmailService;
-    this.refreshTokenBusiness = refreshTokenBusiness;
-
-    this.passwordResetEmailService = passwordResetEmailService;
-}
+    public AuthBusiness(PasswordEncoder passwordEncoder, UtilisateursBusiness utilisateursBusiness, JwtUtil jwtUtil, JwtConfig jwtConfig, ActivationEmailService activationEmailService, RefreshTokenBusiness refreshTokenBusiness, PasswordResetEmailService passwordResetEmailService,RoleService roleService, UserValidationService userValidationService) {
+        this.passwordEncoder = passwordEncoder;
+        this.utilisateursBusiness = utilisateursBusiness;
+        this.jwtUtil = jwtUtil;
+        this.jwtConfig = jwtConfig;
+        this.activationEmailService = activationEmailService;
+        this.refreshTokenBusiness = refreshTokenBusiness;
+        this.roleService = roleService;
+        this.userValidationService = userValidationService;
+        this.passwordResetEmailService = passwordResetEmailService;
+    }
 
     /**
      * Register a new user account
@@ -55,6 +57,8 @@ public AuthBusiness(PasswordEncoder passwordEncoder, UtilisateursBusiness utilis
     public Utilisateurs registerUser(Utilisateurs utilisateur) {
         log.info("Processing user registration request for email: {}", utilisateur.getEmail());
 
+        // Vérification de la force du mot de passe
+        userValidationService.validatePasswordStrength(utilisateur.getPasseAccess());
         // Check if email already exists
         Utilisateurs existingUser = utilisateursBusiness.avoirUtilisateurParEmail(utilisateur.getEmail());
         if (existingUser == null) {
@@ -63,26 +67,18 @@ public AuthBusiness(PasswordEncoder passwordEncoder, UtilisateursBusiness utilis
         }
 
         // Update user data
-        existingUser.setNom(utilisateur.getNom());
-        existingUser.setPrenom(utilisateur.getPrenom());
-        existingUser.setPasseAccess(utilisateur.getPasseAccess());
-        existingUser.setTelephone(utilisateur.getTelephone());
-        existingUser.setAdresse(utilisateur.getAdresse());
-
-        // Validate user data
-        validateUserData(existingUser);
-
         // Encode password before saving
         log.debug("Encoding password for user: {}", utilisateur.getEmail());
         existingUser.setPasseAccess(passwordEncoder.encode(utilisateur.getPasseAccess()));
         existingUser.setEtat(EtatUtilisateur.ACTIVE);
 
-        // Save user
-        Utilisateurs updatedUser = utilisateursBusiness.mettreUtilisateurAJour(existingUser);
-
+        // Enregistrement
+        utilisateursBusiness.mettreUtilisateurAJour(existingUser);
         log.info("User registration completed successfully for: {}", utilisateur.getEmail());
-        return updatedUser;
+        return null;
     }
+
+
     public void registerPassword(PasswordSetupRequest request) {
         log.info("Processing password setup for: {}", request.getEmail());
 
@@ -116,57 +112,29 @@ public AuthBusiness(PasswordEncoder passwordEncoder, UtilisateursBusiness utilis
         // Retrieve user by email
         Utilisateurs existingUser = utilisateursBusiness.avoirUtilisateurParEmail(loginRequest.getEmail());
 
-        // Verify password
+        // Vérification de l'état d'abord
+        if (existingUser.getEtat() != EtatUtilisateur.ACTIVE) {
+            log.warn("Login attempt for inactive account: {}", loginRequest.getEmail());
+            throw new SchoolException(
+                    existingUser.getEtat() == EtatUtilisateur.PENDING ?
+                            SchoolErrorCode.INVALID_STATE : SchoolErrorCode.INACTIVE_USER,
+                    existingUser.getEtat() == EtatUtilisateur.PENDING ?
+                            "User account is still pending activation" : "User account is inactive"
+            );
+        }
+
+        // Vérification du mot de passe ensuite
         if (!passwordEncoder.matches(loginRequest.getPassword(), existingUser.getPasseAccess())) {
             log.warn("Invalid login attempt for user: {}", loginRequest.getEmail());
             throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Invalid email or password");
         }
 
-        // Check if user account is active
-        if (existingUser.getEtat() != EtatUtilisateur.ACTIVE) {
-            log.warn("Login attempt for inactive account: {}", loginRequest.getEmail());
-
-            if (existingUser.getEtat() == EtatUtilisateur.PENDING) {
-                throw new SchoolException(
-                        SchoolErrorCode.INVALID_STATE,
-                        "User account is still pending activation"
-                );
-            } else {
-                throw new SchoolException(
-                        SchoolErrorCode.INACTIVE_USER,
-                        "User account is inactive"
-                );
-            }
-        }
-
-        // Determine the roles for the user based on the type
-        List<String> roles = new ArrayList<>();
-
-        // Assign role based on user type
-        if (existingUser.isAdmin()) {
-            roles.add("ROLE_ADMIN");
-        } else if (existingUser instanceof Professeurs) {
-            roles.add("ROLE_PROFESSOR");
-        } else if (existingUser instanceof Eleves) {
-            roles.add("ROLE_STUDENT");
-        } else if (existingUser instanceof Parents) {
-            roles.add("ROLE_PARENT");
-        } else if (existingUser instanceof Repetiteurs) {
-            roles.add("ROLE_TUTOR");
-        } else {
-            roles.add("ROLE_USER");  // Fallback role for unclassified users
-        }
-
-        // Generate tokens with roles
+        // Génération du token avec les rôles
+        List<String> roles = roleService.determineUserRoles(existingUser);
         String accessToken = jwtUtil.generateAccessToken(existingUser.getEmail(), roles);
-        String refreshToken = refreshTokenBusiness.createRefreshToken(existingUser);
 
-        log.info("User logged in successfully: {}", loginRequest.getEmail());
-
-        // Build the response using the builder pattern
         return AuthResponse.builder()
                 .accessToken(accessToken)
-                .refreshToken(refreshToken)
                 .tokenType("Bearer")
                 .expiresIn(jwtConfig.getAccessTokenExpirationMillis())
                 .userId(existingUser.getId())
@@ -364,7 +332,6 @@ public AuthBusiness(PasswordEncoder passwordEncoder, UtilisateursBusiness utilis
         // Add other user type checks as necessary
     }
 
-
     public Utilisateurs getUtilisateurByEmailWithToken(String email, String token) {
         log.info("Fetching user by email with token validation: {}", email);
         log.debug("Incoming token: {}", token);
@@ -383,6 +350,24 @@ public AuthBusiness(PasswordEncoder passwordEncoder, UtilisateursBusiness utilis
         return utilisateur;
     }
 
+    public void requestPasswordReset(String email) {
+        log.info("Processing password reset request for email: {}", email);
+
+        // Retrieve user by email
+        Utilisateurs user = utilisateursBusiness.avoirUtilisateurParEmail(email);
+
+        // Generate reset token
+        String resetToken = jwtUtil.generatePasswordResetToken(user.getEmail());
+
+        // Save token to user entity
+        user.setResetPasswordToken(resetToken);
+        utilisateursBusiness.mettreUtilisateurAJour(user);
+
+        // Send email
+        passwordResetEmailService.sendPasswordResetEmail(user, resetToken);
+
+        log.info("Password reset email sent to: {}", email);
+    }
     public void requestPasswordReset(String email) {
         log.info("Processing password reset request for email: {}", email);
 
@@ -426,6 +411,7 @@ public AuthBusiness(PasswordEncoder passwordEncoder, UtilisateursBusiness utilis
         utilisateursBusiness.mettreUtilisateurAJour(user);
         log.info("Password reset successful");
     }
+
     public Utilisateurs registerUserWithToken(Utilisateurs utilisateur, String token) {
         log.info("Registering user with token validation: {}", utilisateur.getEmail());
 

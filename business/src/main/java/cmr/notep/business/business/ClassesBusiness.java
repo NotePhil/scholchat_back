@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import cmr.notep.modele.DroitPublication;
 import cmr.notep.modele.EtatClasse;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,6 +19,7 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 
 @Component
 @Slf4j
+@Transactional
 public class ClassesBusiness {
 
     private final DaoAccessorService daoAccessorService;
@@ -109,29 +111,6 @@ public class ClassesBusiness {
             classeExistante.setEtablissement(etablissement);
         }
 
-//        // Parents Update
-//        if (classeModifiee.getParents() != null) {
-//            classeExistante.getParentsEntities().clear();
-//            for (Parents parent : classeModifiee.getParents()) {
-//                ParentsEntity parentEntity = daoAccessorService
-//                        .getRepository(ParentsRepository.class)
-//                        .findById(parent.getId())
-//                        .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Parent introuvable"));
-//                classeExistante.getParentsEntities().add(parentEntity);
-//            }
-//        }
-//
-//        // Eleves Update
-//        if (classeModifiee.getEleves() != null) {
-//            classeExistante.getElevesEntities().clear();
-//            for (Eleves eleve : classeModifiee.getEleves()) {
-//                ElevesEntity eleveEntity = daoAccessorService
-//                        .getRepository(ElevesRepository.class)
-//                        .findById(eleve.getId())
-//                        .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "élève introuvable"));
-//                classeExistante.getElevesEntities().add(eleveEntity);
-//            }
-//        }
 
         ClassesEntity classeSauvegardee = classesRepository.save(classeExistante);
         log.info("Classe modifiée avec succès: {}", idClasse);

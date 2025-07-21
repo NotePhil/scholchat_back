@@ -26,9 +26,9 @@ public class AuthService implements AuthApi {
     }
 
     @Override
-    public Utilisateurs registerUser(@NonNull Utilisateurs utilisateur) {
+    public void registerUser(@NonNull Utilisateurs utilisateur) {
         log.info("Registering new user: {}", utilisateur.getEmail());
-        return authBusiness.registerUser(utilisateur);
+        authBusiness.registerUser(utilisateur);
     }
 
     @Override
