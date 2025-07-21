@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Nouvelle classe créée</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #f8f9fa; padding: 10px; text-align: center; }
+        .content { padding: 20px; }
+        .footer { margin-top: 20px; font-size: 12px; text-align: center; color: #6c757d; }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Nouvelle classe créée</h1>
+    </div>
+    <div class="content">
+        <p>Bonjour,</p>
+
+        <p>Une nouvelle classe a été créée dans votre établissement :</p>
+
+        <ul>
+            <li><strong>Nom de la classe :</strong> <span th:text="${classe.nom}"></span></li>
+            <li><strong>Niveau :</strong> <span th:text="${classe.niveau}"></span></li>
+            <li><strong>Créée par :</strong> <span th:text="${professeur.prenom + ' ' + professeur.nom}"></span></li>
+            <li><strong>Email du professeur :</strong> <span th:text="${professeur.email}"></span></li>
+        </ul>
+
+        <p>Cette classe est actuellement en attente de validation.</p>
+
+        <a th:href="${validationUrl}" class="button">Valider la classe</a>
+
+        <p>Si vous ne reconnaissez pas cette demande, veuillez ignorer cet email.</p>
+    </div>
+    <div class="footer">
+        <p>© 2025 ScholChat. Tous droits réservés.</p>
+    </div>
+</div>
+</body>
+</html>

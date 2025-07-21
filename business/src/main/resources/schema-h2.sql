@@ -50,7 +50,8 @@ CREATE TABLE IF NOT EXISTS ressources.classes (
     etat VARCHAR(50),
     etablissement_id UUID,
     moderator_id VARCHAR(255),
-    droit_publication VARCHAR(50)
+    droit_publication VARCHAR(50),
+    acces_majeur BOOLEAN DEFAULT FALSE
 );
 
 -- 2. Create other tables that depend on the base tables
@@ -79,6 +80,13 @@ CREATE TABLE IF NOT EXISTS ressources.matieres (
     date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     etat VARCHAR(50) DEFAULT 'ACTIF'
 );
+CREATE TABLE IF NOT EXISTS ressources.parent_eleve (
+                                                       parent_id VARCHAR(255) NOT NULL,
+    eleve_id VARCHAR(255) NOT NULL,
+    PRIMARY KEY (parent_id, eleve_id),
+    FOREIGN KEY (parent_id) REFERENCES ressources.parents(parents_id),
+    FOREIGN KEY (eleve_id) REFERENCES ressources.eleves(eleves_id)
+    );
 
 CREATE TABLE IF NOT EXISTS ressources.messages (
     id VARCHAR(255) NOT NULL,
