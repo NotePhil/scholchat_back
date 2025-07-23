@@ -14,6 +14,7 @@ public enum SchoolErrorCode {
     MAPPING_FAILED("User entity mapping failed"),
     TOKEN_EXPIRED("Token Expired"),
     INACTIVE_USER("Cannot create refresh token for inactive user"),
+    EMAIL_ERROR("Email processing error"),
 
     // New codes needed for MediaExceptionHandler
     RESOURCE_NOT_FOUND("Resource not found"),

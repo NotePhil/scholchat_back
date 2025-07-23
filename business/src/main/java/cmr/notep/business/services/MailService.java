@@ -1,5 +1,6 @@
 package cmr.notep.business.services;
 
+import cmr.notep.business.exceptions.SchoolErrorEmail;
 import cmr.notep.interfaces.modeles.Eleves;
 import cmr.notep.interfaces.modeles.IUtilisateurs;
 import cmr.notep.interfaces.modeles.Parents;
@@ -64,7 +65,7 @@ public class MailService implements MailServiceInterface {
     @Recover
     public void recover(MessagingException e, String to, String subject, String htmlContent) {
         log.error("Failed to send email after retries to {}: {}", to, e.getMessage());
-        throw new SchoolException(
+        throw new SchoolErrorEmail(
                 SchoolErrorCode.EMAIL_NOT_SENT,
                 "Échec de l'envoi de l'email après plusieurs tentatives."
         );

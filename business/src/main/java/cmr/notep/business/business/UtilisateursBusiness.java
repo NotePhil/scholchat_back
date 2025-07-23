@@ -60,7 +60,7 @@ public class UtilisateursBusiness {
                                 JwtUtil jwtUtil,
                                 MailServiceInterface mailService,
                                 IRejectionEmailService rejectionEmailService,
-                                RoleService roleService,  UserValidationService userValidationService,
+                                RoleService roleService, UserValidationService userValidationService, UserValidationService userValidationService1,
                                 AwaitingValidationEmailService awaitingValidationEmailService) {
         this.daoAccessorService = daoAccessorService;
         this.activationEmailService = activationEmailService;
@@ -68,6 +68,7 @@ public class UtilisateursBusiness {
         this.mailService = mailService;
         this.rejectionEmailService = rejectionEmailService;
         this.roleService = roleService;
+        this.userValidationService = userValidationService1;
         this.awaitingValidationEmailService = awaitingValidationEmailService;
     }
     public Utilisateurs patcherUtilisateur(String idUtilisateur, Utilisateurs partialUpdate) {

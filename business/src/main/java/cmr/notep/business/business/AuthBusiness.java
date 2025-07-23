@@ -5,6 +5,8 @@ import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.ActivationEmailService;
 import cmr.notep.business.services.PasswordResetEmailService;
+import cmr.notep.business.services.RoleService;
+import cmr.notep.business.services.UserValidationService;
 import cmr.notep.business.utils.JwtUtil;
 import cmr.notep.interfaces.dto.LoginDto;
 import cmr.notep.interfaces.dto.PasswordResetRequest;
@@ -350,24 +352,24 @@ public class AuthBusiness {
         return utilisateur;
     }
 
-    public void requestPasswordReset(String email) {
-        log.info("Processing password reset request for email: {}", email);
-
-        // Retrieve user by email
-        Utilisateurs user = utilisateursBusiness.avoirUtilisateurParEmail(email);
-
-        // Generate reset token
-        String resetToken = jwtUtil.generatePasswordResetToken(user.getEmail());
-
-        // Save token to user entity
-        user.setResetPasswordToken(resetToken);
-        utilisateursBusiness.mettreUtilisateurAJour(user);
-
-        // Send email
-        passwordResetEmailService.sendPasswordResetEmail(user, resetToken);
-
-        log.info("Password reset email sent to: {}", email);
-    }
+//    public void requestPasswordReset(String email) {
+//        log.info("Processing password reset request for email: {}", email);
+//
+//        // Retrieve user by email
+//        Utilisateurs user = utilisateursBusiness.avoirUtilisateurParEmail(email);
+//
+//        // Generate reset token
+//        String resetToken = jwtUtil.generatePasswordResetToken(user.getEmail());
+//
+//        // Save token to user entity
+//        user.setResetPasswordToken(resetToken);
+//        utilisateursBusiness.mettreUtilisateurAJour(user);
+//
+//        // Send email
+//        passwordResetEmailService.sendPasswordResetEmail(user, resetToken);
+//
+//        log.info("Password reset email sent to: {}", email);
+//    }
     public void requestPasswordReset(String email) {
         log.info("Processing password reset request for email: {}", email);
 

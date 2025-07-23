@@ -66,12 +66,12 @@ public class AuthService implements AuthApi {
         log.info("Activating user with token: {}", activationToken);
         return activationService.activerUtilisateur(activationToken);
     }
-
-    @Override
-    public String refreshToken(String refreshToken) {
-        log.info("Refreshing token: {}", refreshToken);
-        return authBusiness.refreshAccessToken(refreshToken);
-    }
+//
+//    @Override
+//    public String refreshToken(String refreshToken) {
+//        log.info("Refreshing token: {}", refreshToken);
+//        return authBusiness.refreshAccessToken(refreshToken);
+//    }
 
     @Override
     public void registerPassword(PasswordSetupRequest request) {
