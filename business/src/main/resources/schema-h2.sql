@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS ressources.professeurs (
     PRIMARY KEY (professeurs_id)
 );
 
+
 CREATE TABLE IF NOT EXISTS ressources.classes (
     id UUID PRIMARY KEY,
     nom VARCHAR(255) NOT NULL,
@@ -147,7 +148,16 @@ CREATE TABLE IF NOT EXISTS ressources.classe_matieres (
     classe_id UUID NOT NULL,
     PRIMARY KEY (matiere_id, classe_id)
 );
-
+CREATE TABLE IF NOT EXISTS ressources.droit_publication (
+    utilisateur_id VARCHAR(255) NOT NULL,
+    classe_id UUID NOT NULL,
+    date_attribution TIMESTAMP NOT NULL,
+    peut_publier BOOLEAN NOT NULL DEFAULT FALSE,
+    peut_moderer BOOLEAN NOT NULL DEFAULT FALSE,
+    PRIMARY KEY (utilisateur_id, classe_id),
+    CONSTRAINT fk_droit_publication_utilisateur FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id),
+    CONSTRAINT fk_droit_publication_classe FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
+);
 CREATE TABLE IF NOT EXISTS ressources.recevoir (
     message_id VARCHAR(255) NOT NULL,
     utilisateur_id VARCHAR(255) NOT NULL

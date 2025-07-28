@@ -62,6 +62,7 @@ public class SecurityConfig {
                                 "/auth/users/register",
                                 "/etablissements","/etablissements/**",
                                 "/reset-password-request",
+                                "/utilisateurs/regenerate-activation",
                                 "/evenements/**",
                                 "/matieres/**",
                                 "/interactions/**",
@@ -72,7 +73,9 @@ public class SecurityConfig {
                                 "/histo-activations/**",
                                 "/profil-eleves","/profil-eleves/**",
                                 "/histo-activations","/histo-activations/**",
-                                "/acceder/**"
+                                "/acceder/**",
+                                "/parent-access/demande",
+                                "/parent-access/infos-classe"
 
                         ).permitAll()
                         .requestMatchers(

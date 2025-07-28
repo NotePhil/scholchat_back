@@ -30,13 +30,18 @@ public class MediaBusiness {
     public MediaEntity saveMediaMetadata(String fileName, String filePath,
                                          String contentType, String mediaType, String ownerId) {
         try {
-            // Validate owner exists if provided
+            // Validate owner exists if provided (except for temp)
             UtilisateursEntity owner = null;
             if (ownerId != null && !ownerId.equals("temp")) {
                 owner = utilisateursRepository.findById(ownerId)
                         .orElseThrow(() -> new SchoolException(
                                 SchoolErrorCode.RESOURCE_NOT_FOUND,
                                 "User not found with ID: " + ownerId));
+
+                // Create user-specific folder structure
+                String userFolderPath = "users/" + ownerId;
+                mediaService.ensureFolderExists(userFolderPath);
+                mediaService.ensureFolderExists(userFolderPath + "/" + mediaType.toLowerCase());
             }
 
             // Create media entity
@@ -49,13 +54,6 @@ public class MediaBusiness {
             media.setUploadedDate(LocalDateTime.now());
             media.setBucketName(mediaService.getDefaultBucketName());
             media.setOwnerId(ownerId);
-
-            // Create folder structure if owner exists
-            if (owner != null) {
-                String basePath = "users/" + ownerId;
-                mediaService.ensureFolderExists(basePath);
-                mediaService.ensureFolderExists(basePath + "/" + mediaType.toLowerCase());
-            }
 
             return mediaRepository.save(media);
         } catch (Exception e) {
@@ -70,7 +68,10 @@ public class MediaBusiness {
             String sanitizedFileName = sanitizeFileName(fileName);
             String filePath = buildUserMediaPath(ownerId, mediaType, documentType, sanitizedFileName);
 
+            // Ensure folders exist (including user folder if not temp)
             ensureUserMediaFoldersExist(ownerId, mediaType, documentType);
+
+            // Save metadata first
             saveMediaMetadata(fileName, filePath, contentType, mediaType, ownerId);
 
             return mediaService.generateUploadPresignedUrl(filePath, contentType);
