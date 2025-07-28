@@ -10,4 +10,5 @@ public class GroupMessageDto {
     private String objet;
     private String content;
     private String senderId;
+    private List<String> copieRecipientIds;
 }

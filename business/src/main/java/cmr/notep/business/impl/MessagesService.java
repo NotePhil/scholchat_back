@@ -6,6 +6,7 @@ import cmr.notep.interfaces.api.MessagesApi;
 import cmr.notep.interfaces.modeles.Messages;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -38,8 +39,10 @@ public class MessagesService implements MessagesApi {
     }
 
     @Override
-    public Messages posterMessageGroupe(@NonNull GroupMessageDto groupMessageDto) {
-        log.info("Envoi d'un message de groupe aux classes {}", groupMessageDto.getClassIds());
+    public Messages posterMessageGroupe(@NonNull @RequestBody GroupMessageDto groupMessageDto) {
+        log.info("Envoi d'un message de groupe aux classes {} avec {} copie(s)",
+                groupMessageDto.getClassIds(),
+                groupMessageDto.getCopieRecipientIds() != null ? groupMessageDto.getCopieRecipientIds().size() : 0);
         return messagesBusiness.posterMessageGroupe(groupMessageDto);
     }
 
