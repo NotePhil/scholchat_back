@@ -75,7 +75,9 @@ public class SecurityConfig {
                                 "/histo-activations","/histo-activations/**",
                                 "/acceder/**",
                                 "/parent-access/demande",
-                                "/parent-access/infos-classe"
+                                "/parent-access/infos-classe",
+                                "/acceder/classes/{classeId}/utilisateurs",
+                                "/acceder/utilisateurs/{utilisateurId}/classes"
 
                         ).permitAll()
                         .requestMatchers(

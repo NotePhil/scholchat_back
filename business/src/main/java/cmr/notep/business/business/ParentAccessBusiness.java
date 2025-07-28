@@ -16,10 +16,7 @@ import cmr.notep.ressourcesjpa.repository.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
@@ -37,7 +34,6 @@ public class ParentAccessBusiness {
     }
 
     public ClasseInfoDto validerTokenEtRecupererInfos(String token, String classeId) throws SchoolException {
-        // Validate token by checking if class exists with this activation code
         ClassesEntity classe = daoAccessorService.getRepository(ClassesRepository.class)
                 .findByActivationTokenAndEtat(token, EtatClasse.ACTIF)
                 .stream()
@@ -45,22 +41,21 @@ public class ParentAccessBusiness {
                 .findFirst()
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.INVALID_TOKEN, "Invalid token or class not found"));
 
-        // Prepare response
         ClasseInfoDto response = new ClasseInfoDto();
         response.setClasseId(classe.getId());
         response.setNomClasse(classe.getNom());
         response.setNiveau(classe.getNiveau());
         response.setAccesMajeur(classe.isAccesMajeur());
 
-        // Add moderator info
         if (classe.getModerator() != null) {
             response.setModerateurNom(classe.getModerator().getNom());
             response.setModerateurPrenom(classe.getModerator().getPrenom());
         }
 
-        // For major access, add students already in class
+        List<EleveInfoDto> eleves = new ArrayList<>();
+
         if (classe.isAccesMajeur()) {
-            List<EleveInfoDto> eleves = daoAccessorService.getRepository(AccederRepository.class)
+            eleves = daoAccessorService.getRepository(AccederRepository.class)
                     .findByClasseId(classe.getId())
                     .stream()
                     .map(acceder -> {
@@ -79,19 +74,36 @@ public class ParentAccessBusiness {
                     })
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
-            response.setElevesAssocies(eleves);
+        } else {
+            eleves = daoAccessorService.getRepository(DemandeAccesRepository.class)
+                    .findByClasseIdAndEtat(classe.getId(), EtatDemandeAcces.EN_ATTENTE)
+                    .stream()
+                    .map(demande -> {
+                        UtilisateursEntity utilisateur = demande.getUtilisateur();
+                        if (utilisateur instanceof ElevesEntity) {
+                            ElevesEntity eleve = (ElevesEntity) utilisateur;
+                            EleveInfoDto dto = new EleveInfoDto();
+                            dto.setId(eleve.getId());
+                            dto.setNom(eleve.getNom());
+                            dto.setPrenom(eleve.getPrenom());
+                            dto.setEmail("Pending approval");
+                            return dto;
+                        }
+                        return null;
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
         }
 
+        response.setElevesAssocies(eleves);
         return response;
     }
 
     public void traiterDemandeAcces(ParentAccessRequestDto request) throws SchoolException {
-        // Validate token and get class
         ClassesEntity classe = daoAccessorService.getRepository(ClassesRepository.class)
                 .findById(request.getClasseId())
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Class not found"));
 
-        // Get parent
         ParentsEntity parent = daoAccessorService.getRepository(ParentsRepository.class)
                 .findById(request.getParentId())
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Parent not found"));
@@ -102,7 +114,6 @@ public class ParentAccessBusiness {
             traiterAccesMineur(request, classe, parent);
         }
 
-        // Notify moderator
         notifierModerateur(classe, parent,
                 request.getElevesIds() != null ? request.getElevesIds() : Collections.emptyList(),
                 request.getElevesNoms() != null ? request.getElevesNoms() : Collections.emptyList());
@@ -115,14 +126,12 @@ public class ParentAccessBusiness {
         }
 
         for (String eleveId : request.getElevesIds()) {
-            // Verify student has access to class
             if (!daoAccessorService.getRepository(AccederRepository.class)
                     .existsByUtilisateurIdAndClasseId(eleveId, classe.getId())) {
                 throw new SchoolException(SchoolErrorCode.INVALID_OPERATION,
                         "Student " + eleveId + " does not have access to this class");
             }
 
-            // Create parent-student relationship if not exists
             if (!daoAccessorService.getRepository(ParentEleveRepository.class)
                     .existsByParentIdAndEleveId(parent.getId(), eleveId)) {
                 ParentEleveEntity relation = new ParentEleveEntity();
@@ -140,10 +149,16 @@ public class ParentAccessBusiness {
         }
 
         for (String eleveNom : request.getElevesNoms()) {
-            // Create student without email
+            String[] nameParts = eleveNom.trim().split(" ", 2);
+            String nom = nameParts.length > 0 ? nameParts[0] : "";
+            String prenom = nameParts.length > 1 ? nameParts[1] : "";
+
+            // Create student
             ElevesEntity eleve = new ElevesEntity();
-            eleve.setNom(eleveNom);
-            eleve.setPrenom("");
+            eleve.setId(UUID.randomUUID().toString());
+            eleve.setNom(nom);
+            eleve.setPrenom(prenom);
+            eleve.setNiveau(classe.getNiveau());
             eleve.setEtat(EtatUtilisateur.PENDING);
             eleve = daoAccessorService.getRepository(ElevesRepository.class).save(eleve);
 
@@ -153,8 +168,9 @@ public class ParentAccessBusiness {
             relation.setEleveId(eleve.getId());
             daoAccessorService.getRepository(ParentEleveRepository.class).save(relation);
 
-            // Create access request for student
+            // Create access request
             DemandeAccesEntity demande = new DemandeAccesEntity();
+            demande.setId(UUID.randomUUID().toString());
             demande.setUtilisateur(eleve);
             demande.setClasse(classe);
             demande.setCodeActivation(classe.getCodeActivation());
