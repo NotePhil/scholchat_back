@@ -5,9 +5,7 @@ import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.AccessConfirmationEmailService;
 import cmr.notep.business.services.AccessRejectionEmailService;
 import cmr.notep.business.services.MailServiceInterface;
-import cmr.notep.interfaces.modeles.Classes;
-import cmr.notep.interfaces.modeles.DemandeAccesDto;
-import cmr.notep.interfaces.modeles.Utilisateurs;
+import cmr.notep.interfaces.modeles.*;
 import cmr.notep.modele.EtatClasse;
 import cmr.notep.modele.EtatDemandeAcces;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
@@ -332,17 +330,31 @@ public class AccederBusiness {
         return accesList.stream()
                 .map(acceder -> {
                     if (acceder.getUtilisateur() == null) {
-                        // Handle case where user is not found
                         log.warn("Utilisateur non trouvé pour l'accès: {}", acceder);
                         return null;
                     }
-                    return dozerMapperBean.map(acceder.getUtilisateur(), Utilisateurs.class);
+                    // Use your existing mapping method that preserves types
+                    return mapUtilisateursEntityToModele(acceder.getUtilisateur());
                 })
-                .filter(Objects::nonNull) // Remove null entries
+                .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());
     }
 
+
+    private Utilisateurs mapUtilisateursEntityToModele(UtilisateursEntity entity) {
+        if (entity instanceof ProfesseursEntity) {
+            return dozerMapperBean.map(entity, Professeurs.class);
+        } else if (entity instanceof ElevesEntity) {
+            return dozerMapperBean.map(entity, Eleves.class);
+        } else if (entity instanceof RepetiteursEntity) {
+            return dozerMapperBean.map(entity, Repetiteurs.class);
+        } else if (entity instanceof ParentsEntity) {
+            return dozerMapperBean.map(entity, Parents.class);
+        } else {
+            return dozerMapperBean.map(entity, Utilisateurs.class);
+        }
+    }
     public List<DemandeAccesDto> obtenirDemandesAccesPourClasse(String classeId) throws SchoolException {
         log.info("Obtenir toutes les demandes d'accès pour la classe {}", classeId);
 
