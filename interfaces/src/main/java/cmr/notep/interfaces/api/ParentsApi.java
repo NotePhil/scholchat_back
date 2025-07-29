@@ -25,4 +25,13 @@ public interface ParentsApi {
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
     Parents posterParent(@NonNull @RequestBody Parents profilParent);
+
+    @PatchMapping(
+            path = "/{idProfilParent}",
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    Parents modifierParentPartiellement(
+            @NonNull @PathVariable String idProfilParent,
+            @NonNull @RequestBody Parents partialParent);
 }

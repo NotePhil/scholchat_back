@@ -47,4 +47,46 @@ public class ElevesBusiness {
                 Eleves.class
         );
     }
+
+    public Eleves modifierElevePartiellement(String idEleve, Eleves partialEleve) {
+        log.info("Partial update for eleve with ID: {}", idEleve);
+
+        ElevesRepository repository = daoAccessorService.getRepository(ElevesRepository.class);
+
+        // Find existing eleve
+        ElevesEntity existingEntity = repository.findById(idEleve)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Eleve introuvable avec l'ID: " + idEleve));
+
+        // Map to domain model
+        Eleves existingEleve = dozerMapperBean.map(existingEntity, Eleves.class);
+
+        // Apply partial updates (only non-null fields)
+        if (partialEleve.getNom() != null) {
+            existingEleve.setNom(partialEleve.getNom());
+        }
+        if (partialEleve.getPrenom() != null) {
+            existingEleve.setPrenom(partialEleve.getPrenom());
+        }
+        if (partialEleve.getEmail() != null) {
+            existingEleve.setEmail(partialEleve.getEmail().toLowerCase());
+        }
+        if (partialEleve.getTelephone() != null) {
+            existingEleve.setTelephone(partialEleve.getTelephone());
+        }
+        if (partialEleve.getAdresse() != null) {
+            existingEleve.setAdresse(partialEleve.getAdresse());
+        }
+        if (partialEleve.getEtat() != null) {
+            existingEleve.setEtat(partialEleve.getEtat());
+        }
+        if (partialEleve.getNiveau() != null) {
+            existingEleve.setNiveau(partialEleve.getNiveau());
+        }
+
+        // Map back to entity and save
+        ElevesEntity updatedEntity = dozerMapperBean.map(existingEleve, ElevesEntity.class);
+        updatedEntity = repository.save(updatedEntity);
+
+        return dozerMapperBean.map(updatedEntity, Eleves.class);
+    }
 }

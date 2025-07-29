@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
@@ -46,5 +47,39 @@ public class ParentsBusiness {
                 .stream()
                 .map(parent -> dozerMapperBean.map(parent, Parents.class))
                 .collect(Collectors.toList());
+    }
+
+    public Parents modifierParentPartiellement(String idParent, Parents partialParent) {
+        log.info("modifierParentPartiellement called for ID: {}", idParent);
+
+        ParentsRepository repository = daoAccessorService.getRepository(ParentsRepository.class);
+        ParentsEntity existingEntity = repository.findById(idParent)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Parent introuvable avec l'ID: " + idParent));
+
+        // Update only non-null fields from partialParent
+        Parents existingParent = dozerMapperBean.map(existingEntity, Parents.class);
+
+        if (partialParent.getNom() != null) {
+            existingParent.setNom(partialParent.getNom());
+        }
+        if (partialParent.getPrenom() != null) {
+            existingParent.setPrenom(partialParent.getPrenom());
+        }
+        if (partialParent.getEmail() != null) {
+            existingParent.setEmail(partialParent.getEmail().toLowerCase());
+        }
+        if (partialParent.getTelephone() != null) {
+            existingParent.setTelephone(partialParent.getTelephone());
+        }
+        if (partialParent.getAdresse() != null) {
+            existingParent.setAdresse(partialParent.getAdresse());
+        }
+        if (partialParent.getEtat() != null) {
+            existingParent.setEtat(partialParent.getEtat());
+        }
+
+        // Save the updated entity
+        ParentsEntity updatedEntity = repository.save(dozerMapperBean.map(existingParent, ParentsEntity.class));
+        return dozerMapperBean.map(updatedEntity, Parents.class);
     }
 }

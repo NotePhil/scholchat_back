@@ -26,4 +26,13 @@ public interface ElevesApi {
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
     Eleves posterEleve(@NonNull @RequestBody Eleves Eleve);
+
+    @PatchMapping(
+            path = "/{idEleve}",
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    Eleves modifierElevePartiellement(
+            @NonNull @PathVariable String idEleve,
+            @NonNull @RequestBody Eleves partialEleve);
 }

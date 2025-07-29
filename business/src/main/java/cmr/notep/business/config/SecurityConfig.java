@@ -54,7 +54,7 @@ public class SecurityConfig {
                                 "/auth/login", "/auth/login/",
                                 "/auth/activate", "/auth/activate/",
                                 "/auth/refresh", "/auth/refresh/",
-                                "/utilisateurs", "/utilisateurs/",
+                                "/utilisateurs", "/utilisateurs/**",
                                 "/auth/reset-password-request",  // Keep this public
                                 "/auth/reset-password",
                                 "/auth/registerPassword", "/auth/registerPassword/",
@@ -77,7 +77,9 @@ public class SecurityConfig {
                                 "/parent-access/demande",
                                 "/parent-access/infos-classe",
                                 "/acceder/classes/{classeId}/utilisateurs",
-                                "/acceder/utilisateurs/{utilisateurId}/classes"
+                                "/acceder/utilisateurs/{utilisateurId}/classes",
+                                "/utilisateurs/professors/{professorId}/validate",
+                                "/utilisateurs/professeurs/{professorId}/rejet"
 
                         ).permitAll()
                         .requestMatchers(

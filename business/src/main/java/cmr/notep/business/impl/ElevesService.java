@@ -32,4 +32,9 @@ public class ElevesService implements ElevesApi {
     public Eleves posterEleve(@NonNull Eleves Eleve) {
         return elevesBusiness.posterEleve(Eleve);
     }
+
+    @Override
+    public Eleves modifierElevePartiellement(@NonNull String idEleve, @NonNull Eleves partialEleve) {
+        return elevesBusiness.modifierElevePartiellement(idEleve, partialEleve);
+    }
 }

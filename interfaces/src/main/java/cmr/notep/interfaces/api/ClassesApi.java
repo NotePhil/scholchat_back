@@ -44,7 +44,7 @@ public interface ClassesApi {
 
     @GetMapping(path = "/by-status", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.OK)
-    List<Classes> obtenirClassesParEtat(@RequestParam EtatClasse etat);
+    List<Classes> obtenirClassesParEtat(@RequestParam(required = false) EtatClasse etat);
 
     @DeleteMapping("/{idClasse}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

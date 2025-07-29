@@ -26,6 +26,15 @@ public interface ProfesseursApi {
     )
     Professeurs posterProfesseur(@NonNull @RequestBody Professeurs professeur);
 
+    @PatchMapping(
+            path = "/{idProfesseur}",
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    Professeurs modifierProfesseurPartiellement(
+            @NonNull @PathVariable String idProfesseur,
+            @NonNull @RequestBody Professeurs professeur);
+
     @GetMapping(
             path = "/matricule/{matriculeProfesseur}",
             produces = MediaType.APPLICATION_JSON_VALUE

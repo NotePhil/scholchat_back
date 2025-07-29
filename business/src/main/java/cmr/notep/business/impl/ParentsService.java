@@ -32,4 +32,9 @@ public class ParentsService implements ParentsApi {
     public Parents posterParent(@NonNull Parents profilParent) {
         return parentsBusiness.posterParent(profilParent);
     }
+
+    @Override
+    public Parents modifierParentPartiellement(@NonNull String idProfilParent, @NonNull Parents partialParent) {
+        return parentsBusiness.modifierParentPartiellement(idProfilParent, partialParent);
+    }
 }
