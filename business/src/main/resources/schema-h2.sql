@@ -275,6 +275,31 @@ CREATE TABLE IF NOT EXISTS ressources.cours_matiere (
     FOREIGN KEY (cours_id) REFERENCES ressources.cours(id),
     FOREIGN KEY (matiere_id) REFERENCES ressources.matieres(id)
     );
+
+
+-- Table pour les cours programmés
+CREATE TABLE IF NOT EXISTS ressources.cours_programmes (
+                                                           id UUID PRIMARY KEY,
+                                                           cours_id UUID NOT NULL,
+                                                           date_cours_prevue TIMESTAMP NOT NULL,
+                                                           date_debut_effectif TIMESTAMP,
+                                                           date_fin_effectif TIMESTAMP,
+                                                           etatCoursProgramme VARCHAR(50) NOT NULL,
+    classe_id UUID,
+    FOREIGN KEY (cours_id) REFERENCES ressources.cours(id),
+    FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
+    );
+
+-- Table de jointure pour la participation aux cours
+CREATE TABLE IF NOT EXISTS ressources.participation_cours (
+                                                              cours_programme_id UUID NOT NULL,
+                                                              utilisateur_id VARCHAR(255) NOT NULL,
+    PRIMARY KEY (cours_programme_id, utilisateur_id),
+    FOREIGN KEY (cours_programme_id) REFERENCES ressources.cours_programmes(id),
+    FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id)
+    );
+
+
 -- Re-enable foreign key checks
 SET REFERENTIAL_INTEGRITY TRUE;
 
