@@ -254,7 +254,27 @@ CREATE TABLE IF NOT EXISTS ressources.demandes_acces (
     FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id),
     FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
     );
+-- Table pour les cours
+CREATE TABLE IF NOT EXISTS ressources.cours (
+                                                id UUID PRIMARY KEY,
+                                                titre VARCHAR(255) NOT NULL,
+    description TEXT,
+    date_creation TIMESTAMP NOT NULL,
+    etat VARCHAR(50) NOT NULL,
+    references TEXT,
+    contenu TEXT NOT NULL,
+    redacteur_id VARCHAR(255) NOT NULL,
+    FOREIGN KEY (redacteur_id) REFERENCES ressources.professeurs(professeurs_id)
+    );
 
+-- Table de jointure pour la relation many-to-many entre cours et matieres
+CREATE TABLE IF NOT EXISTS ressources.cours_matiere (
+                                                        cours_id UUID NOT NULL,
+                                                        matiere_id UUID NOT NULL,
+                                                        PRIMARY KEY (cours_id, matiere_id),
+    FOREIGN KEY (cours_id) REFERENCES ressources.cours(id),
+    FOREIGN KEY (matiere_id) REFERENCES ressources.matieres(id)
+    );
 -- Re-enable foreign key checks
 SET REFERENTIAL_INTEGRITY TRUE;
 
