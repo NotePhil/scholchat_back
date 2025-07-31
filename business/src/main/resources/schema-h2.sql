@@ -236,10 +236,11 @@ CREATE TABLE IF NOT EXISTS ressources.message_classes (
     );
 CREATE TABLE IF NOT EXISTS ressources.acceder (
                                                   utilisateur_id VARCHAR(255) NOT NULL,
-    classe_id UUID NOT NULL,
+    classe_id VARCHAR(255) NOT NULL,
     date_acces TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    PRIMARY KEY (utilisateur_id, classe_id)
+    PRIMARY KEY (utilisateur_id, classe_id),
+    FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id),
+    FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
     );
 
 CREATE TABLE IF NOT EXISTS ressources.demandes_acces (
@@ -251,8 +252,11 @@ CREATE TABLE IF NOT EXISTS ressources.demandes_acces (
     date_demande TIMESTAMP NOT NULL,
     date_traitement TIMESTAMP,
     motif_rejet VARCHAR(255),
+    est_parent BOOLEAN NOT NULL DEFAULT FALSE,
+    eleve_associe_id VARCHAR(255),
     FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id),
-    FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
+    FOREIGN KEY (classe_id) REFERENCES ressources.classes(id),
+    FOREIGN KEY (eleve_associe_id) REFERENCES ressources.eleves(eleves_id)
     );
 -- Table pour les cours
 CREATE TABLE IF NOT EXISTS ressources.cours (
@@ -278,27 +282,37 @@ CREATE TABLE IF NOT EXISTS ressources.cours_matiere (
 
 
 -- Table pour les cours programmés
-CREATE TABLE IF NOT EXISTS ressources.cours_programmes (
-                                                           id UUID PRIMARY KEY,
-                                                           cours_id UUID NOT NULL,
-                                                           date_cours_prevue TIMESTAMP NOT NULL,
-                                                           date_debut_effectif TIMESTAMP,
-                                                           date_fin_effectif TIMESTAMP,
-                                                           etatCoursProgramme VARCHAR(50) NOT NULL,
+CREATE TABLE IF NOT EXISTS ressources.cours_programmer (
+    id VARCHAR(255) PRIMARY KEY,
+    cours_id UUID NOT NULL,
+    date_cours_prevue TIMESTAMP NOT NULL,
+    date_debut_effectif TIMESTAMP,
+    date_fin_effectif TIMESTAMP,
+    etat_cours_programme VARCHAR(50) NOT NULL,
     classe_id UUID,
+    lieu VARCHAR(255) NOT NULL,
+    description TEXT,
+    capacite_max INTEGER,
+    date_creation TIMESTAMP,
+    date_modification TIMESTAMP,
+    cree_par VARCHAR(255),
+    modifie_par VARCHAR(255),
     FOREIGN KEY (cours_id) REFERENCES ressources.cours(id),
     FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
-    );
-
+);
+CREATE TABLE IF NOT EXISTS ressources.cours_programmer_participants (
+    cours_programmer_id VARCHAR(255) NOT NULL,
+    utilisateur_id VARCHAR(255) NOT NULL,
+    PRIMARY KEY (cours_programmer_id, utilisateur_id),
+    FOREIGN KEY (cours_programmer_id) REFERENCES ressources.cours_programmer(id) ON DELETE CASCADE,
+    FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id) ON DELETE CASCADE
+);
 -- Table de jointure pour la participation aux cours
-CREATE TABLE IF NOT EXISTS ressources.participation_cours (
-                                                              cours_programme_id UUID NOT NULL,
-                                                              utilisateur_id VARCHAR(255) NOT NULL,
-    PRIMARY KEY (cours_programme_id, utilisateur_id),
-    FOREIGN KEY (cours_programme_id) REFERENCES ressources.cours_programmes(id),
-    FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id)
-    );
-
+CREATE TABLE IF NOT EXISTS ressources.evenement_participants (
+    evenement_id UUID NOT NULL,
+    utilisateur_id VARCHAR(255) NOT NULL,
+    PRIMARY KEY (evenement_id, utilisateur_id)
+);
 
 -- Re-enable foreign key checks
 SET REFERENTIAL_INTEGRITY TRUE;

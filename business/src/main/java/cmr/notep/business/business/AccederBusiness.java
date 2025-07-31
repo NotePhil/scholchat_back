@@ -8,6 +8,7 @@ import cmr.notep.business.services.MailServiceInterface;
 import cmr.notep.interfaces.modeles.*;
 import cmr.notep.modele.EtatClasse;
 import cmr.notep.modele.EtatDemandeAcces;
+import cmr.notep.modele.EtatUtilisateur;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.*;
 import cmr.notep.ressourcesjpa.repository.*;
@@ -148,44 +149,61 @@ public class AccederBusiness {
 
 
     public void validerDemandeAcces(String demandeId) throws SchoolException {
-        log.info("Validation de la demande d'accès {}", demandeId);
-
         DemandeAccesEntity demande = daoAccessorService.getRepository(DemandeAccesRepository.class)
                 .findById(demandeId)
-                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Demande d'accès introuvable"));
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Demande non trouvée"));
 
         if (demande.getEtat() != EtatDemandeAcces.EN_ATTENTE) {
             throw new SchoolException(SchoolErrorCode.INVALID_STATE,
-                    "Seules les demandes EN_ATTENTE peuvent être validées");
+                    "La demande n'est pas en état EN_ATTENTE");
         }
 
-        // Vérifier si l'utilisateur est un professeur
-        boolean isProfesseur = demande.getUtilisateur() instanceof ProfesseursEntity;
+        // 1. Accorder l'accès principal
+        accorderAcces(demande.getUtilisateur().getId(), demande.getClasse().getId());
 
-        if (!isProfesseur) {
-            // Grant access seulement pour les non-professeurs
-            AccederEntity acceder = new AccederEntity();
-            acceder.setUtilisateurId(demande.getUtilisateur().getId());
-            acceder.setClasseId(demande.getClasse().getId());
-            acceder.setUtilisateur(demande.getUtilisateur());
-            acceder.setClasse(demande.getClasse());
-            acceder.setDateAcces(new Date());
+        String eleveId = null;
 
-            daoAccessorService.getRepository(AccederRepository.class).save(acceder);
+        // 2. Gestion des demandes parent
+        if (demande.isEstParent()) {
+            eleveId = demande.getEleveAssocieId();
+            if (eleveId != null) {
+                // a. Accorder l'accès à l'élève
+                accorderAcces(eleveId, demande.getClasse().getId());
+
+                // b. Créer la relation parent-élève
+                creerRelationParentEleve(demande.getUtilisateur().getId(), eleveId);
+            }
+        } else if (demande.getUtilisateur() instanceof ElevesEntity) {
+            eleveId = demande.getUtilisateur().getId();
         }
 
-        // Supprimer la demande d'accès
-        daoAccessorService.getRepository(DemandeAccesRepository.class).delete(demande);
+        // 3. Mise à jour statut élève
+        if (eleveId != null) {
+            mettreAJourStatutEleve(eleveId, EtatUtilisateur.ACTIVE);
+        }
 
-        // Send confirmation email
-        accessConfirmationEmailService.sendConfirmationEmail(
-                dozerMapperBean.map(demande.getUtilisateur(), Utilisateurs.class),
-                dozerMapperBean.map(demande.getClasse(), Classes.class)
-        );
-
-        log.info("Accès accordé avec succès");
+        // 4. Finaliser la demande
+        finaliserDemande(demande);
     }
-
+    private void accorderAcces(String utilisateurId, String classeId) {
+        if (!daoAccessorService.getRepository(AccederRepository.class)
+                .existsByUtilisateurIdAndClasseId(utilisateurId, classeId)) {
+            AccederEntity acces = new AccederEntity();
+            acces.setUtilisateurId(utilisateurId);
+            acces.setClasseId(classeId);
+            acces.setDateAcces(new Date());
+            daoAccessorService.getRepository(AccederRepository.class).save(acces);
+        }
+    }
+    private void creerRelationParentEleve(String parentId, String eleveId) {
+        if (!daoAccessorService.getRepository(ParentEleveRepository.class)
+                .existsByParentIdAndEleveId(parentId, eleveId)) {
+            ParentEleveEntity relation = new ParentEleveEntity();
+            relation.setParentId(parentId);
+            relation.setEleveId(eleveId);
+            daoAccessorService.getRepository(ParentEleveRepository.class).save(relation);
+        }
+    }
     public void rejeterDemandeAcces(String demandeId, String motifRejet) throws SchoolException {
         log.info("Rejet de la demande d'accès {}", demandeId);
 
@@ -230,6 +248,23 @@ public class AccederBusiness {
         );
 
         log.info("Demande d'accès rejetée avec succès");
+    }
+
+    private void mettreAJourStatutEleve(String eleveId, EtatUtilisateur etat) {
+        UtilisateursEntity eleve = daoAccessorService.getRepository(UtilisateursRepository.class)
+                .findById(eleveId)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Élève non trouvé"));
+
+        if (eleve.getEtat() != etat) {
+            eleve.setEtat(etat);
+            daoAccessorService.getRepository(UtilisateursRepository.class).save(eleve);
+        }
+    }
+
+    private void finaliserDemande(DemandeAccesEntity demande) {
+        demande.setEtat(EtatDemandeAcces.APPROUVEE);
+        demande.setDateTraitement(new Date());
+        daoAccessorService.getRepository(DemandeAccesRepository.class).save(demande);
     }
 
     public void retirerAcces(String utilisateurId, String classeId) throws SchoolException {
@@ -315,25 +350,21 @@ public class AccederBusiness {
             throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Au moins un ID de classe doit être fourni");
         }
 
-        // Verify all classes exist
         for (String classeId : classeIds) {
             if (!daoAccessorService.getRepository(ClassesRepository.class).existsById(classeId)) {
                 throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe introuvable avec l'ID: " + classeId);
             }
         }
 
-        // Get users with access to any of the classes
         List<AccederEntity> accesList = daoAccessorService.getRepository(AccederRepository.class)
                 .findByClasseIdIn(classeIds);
 
-        // Map to Utilisateurs and remove duplicates
         return accesList.stream()
                 .map(acceder -> {
                     if (acceder.getUtilisateur() == null) {
                         log.warn("Utilisateur non trouvé pour l'accès: {}", acceder);
                         return null;
                     }
-                    // Use your existing mapping method that preserves types
                     return mapUtilisateursEntityToModele(acceder.getUtilisateur());
                 })
                 .filter(Objects::nonNull)

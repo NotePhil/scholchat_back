@@ -2,19 +2,21 @@ package cmr.notep.interfaces.modeles;
 
 import cmr.notep.modele.EtatCoursProgramme;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-@EqualsAndHashCode(callSuper = true)
-public class CoursProgrammer extends Cours {
+public class CoursProgrammer {
     private String id;
+    private String coursId;
     private LocalDateTime dateCoursPrevue;
-    private LocalDateTime dateDebutCoursEffectif;
-    private LocalDateTime dateFinCoursEffectif;
+    private LocalDateTime dateDebutEffectif;
+    private LocalDateTime dateFinEffectif;
     private EtatCoursProgramme etatCoursProgramme;
     private String classeId;
+    private String lieu;
+    private String description;
+    private Integer capaciteMax;
     private List<String> participantsIds;
 }

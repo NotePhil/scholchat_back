@@ -4,48 +4,86 @@ import cmr.notep.modele.EtatCoursProgramme;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.GenericGenerator;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Getter
 @Setter
 @Entity
-@Table(name = "cours_programmes", schema = "ressources")
+@Table(name = "cours_programmer", schema = "ressources")
 public class CoursProgrammerEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+    @Column(name = "id", nullable = false, updatable = false)
     private String id;
-
-    @ManyToOne
-    @JoinColumn(name = "cours_id", nullable = false)
-    private CoursEntity cours;
 
     @Column(name = "date_cours_prevue", nullable = false)
     private LocalDateTime dateCoursPrevue;
 
     @Column(name = "date_debut_effectif")
-    private LocalDateTime dateDebutCoursEffectif;
+    private LocalDateTime dateDebutEffectif;
 
     @Column(name = "date_fin_effectif")
-    private LocalDateTime dateFinCoursEffectif;
+    private LocalDateTime dateFinEffectif;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "etat_cours_programme", nullable = false)
     private EtatCoursProgramme etatCoursProgramme;
 
-    @ManyToOne
+    @Column(name = "lieu", nullable = false)
+    private String lieu;
+
+    @Column(name = "description")
+    private String description;
+
+    @Column(name = "capacite_max")
+    private Integer capaciteMax;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cours_id", nullable = false)
+    private CoursEntity cours;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "classe_id")
     private ClassesEntity classe;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-            name = "participation_cours",
+            name = "cours_programmer_participants",
             schema = "ressources",
-            joinColumns = @JoinColumn(name = "cours_programme_id"),
+            joinColumns = @JoinColumn(name = "cours_programmer_id"),
             inverseJoinColumns = @JoinColumn(name = "utilisateur_id")
     )
-    private List<UtilisateursEntity> participants = new ArrayList<>();
+    private List<UtilisateursEntity> participants;
+
+    // Audit fields
+    @Column(name = "date_creation")
+    private LocalDateTime dateCreation;
+
+    @Column(name = "date_modification")
+    private LocalDateTime dateModification;
+
+    @Column(name = "cree_par")
+    private String creePar;
+
+    @Column(name = "modifie_par")
+    private String modifiePar;
+
+    @PrePersist
+    protected void onCreate() {
+        dateCreation = LocalDateTime.now();
+        dateModification = LocalDateTime.now();
+        if (etatCoursProgramme == null) {
+            etatCoursProgramme = EtatCoursProgramme.PLANIFIE;
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        dateModification = LocalDateTime.now();
+    }
 }
