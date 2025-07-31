@@ -1,7 +1,9 @@
 package cmr.notep.interfaces.api;
 
+import cmr.notep.interfaces.modeles.Eleves;
 import cmr.notep.interfaces.modeles.Parents;
 import lombok.NonNull;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,4 +36,21 @@ public interface ParentsApi {
     Parents modifierParentPartiellement(
             @NonNull @PathVariable String idProfilParent,
             @NonNull @RequestBody Parents partialParent);
+
+
+    @PostMapping("/{parentId}/enfants/{eleveId}")
+    @ResponseStatus(HttpStatus.OK)
+    void ajouterEnfant(
+            @PathVariable String parentId,
+            @PathVariable String eleveId);
+
+    @DeleteMapping("/{parentId}/enfants/{eleveId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void retirerEnfant(
+            @PathVariable String parentId,
+            @PathVariable String eleveId);
+
+    @GetMapping("/{parentId}/enfants")
+    @ResponseStatus(HttpStatus.OK)
+    List<Eleves> obtenirEnfants(@PathVariable String parentId);
 }

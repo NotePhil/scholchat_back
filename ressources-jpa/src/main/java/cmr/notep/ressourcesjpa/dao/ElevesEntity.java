@@ -20,4 +20,8 @@ public class ElevesEntity extends UtilisateursEntity {
 //    @ManyToMany(mappedBy = "elevesEntities")
 //    @Mapping("classes")
 //    private List<ClassesEntity> classesEntities;
+
+
+    @ManyToMany(mappedBy = "enfants")
+    private List<ParentsEntity> parents;
 }

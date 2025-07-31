@@ -3,12 +3,14 @@ package cmr.notep.business.business;
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.interfaces.modeles.Eleves;
+import cmr.notep.interfaces.modeles.Parents;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.ElevesEntity;
 import cmr.notep.ressourcesjpa.repository.ElevesRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -88,5 +90,20 @@ public class ElevesBusiness {
         updatedEntity = repository.save(updatedEntity);
 
         return dozerMapperBean.map(updatedEntity, Eleves.class);
+    }
+
+
+    public List<Parents> obtenirParents(String eleveId) throws SchoolException {
+        ElevesEntity eleve = daoAccessorService.getRepository(ElevesRepository.class)
+                .findById(eleveId)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Élève introuvable"));
+
+        if (eleve.getParents() == null) {
+            return Collections.emptyList();
+        }
+
+        return eleve.getParents().stream()
+                .map(p -> dozerMapperBean.map(p, Parents.class))
+                .collect(Collectors.toList());
     }
 }
