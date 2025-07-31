@@ -37,4 +37,10 @@ public class DemandeAccesEntity {
     private Date dateTraitement;
 
     private String motifRejet;
+
+    @Column(nullable = false)
+    private boolean estParent = false;
+
+    @Column(name = "eleve_associe_id")
+    private String eleveAssocieId;
 }

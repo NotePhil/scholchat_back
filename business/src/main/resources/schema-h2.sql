@@ -236,10 +236,11 @@ CREATE TABLE IF NOT EXISTS ressources.message_classes (
     );
 CREATE TABLE IF NOT EXISTS ressources.acceder (
                                                   utilisateur_id VARCHAR(255) NOT NULL,
-    classe_id UUID NOT NULL,
+    classe_id VARCHAR(255) NOT NULL,
     date_acces TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    PRIMARY KEY (utilisateur_id, classe_id)
+    PRIMARY KEY (utilisateur_id, classe_id),
+    FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id),
+    FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
     );
 
 CREATE TABLE IF NOT EXISTS ressources.demandes_acces (
@@ -251,8 +252,11 @@ CREATE TABLE IF NOT EXISTS ressources.demandes_acces (
     date_demande TIMESTAMP NOT NULL,
     date_traitement TIMESTAMP,
     motif_rejet VARCHAR(255),
+    est_parent BOOLEAN NOT NULL DEFAULT FALSE,
+    eleve_associe_id VARCHAR(255),
     FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id),
-    FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
+    FOREIGN KEY (classe_id) REFERENCES ressources.classes(id),
+    FOREIGN KEY (eleve_associe_id) REFERENCES ressources.eleves(eleves_id)
     );
 -- Table pour les cours
 CREATE TABLE IF NOT EXISTS ressources.cours (

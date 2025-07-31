@@ -46,7 +46,7 @@ INSERT INTO ressources.parents (parents_id) VALUES
 INSERT INTO ressources.eleves (eleves_id, niveau) VALUES
 ('550e8400-e29b-41d4-a716-446655440300', '6eme'),
 ('550e8400-e29b-41d4-a716-446655440301', '5eme'),
-('550e8400-e29b-41d4-a716-446655440302', '4eme');
+('550e8400-e29b-41d4-a716-446655440302', '3eme');
 
 -- Insert tutors (must come after users)
 INSERT INTO ressources.repetiteurs (repetiteurs_id, cni_url_front, cni_url_back, photo_full_picture, nom_classe) VALUES
@@ -193,7 +193,7 @@ INSERT INTO ressources.acceder (utilisateur_id, classe_id, date_acces) VALUES
 ('550e8400-e29b-41d4-a716-446655440999', '550e8400-e29b-41d4-a716-446655440401', '2024-01-01 09:00:00'),
 ('550e8400-e29b-41d4-a716-446655440300', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00'),
 ('550e8400-e29b-41d4-a716-446655440300', '550e8400-e29b-41d4-a716-446655440401', '2024-01-01 09:00:00'), -- User 2 in Class B
-    (' 550e8400-e29b-41d4-a716-446655440009', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00'), -- User 3 in Class A
+    ('550e8400-e29b-41d4-a716-446655440009', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00'), -- User 3 in Class A
 ('550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00'), -- User 3 in Class A
 ('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00'), -- Professor Marie Dupont to Class A
 ('550e8400-e29b-41d4-a716-446655440008', '550e8400-e29b-41d4-a716-446655440401', '2024-01-01 09:00:00'); -- Professor Lucas Martin to Class B
@@ -252,3 +252,8 @@ UPDATE ressources.messages SET objet = 'Prochaine réunion' WHERE id = '550e8400
 
 
 
+
+
+DELETE FROM ressources.acceder
+WHERE utilisateur_id = '550e8400-e29b-41d4-a716-446655440300'
+  AND classe_id = '550e8400-e29b-41d4-a716-446655440401';
