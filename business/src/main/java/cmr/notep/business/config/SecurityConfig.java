@@ -54,7 +54,7 @@ public class SecurityConfig {
                                 "/auth/login", "/auth/login/",
                                 "/auth/activate", "/auth/activate/",
                                 "/auth/refresh", "/auth/refresh/",
-                                "/utilisateurs", "/utilisateurs/",
+                                "/utilisateurs", "/utilisateurs/**",
                                 "/auth/reset-password-request",  // Keep this public
                                 "/auth/reset-password",
                                 "/auth/registerPassword", "/auth/registerPassword/",
@@ -62,6 +62,7 @@ public class SecurityConfig {
                                 "/auth/users/register",
                                 "/etablissements","/etablissements/**",
                                 "/reset-password-request",
+                                "/utilisateurs/regenerate-activation",
                                 "/evenements/**",
                                 "/matieres/**",
                                 "/interactions/**",
@@ -72,7 +73,13 @@ public class SecurityConfig {
                                 "/histo-activations/**",
                                 "/profil-eleves","/profil-eleves/**",
                                 "/histo-activations","/histo-activations/**",
-                                "/acceder/**"
+                                "/acceder/**",
+                                "/parent-access/demande",
+                                "/parent-access/infos-classe",
+                                "/acceder/classes/{classeId}/utilisateurs",
+                                "/acceder/utilisateurs/{utilisateurId}/classes",
+                                "/utilisateurs/professors/{professorId}/validate",
+                                "/utilisateurs/professeurs/{professorId}/rejet"
 
                         ).permitAll()
                         .requestMatchers(

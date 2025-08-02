@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
-
+import cmr.notep.business.services.MediaService;
 @Component
 @Slf4j
 @Transactional(noRollbackFor = SchoolException.class)
@@ -50,7 +50,7 @@ public class UtilisateursBusiness {
     private final RoleService roleService;
     private final UserValidationService userValidationService;
     private final AwaitingValidationEmailService awaitingValidationEmailService;
-
+    private final MediaService mediaService;
 
     @Autowired
     private TemplateEngine templateEngine;
@@ -61,7 +61,8 @@ public class UtilisateursBusiness {
                                 MailServiceInterface mailService,
                                 IRejectionEmailService rejectionEmailService,
                                 RoleService roleService, UserValidationService userValidationService, UserValidationService userValidationService1,
-                                AwaitingValidationEmailService awaitingValidationEmailService) {
+                                AwaitingValidationEmailService awaitingValidationEmailService,
+                                MediaService mediaService) {
         this.daoAccessorService = daoAccessorService;
         this.activationEmailService = activationEmailService;
         this.jwtUtil = jwtUtil;
@@ -70,6 +71,7 @@ public class UtilisateursBusiness {
         this.roleService = roleService;
         this.userValidationService = userValidationService1;
         this.awaitingValidationEmailService = awaitingValidationEmailService;
+        this.mediaService = mediaService;
     }
     public Utilisateurs patcherUtilisateur(String idUtilisateur, Utilisateurs partialUpdate) {
         log.info("Patching user with ID: {}", idUtilisateur);
@@ -200,6 +202,21 @@ public class UtilisateursBusiness {
         UtilisateursEntity userEntity = mapUtilisateursModeleToEntity(utilisateur);
         UtilisateursEntity savedUserEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .save(userEntity);
+        try {
+            if (savedUserEntity.getId() != null && !savedUserEntity.getId().equals("temp")) {
+                String userFolderPath = "users/" + savedUserEntity.getId();
+                mediaService.ensureFolderExists(userFolderPath);
+                log.info("Created user folder for ID: {}", savedUserEntity.getId());
+
+                // Create standard subfolders
+                mediaService.ensureFolderExists(userFolderPath + "/photos");
+                mediaService.ensureFolderExists(userFolderPath + "/documents");
+                mediaService.ensureFolderExists(userFolderPath + "/videos");
+            }
+        } catch (Exception e) {
+            log.error("Failed to create user folder for ID: {}", savedUserEntity.getId(), e);
+            // Don't fail the operation, just log the error
+        }
 
         // Génération du token et envoi d'email (sauf pour les professeurs)
         if (!(savedUserEntity instanceof ProfesseursEntity)) {

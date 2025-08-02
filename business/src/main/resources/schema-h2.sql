@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS ressources.professeurs (
     PRIMARY KEY (professeurs_id)
 );
 
+
 CREATE TABLE IF NOT EXISTS ressources.classes (
     id UUID PRIMARY KEY,
     nom VARCHAR(255) NOT NULL,
@@ -147,7 +148,16 @@ CREATE TABLE IF NOT EXISTS ressources.classe_matieres (
     classe_id UUID NOT NULL,
     PRIMARY KEY (matiere_id, classe_id)
 );
-
+CREATE TABLE IF NOT EXISTS ressources.droit_publication (
+    utilisateur_id VARCHAR(255) NOT NULL,
+    classe_id UUID NOT NULL,
+    date_attribution TIMESTAMP NOT NULL,
+    peut_publier BOOLEAN NOT NULL DEFAULT FALSE,
+    peut_moderer BOOLEAN NOT NULL DEFAULT FALSE,
+    PRIMARY KEY (utilisateur_id, classe_id),
+    CONSTRAINT fk_droit_publication_utilisateur FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id),
+    CONSTRAINT fk_droit_publication_classe FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
+);
 CREATE TABLE IF NOT EXISTS ressources.recevoir (
     message_id VARCHAR(255) NOT NULL,
     utilisateur_id VARCHAR(255) NOT NULL
@@ -226,10 +236,11 @@ CREATE TABLE IF NOT EXISTS ressources.message_classes (
     );
 CREATE TABLE IF NOT EXISTS ressources.acceder (
                                                   utilisateur_id VARCHAR(255) NOT NULL,
-    classe_id UUID NOT NULL,
+    classe_id VARCHAR(255) NOT NULL,
     date_acces TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    PRIMARY KEY (utilisateur_id, classe_id)
+    PRIMARY KEY (utilisateur_id, classe_id),
+    FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id),
+    FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
     );
 
 CREATE TABLE IF NOT EXISTS ressources.demandes_acces (
@@ -241,9 +252,57 @@ CREATE TABLE IF NOT EXISTS ressources.demandes_acces (
     date_demande TIMESTAMP NOT NULL,
     date_traitement TIMESTAMP,
     motif_rejet VARCHAR(255),
+    est_parent BOOLEAN NOT NULL DEFAULT FALSE,
+    eleve_associe_id VARCHAR(255),
     FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id),
+    FOREIGN KEY (classe_id) REFERENCES ressources.classes(id),
+    FOREIGN KEY (eleve_associe_id) REFERENCES ressources.eleves(eleves_id)
+    );
+-- Table pour les cours
+CREATE TABLE IF NOT EXISTS ressources.cours (
+                                                id UUID PRIMARY KEY,
+                                                titre VARCHAR(255) NOT NULL,
+    description TEXT,
+    date_creation TIMESTAMP NOT NULL,
+    etat VARCHAR(50) NOT NULL,
+    references TEXT,
+    contenu TEXT NOT NULL,
+    redacteur_id VARCHAR(255) NOT NULL,
+    FOREIGN KEY (redacteur_id) REFERENCES ressources.professeurs(professeurs_id)
+    );
+
+-- Table de jointure pour la relation many-to-many entre cours et matieres
+CREATE TABLE IF NOT EXISTS ressources.cours_matiere (
+                                                        cours_id UUID NOT NULL,
+                                                        matiere_id UUID NOT NULL,
+                                                        PRIMARY KEY (cours_id, matiere_id),
+    FOREIGN KEY (cours_id) REFERENCES ressources.cours(id),
+    FOREIGN KEY (matiere_id) REFERENCES ressources.matieres(id)
+    );
+
+
+-- Table pour les cours programmés
+CREATE TABLE IF NOT EXISTS ressources.cours_programmes (
+                                                           id UUID PRIMARY KEY,
+                                                           cours_id UUID NOT NULL,
+                                                           date_cours_prevue TIMESTAMP NOT NULL,
+                                                           date_debut_effectif TIMESTAMP,
+                                                           date_fin_effectif TIMESTAMP,
+                                                           etatCoursProgramme VARCHAR(50) NOT NULL,
+    classe_id UUID,
+    FOREIGN KEY (cours_id) REFERENCES ressources.cours(id),
     FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
     );
+
+-- Table de jointure pour la participation aux cours
+CREATE TABLE IF NOT EXISTS ressources.participation_cours (
+                                                              cours_programme_id UUID NOT NULL,
+                                                              utilisateur_id VARCHAR(255) NOT NULL,
+    PRIMARY KEY (cours_programme_id, utilisateur_id),
+    FOREIGN KEY (cours_programme_id) REFERENCES ressources.cours_programmes(id),
+    FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id)
+    );
+
 
 -- Re-enable foreign key checks
 SET REFERENTIAL_INTEGRITY TRUE;

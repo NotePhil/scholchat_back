@@ -10,9 +10,7 @@ import cmr.notep.ressourcesjpa.repository.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
@@ -27,102 +25,149 @@ public class DroitPublicationBusiness {
         this.daoAccessorService = daoAccessorService;
     }
 
-    public void attribuerDroitPublication(String utilisateurId, String classeId, boolean peutPublier, boolean peutModerer) throws SchoolException {
-        log.info("Attribuer droit de publication à l'utilisateur {} pour la classe {}", utilisateurId, classeId);
+    public void attribuerDroitPublication(String utilisateurId, String classeId, boolean peutPublier, boolean peutModerer)
+            throws SchoolException {
 
-        // Vérifier si l'utilisateur est un professeur
-        UtilisateursEntity utilisateur = daoAccessorService.getRepository(UtilisateursRepository.class)
-                .findById(utilisateurId)
-                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable"));
+        log.info("Assigning publication rights to user {} for class {}", utilisateurId, classeId);
 
-        if (!(utilisateur instanceof ProfesseursEntity)) {
-            throw new SchoolException(SchoolErrorCode.INVALID_OPERATION,
-                    "Seuls les professeurs peuvent avoir des droits de publication");
-        }
+        // Verify user exists and is a professor
+        UtilisateursEntity utilisateur = verifyUserIsProfessor(utilisateurId);
 
-        // Vérifier si le droit existe déjà
-        Optional<DroitPublicationEntity> droitExist = daoAccessorService.getRepository(DroitPublicationRepository.class)
-                .findByUtilisateurIdAndClasseId(utilisateurId, classeId);
-
-        if (droitExist.isPresent()) {
-            throw new SchoolException(SchoolErrorCode.ALREADY_EXISTS,
-                    "L'utilisateur a déjà des droits de publication pour cette classe");
-        }
-
-        // Vérifier l'existence de la classe
+        // Verify class exists (any status)
         ClassesEntity classe = daoAccessorService.getRepository(ClassesRepository.class)
                 .findById(classeId)
-                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe introuvable"));
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Class not found"));
 
-        // Créer le nouveau droit
-        DroitPublicationEntity droit = new DroitPublicationEntity();
-        droit.setUtilisateurId(utilisateurId);
-        droit.setClasseId(classeId);
-        droit.setUtilisateur(utilisateur);
-        droit.setClasse(classe);
-        droit.setDateAttribution(new Date());
-        droit.setPeutPublier(peutPublier);
-        droit.setPeutModerer(peutModerer);
+        // Check if rights already exist
+        if (daoAccessorService.getRepository(DroitPublicationRepository.class)
+                .existsByUtilisateurIdAndClasseId(utilisateurId, classeId)) {
+            throw new SchoolException(SchoolErrorCode.ALREADY_EXISTS,
+                    "User already has publication rights for this class");
+        }
 
-        // Sauvegarder
-        daoAccessorService.getRepository(DroitPublicationRepository.class).save(droit);
-        log.info("Droit de publication attribué avec succès");
+        createPublicationRight(utilisateurId, classeId, utilisateur, classe, peutPublier, peutModerer);
     }
 
-    public void modifierDroitPublication(String utilisateurId, String classeId, boolean peutPublier, boolean peutModerer) throws SchoolException {
-        log.info("Modifier droit de publication pour l'utilisateur {} dans la classe {}", utilisateurId, classeId);
+    private UtilisateursEntity verifyUserIsProfessor(String userId) throws SchoolException {
+        UtilisateursEntity user = daoAccessorService.getRepository(UtilisateursRepository.class)
+                .findById(userId)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "User not found"));
+
+        if (!(user instanceof ProfesseursEntity)) {
+            throw new SchoolException(SchoolErrorCode.INVALID_OPERATION,
+                    "Only professors can have publication rights");
+        }
+        return user;
+    }
+
+    private void createPublicationRight(String userId, String classId,
+                                        UtilisateursEntity user, ClassesEntity classe,
+                                        boolean canPublish, boolean canModerate) {
+        DroitPublicationEntity droit = new DroitPublicationEntity();
+        droit.setUtilisateurId(userId);
+        droit.setClasseId(classId);
+        droit.setUtilisateur(user);
+        droit.setClasse(classe);
+        droit.setDateAttribution(new Date());
+        droit.setPeutPublier(canPublish);
+        droit.setPeutModerer(canModerate);
+
+        daoAccessorService.getRepository(DroitPublicationRepository.class).save(droit);
+        log.info("Publication rights successfully assigned");
+    }
+
+    public void modifierDroitPublication(String utilisateurId, String classeId,
+                                         boolean peutPublier, boolean peutModerer)
+            throws SchoolException {
+
+        log.info("Updating publication rights for user {} in class {}", utilisateurId, classeId);
 
         DroitPublicationEntity droit = daoAccessorService.getRepository(DroitPublicationRepository.class)
                 .findByUtilisateurIdAndClasseId(utilisateurId, classeId)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND,
-                        "Droit de publication introuvable"));
+                        "Publication rights not found"));
 
         droit.setPeutPublier(peutPublier);
         droit.setPeutModerer(peutModerer);
 
         daoAccessorService.getRepository(DroitPublicationRepository.class).save(droit);
-        log.info("Droit de publication modifié avec succès");
+        log.info("Publication rights successfully updated");
     }
 
     public void retirerDroitPublication(String utilisateurId, String classeId) throws SchoolException {
-        log.info("Retirer droit de publication de l'utilisateur {} pour la classe {}", utilisateurId, classeId);
+        log.info("Removing publication rights from user {} for class {}", utilisateurId, classeId);
 
         DroitPublicationEntity droit = daoAccessorService.getRepository(DroitPublicationRepository.class)
                 .findByUtilisateurIdAndClasseId(utilisateurId, classeId)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND,
-                        "Droit de publication introuvable"));
+                        "Publication rights not found"));
 
         daoAccessorService.getRepository(DroitPublicationRepository.class).delete(droit);
-        log.info("Droit de publication retiré avec succès");
+        log.info("Publication rights successfully removed");
     }
 
     public List<Utilisateurs> obtenirUtilisateursAvecDroitPublication(String classeId) throws SchoolException {
-        log.info("Obtenir tous les utilisateurs ayant des droits de publication pour la classe {}", classeId);
+        log.info("Getting users with publication rights for class {}", classeId);
 
-        // Vérifier l'existence de la classe
+        // Verify class exists (any status)
         if (!daoAccessorService.getRepository(ClassesRepository.class).existsById(classeId)) {
-            throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe introuvable");
+            throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Class not found");
         }
 
         return daoAccessorService.getRepository(DroitPublicationRepository.class)
-                .findByClasseId(classeId)
+                .findAllUsersByClassId(classeId)
                 .stream()
-                .map(droit -> dozerMapperBean.map(droit.getUtilisateur(), Utilisateurs.class))
+                .map(this::mapUserWithMinimalData)
                 .collect(Collectors.toList());
     }
 
-    public List<Classes> obtenirClassesAvecDroitPublication(String utilisateurId) throws SchoolException {
-        log.info("Obtenir toutes les classes où l'utilisateur {} a des droits de publication", utilisateurId);
+    private Utilisateurs mapUserWithMinimalData(DroitPublicationEntity droit) {
+        Utilisateurs user = dozerMapperBean.map(droit.getUtilisateur(), Utilisateurs.class);
+        // Clear sensitive data
+        user.setPasseAccess(null);
+        user.setActivationToken(null);
+        user.setResetPasswordToken(null);
+        return user;
+    }
 
-        // Vérifier l'existence de l'utilisateur
-        if (!daoAccessorService.getRepository(UtilisateursRepository.class).existsById(utilisateurId)) {
-            throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable");
+    public List<Classes> obtenirClassesAvecDroitPublication(String utilisateurId) throws SchoolException {
+        log.info("Getting classes with publication rights for user {}", utilisateurId);
+
+        // Verify user exists
+        UtilisateursEntity utilisateur = daoAccessorService.getRepository(UtilisateursRepository.class)
+                .findById(utilisateurId)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "User not found"));
+
+        if (Boolean.TRUE.equals(utilisateur.getAdmin())) {
+            return getAllClassesForAdmin();
         }
 
-        return daoAccessorService.getRepository(DroitPublicationRepository.class)
-                .findByUtilisateurId(utilisateurId)
+        return getClassesWithPublicationRights(utilisateurId);
+    }
+
+    private List<Classes> getAllClassesForAdmin() {
+        return daoAccessorService.getRepository(ClassesRepository.class)
+                .findAll()
                 .stream()
-                .map(droit -> dozerMapperBean.map(droit.getClasse(), Classes.class))
+                .map(this::mapClassWithMinimalData)
                 .collect(Collectors.toList());
+    }
+
+    private List<Classes> getClassesWithPublicationRights(String userId) {
+        return daoAccessorService.getRepository(DroitPublicationRepository.class)
+                .findAllClassesByUserId(userId)
+                .stream()
+                .map(DroitPublicationEntity::getClasse)
+                .filter(Objects::nonNull)
+                .map(this::mapClassWithMinimalData)
+                .collect(Collectors.toList());
+    }
+
+    private Classes mapClassWithMinimalData(ClassesEntity classe) {
+        Classes mapped = dozerMapperBean.map(classe, Classes.class);
+        // Simplify response by removing nested objects
+        mapped.setEtablissement(null);
+        mapped.setModerator(null);
+        return mapped;
     }
 }

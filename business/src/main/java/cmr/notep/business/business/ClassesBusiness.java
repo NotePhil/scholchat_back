@@ -291,6 +291,12 @@ public class ClassesBusiness {
      */
     public List<Classes> obtenirClassesParEtat(EtatClasse etat) throws SchoolException {
         ClassesRepository classesRepository = daoAccessorService.getRepository(ClassesRepository.class);
+        if (etat == null) {
+            return classesRepository.findAll()
+                    .stream()
+                    .map(c -> dozerMapperBean.map(c, Classes.class))
+                    .collect(Collectors.toList());
+        }
         return classesRepository.findByEtat(etat)
                 .stream()
                 .map(c -> dozerMapperBean.map(c, Classes.class))

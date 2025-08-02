@@ -47,12 +47,60 @@ public class ProfesseursBusiness {
 
         return professeur;
     }
+
     public Professeurs posterProfesseur(Professeurs professeur) {
         return dozerMapperBean.map(
                 this.daoAccessorService.getRepository(ProfesseursRepository.class)
                         .save(dozerMapperBean.map(professeur, ProfesseursEntity.class)),
                 Professeurs.class
         );
+    }
+
+    public Professeurs modifierProfesseurPartiellement(String idProfesseur, Professeurs partialUpdate) {
+        ProfesseursRepository repository = daoAccessorService.getRepository(ProfesseursRepository.class);
+
+        // Get existing professor
+        ProfesseursEntity existingEntity = repository.findById(idProfesseur)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Professeur introuvable avec l'ID: " + idProfesseur));
+
+        // Map the existing entity to model
+        Professeurs existingProfesseur = dozerMapperBean.map(existingEntity, Professeurs.class);
+
+        // Apply partial updates
+        if (partialUpdate.getNom() != null) {
+            existingProfesseur.setNom(partialUpdate.getNom());
+        }
+        if (partialUpdate.getPrenom() != null) {
+            existingProfesseur.setPrenom(partialUpdate.getPrenom());
+        }
+        if (partialUpdate.getEmail() != null) {
+            existingProfesseur.setEmail(partialUpdate.getEmail());
+        }
+        if (partialUpdate.getTelephone() != null) {
+            existingProfesseur.setTelephone(partialUpdate.getTelephone());
+        }
+        if (partialUpdate.getAdresse() != null) {
+            existingProfesseur.setAdresse(partialUpdate.getAdresse());
+        }
+        if (partialUpdate.getEtat() != null) {
+            existingProfesseur.setEtat(partialUpdate.getEtat());
+        }
+        if (partialUpdate.getCniUrlRecto() != null) {
+            existingProfesseur.setCniUrlRecto(partialUpdate.getCniUrlRecto());
+        }
+        if (partialUpdate.getCniUrlVerso() != null) {
+            existingProfesseur.setCniUrlVerso(partialUpdate.getCniUrlVerso());
+        }
+        if (partialUpdate.getSelfieUrl() != null) {
+            existingProfesseur.setSelfieUrl(partialUpdate.getSelfieUrl());
+        }
+        if (partialUpdate.getMatriculeProfesseur() != null) {
+            existingProfesseur.setMatriculeProfesseur(partialUpdate.getMatriculeProfesseur());
+        }
+
+        // Save the updated entity
+        ProfesseursEntity updatedEntity = repository.save(dozerMapperBean.map(existingProfesseur, ProfesseursEntity.class));
+        return dozerMapperBean.map(updatedEntity, Professeurs.class);
     }
 
     public List<Professeurs> avoirToutProfesseurs() {

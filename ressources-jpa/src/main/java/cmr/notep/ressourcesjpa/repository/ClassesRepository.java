@@ -19,4 +19,6 @@ public interface ClassesRepository extends JpaRepository<ClassesEntity, String> 
     }
 
     boolean existsByCodeActivationAndEtat(String token, EtatClasse etat);
+
+
 }

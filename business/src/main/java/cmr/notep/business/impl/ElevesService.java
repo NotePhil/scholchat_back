@@ -3,6 +3,7 @@ package cmr.notep.business.impl;
 import cmr.notep.business.business.ElevesBusiness;
 import cmr.notep.interfaces.api.ElevesApi;
 import cmr.notep.interfaces.modeles.Eleves;
+import cmr.notep.interfaces.modeles.Parents;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,5 +32,14 @@ public class ElevesService implements ElevesApi {
     @Override
     public Eleves posterEleve(@NonNull Eleves Eleve) {
         return elevesBusiness.posterEleve(Eleve);
+    }
+
+    @Override
+    public Eleves modifierElevePartiellement(@NonNull String idEleve, @NonNull Eleves partialEleve) {
+        return elevesBusiness.modifierElevePartiellement(idEleve, partialEleve);
+    }
+    @Override
+    public List<Parents> obtenirParents(String eleveId) {
+        return elevesBusiness.obtenirParents(eleveId);
     }
 }

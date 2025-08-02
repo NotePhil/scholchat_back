@@ -63,6 +63,7 @@ public class MessagesBusiness {
         // Create message entity
         MessagesEntity messageEntity = new MessagesEntity();
         messageEntity.setContenu(groupMessageDto.getContent());
+        messageEntity.setObjet(groupMessageDto.getObjet());
         messageEntity.setExpediteurEntity(sender);
         messageEntity.setDateCreation(new Date().toString());
         messageEntity.setEtat("envoyé");
@@ -83,16 +84,28 @@ public class MessagesBusiness {
             // Filter out null users and the sender
             recipients.addAll(accessList.stream()
                     .map(AccederEntity::getUtilisateur)
-                    .filter(Objects::nonNull) // Filter out null users
-                    .filter(user -> !user.getId().equals(sender.getId())) // Exclude sender
+                    .filter(Objects::nonNull)
+                    .filter(user -> !user.getId().equals(sender.getId()))
                     .collect(Collectors.toList()));
         }
 
         // Remove duplicates (in case a user is in multiple classes)
         recipients = recipients.stream()
-                .filter(Objects::nonNull) // Additional null check
+                .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());
+
+        // Add copie recipients if any
+        if (groupMessageDto.getCopieRecipientIds() != null && !groupMessageDto.getCopieRecipientIds().isEmpty()) {
+            List<UtilisateursEntity> copieRecipients = groupMessageDto.getCopieRecipientIds().stream()
+                    .map(id -> daoAccessorService.getRepository(UtilisateursRepository.class)
+                            .findById(id)
+                            .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Destinataire copie non trouvé avec l'ID: " + id)))
+                    .filter(recipient -> !recipient.getId().equals(sender.getId())) // Exclude sender
+                    .collect(Collectors.toList());
+
+            recipients.addAll(copieRecipients);
+        }
 
         messageEntity.setDestinatairesEntities(recipients);
         messageEntity.setClasses(classes);

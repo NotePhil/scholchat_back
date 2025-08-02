@@ -9,9 +9,9 @@ INSERT INTO ressources.utilisateurs (id, nom, prenom, email, passeaccess, teleph
 ('550e8400-e29b-41d4-a716-446655440002', 'Durand', 'Pierre', 'pierre.durand@example.com', 'password123', '0123456787', '789 Boulevard de Nice', 'abc123activationcode3', 'ACTIVE', FALSE),
 ('550e8400-e29b-41d4-a716-446655440003', 'Lefevre', 'Sophie', 'sophie.lefevre@example.com', 'password123', '0123456786', '101 Rue de Marseille', 'abc123activationcode4', 'ACTIVE', FALSE),
 ('550e8400-e29b-41d4-a716-446655440004', 'Durand', 'Paul', 'peroldkamsu83@gmail.com', 'password123', '0123456785', '111 Rue de Lille', 'abc123activationcode5', 'ACTIVE', FALSE),
-('550e8400-e29b-41d4-a716-446655440007', 'Marie', 'Dupont', 'peroldkamsu23@gmail.com', 'password123', '0123456789', '123 Rue de Paris', 'abc123activationcode6', 'ACTIVE', FALSE),
+('550e8400-e29b-41d4-a716-446655440007', 'Marie', 'Dupont', 'kpgpa237@gmail.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456789', '123 Rue de Paris', 'abc123activationcode6', 'ACTIVE', FALSE),
 ('550e8400-e29b-41d4-a716-446655440008', 'Lucas', 'Martin', 'peroldkamsu33@gmail.com', 'password123', '0123456788', '456 Avenue de Lyon', 'abc123activationcode7', 'ACTIVE', FALSE),
-('550e8400-e29b-41d4-a716-446655440009', 'Isabelle', 'Lefevre', 'isabelle.lefevre@example.com', 'password123', '0123456787', '789 Boulevard de Nice', 'abc123activationcode8', 'ACTIVE', FALSE),
+('550e8400-e29b-41d4-a716-446655440009', 'Isabelle', 'Lefevre', 'isabelle.lefevre@example.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456787', '789 Boulevard de Nice', 'abc123activationcode8', 'ACTIVE', FALSE),
 ('550e8400-e29b-41d4-a716-446655440010', 'Paul', 'Durand', 'paul.durand@example.com', 'password123', '0123456786', '111 Rue de Lille', 'abc123activationcode9', 'ACTIVE', FALSE),
 ('550e8400-e29b-41d4-a716-446655440200', 'Parent A', 'FirstNameA', 'peroldkamsu38@gmail.com', 'password123', '0123456780', 'AddressA', 'abc123activationcode10', 'ACTIVE', FALSE),
 ('550e8400-e29b-41d4-a716-446655440201', 'Parent B', 'FirstNameB', 'parentb@example.com', 'password123', '0123456781', 'AddressB', 'abc123activationcode11', 'ACTIVE', FALSE),
@@ -46,7 +46,7 @@ INSERT INTO ressources.parents (parents_id) VALUES
 INSERT INTO ressources.eleves (eleves_id, niveau) VALUES
 ('550e8400-e29b-41d4-a716-446655440300', '6eme'),
 ('550e8400-e29b-41d4-a716-446655440301', '5eme'),
-('550e8400-e29b-41d4-a716-446655440302', '4eme');
+('550e8400-e29b-41d4-a716-446655440302', '3eme');
 
 -- Insert tutors (must come after users)
 INSERT INTO ressources.repetiteurs (repetiteurs_id, cni_url_front, cni_url_back, photo_full_picture, nom_classe) VALUES
@@ -54,7 +54,7 @@ INSERT INTO ressources.repetiteurs (repetiteurs_id, cni_url_front, cni_url_back,
 
 -- Insert classes (must come after schools and professors)
 INSERT INTO ressources.classes (id, nom, niveau, date_creation, code_activation, etat, etablissement_id, moderator_id, acces_majeur) VALUES
-('550e8400-e29b-41d4-a716-446655440400', 'Classe A', '3ème', '2024-11-28 08:00:00', '123456', 'ACTIF', '550e8400-e29b-41d4-a716-446655440100', '550e8400-e29b-41d4-a716-446655440007',TRUE),
+('550e8400-e29b-41d4-a716-446655440400', 'Classe A', '3ème', '2024-11-28 08:00:00', '123456', 'ACTIF', '550e8400-e29b-41d4-a716-446655440100', '550e8400-e29b-41d4-a716-446655440007',FALSE),
 ('550e8400-e29b-41d4-a716-446655440401', 'Classe B', '2nde', '2024-11-28 09:00:00', '234567', 'ACTIF', '550e8400-e29b-41d4-a716-446655440101', '550e8400-e29b-41d4-a716-446655440008',TRUE),
 ('550e8400-e29b-41d4-a716-446655440402', 'Classe C - Pending', '4ème', '2024-11-29 09:00:00', '789012', 'EN_ATTENTE_APPROBATION', '550e8400-e29b-41d4-a716-446655440100', '550e8400-e29b-41d4-a716-446655440009',FALSE),
 ('550e8400-e29b-41d4-a716-446655440403', 'Classe D - Pending', '1ère', '2024-11-29 10:00:00', '890123', 'EN_ATTENTE_APPROBATION', '550e8400-e29b-41d4-a716-446655440101', '660e8400-e29b-41d4-a716-446655440999',TRUE),
@@ -191,11 +191,14 @@ INSERT INTO ressources.acceder (utilisateur_id, classe_id, date_acces) VALUES
 ('550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440401', '2024-01-01 09:00:00'), -- User 2 in Class B
 ('550e8400-e29b-41d4-a716-446655440999', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00'), -- User 3 in Class A
 ('550e8400-e29b-41d4-a716-446655440999', '550e8400-e29b-41d4-a716-446655440401', '2024-01-01 09:00:00'),
+('550e8400-e29b-41d4-a716-446655440300', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00'),
 ('550e8400-e29b-41d4-a716-446655440300', '550e8400-e29b-41d4-a716-446655440401', '2024-01-01 09:00:00'), -- User 2 in Class B
-    (' 550e8400-e29b-41d4-a716-446655440009', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00'), -- User 3 in Class A
+    ('550e8400-e29b-41d4-a716-446655440009', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00'), -- User 3 in Class A
 ('550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00'), -- User 3 in Class A
 ('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00'), -- Professor Marie Dupont to Class A
 ('550e8400-e29b-41d4-a716-446655440008', '550e8400-e29b-41d4-a716-446655440401', '2024-01-01 09:00:00'); -- Professor Lucas Martin to Class B
+
+VALUES ('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440401', TRUE, TRUE);
 -- Insert access requests
 INSERT INTO ressources.demandes_acces (id, utilisateur_id, classe_id, code_activation, etat, date_demande) VALUES
 -- Pending requests
@@ -207,8 +210,25 @@ INSERT INTO ressources.demandes_acces (id, utilisateur_id, classe_id, code_activ
 
 -- Rejected request
 ('660e8400-e29b-41d4-a716-446655440003', '550e8400-e29b-41d4-a716-446655440003', '550e8400-e29b-41d4-a716-446655440401', '234567', 'REJETEE', '2024-01-01 13:00:00');
+-- Insert publication rights for kpgpa237@gmail.com (Marie Dupont)
+INSERT INTO ressources.droit_publication (utilisateur_id, classe_id, date_attribution, peut_publier, peut_moderer) VALUES
+('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440400', '2024-01-01 09:00:00', TRUE, FALSE), -- Class A (can publish)
+('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440401', '2024-01-01 09:00:00', TRUE, TRUE); -- Class B (can publish and moderate)
+INSERT INTO ressources.parent_eleve (parent_id, eleve_id)
+SELECT '550e8400-e29b-41d4-a716-446655440200', '550e8400-e29b-41d4-a716-446655440300'
+WHERE NOT EXISTS (
+    SELECT 1 FROM ressources.parent_eleve
+    WHERE parent_id = '550e8400-e29b-41d4-a716-446655440200'
+    AND eleve_id = '550e8400-e29b-41d4-a716-446655440300'
+);
 
-
+INSERT INTO ressources.parent_eleve (parent_id, eleve_id)
+SELECT '550e8400-e29b-41d4-a716-446655440201', '550e8400-e29b-41d4-a716-446655440301'
+WHERE NOT EXISTS (
+    SELECT 1 FROM ressources.parent_eleve
+    WHERE parent_id = '550e8400-e29b-41d4-a716-446655440201'
+    AND eleve_id = '550e8400-e29b-41d4-a716-446655440301'
+);
 
 -- Supprimer les demandes d'accès existantes pour les professeurs
 DELETE FROM ressources.demandes_acces
@@ -232,3 +252,8 @@ UPDATE ressources.messages SET objet = 'Prochaine réunion' WHERE id = '550e8400
 
 
 
+
+
+DELETE FROM ressources.acceder
+WHERE utilisateur_id = '550e8400-e29b-41d4-a716-446655440300'
+  AND classe_id = '550e8400-e29b-41d4-a716-446655440401';
