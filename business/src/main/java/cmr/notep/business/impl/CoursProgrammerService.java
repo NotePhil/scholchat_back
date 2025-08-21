@@ -110,6 +110,7 @@ public class CoursProgrammerService implements CoursProgrammerApi {
         }
     }
 
+
     @Override
     public List<CoursProgrammer> obtenirProgrammationParParticipant(@NonNull String participantId) {
         log.info("Fetching programming for participant: {}", participantId);
