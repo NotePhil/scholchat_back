@@ -4,5 +4,7 @@ public enum EtatCours {
     BROUILLON,
     PUBLIE,
     ARCHIVE,
-    EN_ATTENTE_VALIDATION
+    EN_ATTENTE_VALIDATION,
+    ACTIF,        // Added
+    INACTIF
 }

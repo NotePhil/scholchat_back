@@ -27,16 +27,23 @@ public interface CoursApi {
     List<Cours> obtenirCoursParProfesseur(@NonNull @PathVariable String professeurId);
 
     @GetMapping(
-            path = "/matiere/{matiereId}",
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    @ResponseStatus(HttpStatus.OK)
-    List<Cours> obtenirCoursParMatiere(@NonNull @PathVariable String matiereId);
-
-    @GetMapping(
             path = "/etat/{etat}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @ResponseStatus(HttpStatus.OK)
     List<Cours> obtenirCoursParEtat(@NonNull @PathVariable EtatCours etat);
+
+    @GetMapping(
+            path = "/accessibles/{userId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    List<Cours> obtenirCoursAccessibles(@NonNull @PathVariable String userId);
+
+    @GetMapping(
+            path = "/{coursId}/complet",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    Cours obtenirCoursAvecChapitres(@NonNull @PathVariable String coursId);
 }

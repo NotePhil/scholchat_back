@@ -22,16 +22,11 @@ public class Cours {
     private Date dateCreation;
     private EtatCours etat;
     private String references;
-    private String contenu;
-    @JsonProperty("redacteurId") // Change to simple ID reference
+    private String restriction; // PUBLIC/PRIVE
+    private List<Chapitre> chapitres;
+
+    @JsonProperty("redacteurId")
     private String redacteurId;
-
-    @JsonProperty("matiereIds") // Change to list of IDs
-    private List<String> matiereIds;
-
-    // These will be populated in the business layer
-    @JsonIgnore
-    private Professeurs redacteur;
 
     @JsonIgnore
     private List<Matiere> matieres;

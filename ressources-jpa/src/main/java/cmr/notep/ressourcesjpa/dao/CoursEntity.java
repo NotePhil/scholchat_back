@@ -37,13 +37,17 @@ public class CoursEntity {
     @Column(columnDefinition = "TEXT")
     private String references;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
-    private String contenu;
+    @Column(name = "restriction")
+    private String restriction; // PUBLIC/PRIVE
 
     @ManyToOne
     @JoinColumn(name = "redacteur_id", nullable = false)
     @Mapping("redacteur")
     private ProfesseursEntity redacteur;
+
+    @OneToMany(mappedBy = "cours", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Mapping("chapitres")
+    private List<ChapitreEntity> chapitres = new ArrayList<>();
 
     @ManyToMany
     @JoinTable(name = "cours_matiere", schema = "ressources",

@@ -33,14 +33,20 @@ public class CoursService implements CoursApi {
     }
 
     @Override
-    public List<Cours> obtenirCoursParMatiere(@NonNull String matiereId) {
-        log.info("Récupération des cours pour la matière: {}", matiereId);
-        return coursBusiness.obtenirCoursParMatiere(matiereId);
-    }
-
-    @Override
     public List<Cours> obtenirCoursParEtat(@NonNull EtatCours etat) {
         log.info("Récupération des cours avec l'état: {}", etat);
         return coursBusiness.obtenirCoursParEtat(etat);
+    }
+
+    @Override
+    public List<Cours> obtenirCoursAccessibles(@NonNull String userId) {
+        log.info("Récupération des cours accessibles pour l'utilisateur: {}", userId);
+        return coursBusiness.obtenirCoursAccessibles(userId);
+    }
+
+    @Override
+    public Cours obtenirCoursAvecChapitres(@NonNull String coursId) {
+        log.info("Récupération du cours avec chapitres: {}", coursId);
+        return coursBusiness.obtenirCoursAvecChapitres(coursId);
     }
 }

@@ -55,6 +55,9 @@ CREATE TABLE IF NOT EXISTS ressources.classes (
     acces_majeur BOOLEAN DEFAULT FALSE
 );
 
+
+
+
 -- 2. Create other tables that depend on the base tables
 CREATE TABLE IF NOT EXISTS ressources.parents (
     parents_id VARCHAR(255) PRIMARY KEY
@@ -270,7 +273,15 @@ CREATE TABLE IF NOT EXISTS ressources.cours (
     redacteur_id VARCHAR(255) NOT NULL,
     FOREIGN KEY (redacteur_id) REFERENCES ressources.professeurs(professeurs_id)
     );
-
+CREATE TABLE IF NOT EXISTS ressources.chapitres (
+                                                    id UUID PRIMARY KEY,
+                                                    titre VARCHAR(255) NOT NULL,
+    description TEXT,
+    ordre INTEGER NOT NULL,
+    contenu TEXT NOT NULL,
+    cours_id UUID NOT NULL,
+    FOREIGN KEY (cours_id) REFERENCES ressources.cours(id) ON DELETE CASCADE
+    );
 -- Table de jointure pour la relation many-to-many entre cours et matieres
 CREATE TABLE IF NOT EXISTS ressources.cours_matiere (
                                                         cours_id UUID NOT NULL,
@@ -349,6 +360,7 @@ ALTER TABLE ressources.interactions DROP CONSTRAINT IF EXISTS fk_interaction_use
 ALTER TABLE ressources.interactions DROP CONSTRAINT IF EXISTS fk_interaction_event;
 ALTER TABLE ressources.interactions DROP CONSTRAINT IF EXISTS fk_interaction_message;
 ALTER TABLE ressources.refresh_tokens DROP CONSTRAINT IF EXISTS fk_refresh_tokens_utilisateur;
+ALTER TABLE ressources.cours ADD COLUMN IF NOT EXISTS restriction VARCHAR(50) DEFAULT 'PRIVE';
 
 -- Now add the constraints
 ALTER TABLE ressources.professeurs
@@ -486,3 +498,7 @@ CREATE INDEX IF NOT EXISTS idx_classe_etablissement ON ressources.classes(etabli
 CREATE INDEX IF NOT EXISTS idx_utilisateur_email ON ressources.utilisateurs(email);
 CREATE INDEX IF NOT EXISTS idx_acceder_classe ON ressources.acceder(classe_id);
 CREATE INDEX IF NOT EXISTS idx_acceder_utilisateur ON ressources.acceder(utilisateur_id);
+-- Create index for better performance
+CREATE INDEX IF NOT EXISTS idx_chapitres_cours ON ressources.chapitres(cours_id);
+CREATE INDEX IF NOT EXISTS idx_chapitres_ordre ON ressources.chapitres(ordre);
+CREATE INDEX IF NOT EXISTS idx_cours_restriction ON ressources.cours(restriction);
