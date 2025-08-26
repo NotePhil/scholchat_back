@@ -284,3 +284,53 @@
     DELETE FROM ressources.acceder
     WHERE utilisateur_id = '550e8400-e29b-41d4-a716-446655440300'
       AND classe_id = '550e8400-e29b-41d4-a716-446655440401';
+
+
+    INSERT INTO ressources.cours (id, titre, description, date_creation, etat, references, contenu, redacteur_id) VALUES
+                                                                                                                      ('660e8400-e29b-41d4-a716-446655441104', 'Trigonométrie', 'Cours sur les fonctions trigonométriques et leurs applications', '2024-03-15 09:00:00', 'PUBLIE', 'Référence 8, Référence 9', 'Contenu détaillé du cours de trigonométrie...', '550e8400-e29b-41d4-a716-446655440007'),
+                                                                                                                      ('660e8400-e29b-41d4-a716-446655441105', 'Chimie Organique', 'Cours sur les bases de la chimie organique', '2024-04-01 10:00:00', 'PUBLIE', 'Référence 10, Référence 11', 'Contenu détaillé du cours de chimie organique...', '550e8400-e29b-41d4-a716-446655440008'),
+                                                                                                                      ('660e8400-e29b-41d4-a716-446655441106', 'Biologie Cellulaire', 'Cours sur la structure et la fonction des cellules', '2024-04-15 11:00:00', 'BROUILLON', 'Référence 12', 'Contenu en préparation...', '550e8400-e29b-41d4-a716-446655440009'),
+                                                                                                                      ('660e8400-e29b-41d4-a716-446655441107', 'Littérature Française', 'Cours sur les grands auteurs français', '2024-05-01 14:00:00', 'EN_ATTENTE_VALIDATION', 'Référence 13, Référence 14', 'Contenu du cours de littérature française...', '550e8400-e29b-41d4-a716-446655440007');
+
+
+
+    INSERT INTO ressources.cours_matiere (cours_id, matiere_id) VALUES
+                                                                    ('660e8400-e29b-41d4-a716-446655441104', '550e8400-e29b-41d4-a716-446655441000'), -- Mathématiques
+                                                                    ('660e8400-e29b-41d4-a716-446655441105', '550e8400-e29b-41d4-a716-446655441001'), -- Sciences
+                                                                    ('660e8400-e29b-41d4-a716-446655441106', '550e8400-e29b-41d4-a716-446655441001'), -- Sciences
+                                                                    ('660e8400-e29b-41d4-a716-446655441107', '550e8400-e29b-41d4-a716-446655441004'); -- Langue
+
+
+    -- Schedule some courses for Class A and Class B
+    INSERT INTO ressources.cours_programmer
+    (id, cours_id, professeur_id, date_cours_prevue, date_debut_effectif, date_fin_effectif, etat_cours_programme, classe_id, lieu, description, date_creation, date_modification)
+    VALUES
+-- For Class A
+('770e8400-e29b-41d4-a716-446655442104', '660e8400-e29b-41d4-a716-446655441104', '550e8400-e29b-41d4-a716-446655440007', '2024-05-10 08:00:00', '2024-05-10 08:00:00', '2024-05-10 10:00:00', 'PLANIFIE', '550e8400-e29b-41d4-a716-446655440400', 'Salle A3', 'Cours de trigonométrie', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('770e8400-e29b-41d4-a716-446655442105', '660e8400-e29b-41d4-a716-446655441106', '550e8400-e29b-41d4-a716-446655440009', '2024-05-12 10:00:00', '2024-05-12 10:00:00', '2024-05-12 12:00:00', 'PLANIFIE', '550e8400-e29b-41d4-a716-446655440400', 'Labo Bio', 'Cours de biologie cellulaire', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+-- For Class B
+('770e8400-e29b-41d4-a716-446655442106', '660e8400-e29b-41d4-a716-446655441105', '550e8400-e29b-41d4-a716-446655440008', '2024-05-15 14:00:00', '2024-05-15 14:00:00', '2024-05-15 16:00:00', 'PLANIFIE', '550e8400-e29b-41d4-a716-446655440401', 'Salle B2', 'Cours de chimie organique', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('770e8400-e29b-41d4-a716-446655442107', '660e8400-e29b-41d4-a716-446655441107', '550e8400-e29b-41d4-a716-446655440007', '2024-05-17 09:00:00', '2024-05-17 09:00:00', '2024-05-17 11:00:00', 'PLANIFIE', '550e8400-e29b-41d4-a716-446655440401', 'Salle B3', 'Cours de littérature française', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+
+-- Add student participation to scheduled courses
+    INSERT INTO ressources.cours_programmer_participants (cours_programmer_id, utilisateur_id) VALUES
+-- For Class A
+('770e8400-e29b-41d4-a716-446655442104', '550e8400-e29b-41d4-a716-446655440300'), -- Eleve A
+('770e8400-e29b-41d4-a716-446655442104', '550e8400-e29b-41d4-a716-446655440302'), -- Eleve C
+('770e8400-e29b-41d4-a716-446655442105', '550e8400-e29b-41d4-a716-446655440300'), -- Eleve A
+('770e8400-e29b-41d4-a716-446655442105', '550e8400-e29b-41d4-a716-446655440302'), -- Eleve C
+-- For Class B
+('770e8400-e29b-41d4-a716-446655442106', '550e8400-e29b-41d4-a716-446655440301'), -- Eleve B
+('770e8400-e29b-41d4-a716-446655442107', '550e8400-e29b-41d4-a716-446655440301'); -- Eleve B
+
+
+-- Associate scheduled courses with classes
+    INSERT INTO ressources.cours_programmer_classes (cours_programmer_id, classe_id) VALUES
+                                                                                         ('770e8400-e29b-41d4-a716-446655442104', '550e8400-e29b-41d4-a716-446655440400'), -- Class A
+                                                                                         ('770e8400-e29b-41d4-a716-446655442105', '550e8400-e29b-41d4-a716-446655440400'), -- Class A
+                                                                                         ('770e8400-e29b-41d4-a716-446655442106', '550e8400-e29b-41d4-a716-446655440401'), -- Class B
+                                                                                         ('770e8400-e29b-41d4-a716-446655442107', '550e8400-e29b-41d4-a716-446655440401'); -- Class B
+
+
+
