@@ -10,13 +10,13 @@ import java.util.List;
 public class CoursProgrammer {
     private String id;
     private String coursId;
+    private String professeurId; // Ajout de la référence au professeur
     private LocalDateTime dateCoursPrevue;
     private LocalDateTime dateDebutEffectif;
     private LocalDateTime dateFinEffectif;
     private EtatCoursProgramme etatCoursProgramme;
-    private String classeId;
     private String lieu;
     private String description;
-    private Integer capaciteMax;
-    private List<String> participantsIds;
+    private List<String> classesIds; // Relation many-to-many avec les classes
+    private List<String> participantsIds; // Participants invités
 }

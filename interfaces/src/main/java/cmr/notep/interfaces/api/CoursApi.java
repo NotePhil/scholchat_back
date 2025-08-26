@@ -46,4 +46,35 @@ public interface CoursApi {
     )
     @ResponseStatus(HttpStatus.OK)
     Cours obtenirCoursAvecChapitres(@NonNull @PathVariable String coursId);
+
+
+
+    @PutMapping(
+            path = "/{coursId}",
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    Cours mettreAJourCours(@NonNull @PathVariable String coursId, @NonNull @RequestBody Cours cours);
+
+    @DeleteMapping(
+            path = "/{coursId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void supprimerCours(@NonNull @PathVariable String coursId);
+
+    @GetMapping(
+            path = "/{coursId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    Cours obtenirCoursParId(@NonNull @PathVariable String coursId);
+
+    @GetMapping(
+            path = "/restriction/{restriction}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    List<Cours> obtenirCoursParRestriction(@NonNull @PathVariable String restriction);
 }

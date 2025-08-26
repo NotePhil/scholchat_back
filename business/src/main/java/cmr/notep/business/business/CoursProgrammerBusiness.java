@@ -27,7 +27,7 @@ public class CoursProgrammerBusiness {
     public CoursProgrammer programmerCours(CoursProgrammer coursProgrammer) {
         // Validate input dates
         validateCourseScheduleDates(coursProgrammer);
-
+        validateEffectiveDates(coursProgrammer);
         // Get the course and validate its status
         CoursEntity cours = daoAccessorService.getRepository(CoursRepository.class)
                 .findById(coursProgrammer.getCoursId())
@@ -35,8 +35,18 @@ public class CoursProgrammerBusiness {
 
         validateCourseStatusForScheduling(cours);
 
+        // Get the professor
+        ProfesseursEntity professeur = daoAccessorService.getRepository(ProfesseursRepository.class)
+                .findById(coursProgrammer.getProfesseurId())
+                .orElseThrow(() -> new RuntimeException("Professor not found with ID: " + coursProgrammer.getProfesseurId()));
+
+        // Validate that the professor is the author of the course
+        if (!cours.getRedacteur().getId().equals(professeur.getId())) {
+            throw new RuntimeException("Only the course author can schedule the course");
+        }
+
         // Create and populate the scheduled course entity
-        CoursProgrammerEntity entity = createScheduledCourseEntity(coursProgrammer, cours);
+        CoursProgrammerEntity entity = createScheduledCourseEntity(coursProgrammer, cours, professeur);
 
         // Save the scheduled course
         CoursProgrammerEntity savedEntity = daoAccessorService.getRepository(CoursProgrammerRepository.class).save(entity);
@@ -56,7 +66,7 @@ public class CoursProgrammerBusiness {
 
         // Validate input dates
         validateCourseScheduleDates(coursProgrammer);
-
+        validateEffectiveDates(coursProgrammer);
         // Update entity fields
         updateEntityFromDto(existingEntity, coursProgrammer);
 
@@ -64,6 +74,23 @@ public class CoursProgrammerBusiness {
         CoursProgrammerEntity updatedEntity = daoAccessorService.getRepository(CoursProgrammerRepository.class).save(existingEntity);
 
         return mapToDto(updatedEntity);
+    }
+    private void validateCourseSchedule(CoursProgrammer coursProgrammer) {
+        if (coursProgrammer.getDateCoursPrevue() == null) {
+            throw new IllegalArgumentException("Date prévue du cours est requise");
+        }
+
+        if (coursProgrammer.getDateCoursPrevue().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Impossible de programmer un cours dans le passé");
+        }
+
+        if (coursProgrammer.getProfesseurId() == null) {
+            throw new IllegalArgumentException("ID du professeur est requis");
+        }
+
+        if (coursProgrammer.getCoursId() == null) {
+            throw new IllegalArgumentException("ID du cours est requis");
+        }
     }
 
     @Transactional
@@ -98,30 +125,35 @@ public class CoursProgrammerBusiness {
                 dto.getEtatCoursProgramme() : EtatCoursProgramme.PLANIFIE);
         entity.setLieu(dto.getLieu());
         entity.setDescription(dto.getDescription());
-        entity.setCapaciteMax(dto.getCapaciteMax());
 
-        // Update class if provided
-        if (dto.getClasseId() != null) {
-            ClassesEntity classe = daoAccessorService.getRepository(ClassesRepository.class)
-                    .findById(dto.getClasseId())
-                    .orElseThrow(() -> new RuntimeException("Class not found with ID: " + dto.getClasseId()));
-            entity.setClasse(classe);
-        } else {
-            entity.setClasse(null);
+        // Update classes if provided
+        if (dto.getClassesIds() != null) {
+            List<ClassesEntity> classes = dto.getClassesIds().stream()
+                    .map(classId -> daoAccessorService.getRepository(ClassesRepository.class)
+                            .findById(classId)
+                            .orElseThrow(() -> new RuntimeException("Class not found with ID: " + classId)))
+                    .collect(Collectors.toList());
+            entity.setClasses(classes);
         }
 
-        // Update participants if provided
+        // Update participants if provided - VALIDATE ACCESS
         if (dto.getParticipantsIds() != null) {
-            List<UtilisateursEntity> participants = dto.getParticipantsIds().stream()
-                    .map(participantId -> daoAccessorService.getRepository(UtilisateursRepository.class)
-                            .findById(participantId)
-                            .orElseThrow(() -> new RuntimeException("User not found with ID: " + participantId)))
-                    .collect(Collectors.toList());
+            List<UtilisateursEntity> participants = validateAndGetParticipants(
+                    dto.getParticipantsIds(),
+                    dto.getClassesIds()
+            );
             entity.setParticipants(participants);
-        } else {
-            entity.setParticipants(null);
         }
     }
+
+    public List<CoursProgrammer> obtenirProgrammationParProfesseur(String professeurId) {
+        return daoAccessorService.getRepository(CoursProgrammerRepository.class)
+                .findByProfesseurId(professeurId)
+                .stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
 
     private void validateCourseScheduleDates(CoursProgrammer coursProgrammer) {
         if (coursProgrammer.getDateCoursPrevue() == null) {
@@ -143,8 +175,12 @@ public class CoursProgrammerBusiness {
             throw new IllegalStateException("Course must be in BROUILLON or PUBLIE state to be scheduled. Current state: " + cours.getEtat());
         }
     }
-
-    private CoursProgrammerEntity createScheduledCourseEntity(CoursProgrammer coursProgrammer, CoursEntity cours) {
+    private void validateCourseStatus(CoursEntity cours) {
+        if (cours.getEtat() != EtatCours.BROUILLON && cours.getEtat() != EtatCours.PUBLIE) {
+            throw new IllegalStateException("Le cours doit être en état BROUILLON ou PUBLIE pour être programmé");
+        }
+    }
+    private CoursProgrammerEntity createScheduledCourseEntity(CoursProgrammer coursProgrammer, CoursEntity cours, ProfesseursEntity professeur) {
         CoursProgrammerEntity entity = new CoursProgrammerEntity();
 
         // Set basic fields
@@ -155,37 +191,64 @@ public class CoursProgrammerBusiness {
                 coursProgrammer.getEtatCoursProgramme() : EtatCoursProgramme.PLANIFIE);
         entity.setLieu(coursProgrammer.getLieu());
         entity.setDescription(coursProgrammer.getDescription());
-        entity.setCapaciteMax(coursProgrammer.getCapaciteMax());
         entity.setCours(cours);
+        entity.setProfesseur(professeur);
 
-        // Set class if provided
-        if (coursProgrammer.getClasseId() != null) {
-            ClassesEntity classe = daoAccessorService.getRepository(ClassesRepository.class)
-                    .findById(coursProgrammer.getClasseId())
-                    .orElseThrow(() -> new RuntimeException("Class not found with ID: " + coursProgrammer.getClasseId()));
-            entity.setClasse(classe);
+        // Set classes if provided
+        if (coursProgrammer.getClassesIds() != null && !coursProgrammer.getClassesIds().isEmpty()) {
+            List<ClassesEntity> classes = coursProgrammer.getClassesIds().stream()
+                    .map(classId -> daoAccessorService.getRepository(ClassesRepository.class)
+                            .findById(classId)
+                            .orElseThrow(() -> new RuntimeException("Class not found with ID: " + classId)))
+                    .collect(Collectors.toList());
+            entity.setClasses(classes);
         }
 
-        // Set participants if provided
+        // Set participants if provided - VALIDATE ACCESS
         if (coursProgrammer.getParticipantsIds() != null && !coursProgrammer.getParticipantsIds().isEmpty()) {
-            List<UtilisateursEntity> participants = coursProgrammer.getParticipantsIds().stream()
-                    .map(id -> daoAccessorService.getRepository(UtilisateursRepository.class)
-                            .findById(id)
-                            .orElseThrow(() -> new RuntimeException("User not found: " + id)))
-                    .collect(Collectors.toList());
+            List<UtilisateursEntity> participants = validateAndGetParticipants(
+                    coursProgrammer.getParticipantsIds(),
+                    coursProgrammer.getClassesIds()
+            );
             entity.setParticipants(participants);
         }
 
         return entity;
     }
+    private List<UtilisateursEntity> validateAndGetParticipants(List<String> participantIds, List<String> classIds) {
+        return participantIds.stream()
+                .map(participantId -> {
+                    UtilisateursEntity participant = daoAccessorService.getRepository(UtilisateursRepository.class)
+                            .findById(participantId)
+                            .orElseThrow(() -> new RuntimeException("User not found: " + participantId));
 
+                    // Vérifier que l'utilisateur a accès aux classes spécifiées
+                    if (classIds != null && !classIds.isEmpty()) {
+                        boolean hasAccess = classIds.stream()
+                                .allMatch(classId -> daoAccessorService.getRepository(AccederRepository.class)
+                                        .existsByUtilisateurIdAndClasseId(participantId, classId));
+
+                        if (!hasAccess) {
+                            throw new RuntimeException("User " + participantId + " doesn't have access to all specified classes");
+                        }
+                    }
+
+                    return participant;
+                })
+                .collect(Collectors.toList());
+    }
     private void updateCourseStatusAfterScheduling(CoursEntity cours) {
         if (cours.getEtat() == EtatCours.BROUILLON) {
             cours.setEtat(EtatCours.PUBLIE);
             daoAccessorService.getRepository(CoursRepository.class).save(cours);
         }
     }
-
+    private void updateCourseStatus(CoursEntity cours) {
+        if (cours.getEtat() == EtatCours.BROUILLON) {
+            cours.setEtat(EtatCours.PUBLIE);
+            daoAccessorService.getRepository(CoursRepository.class).save(cours);
+        }
+    }
     public List<CoursProgrammer> obtenirProgrammationParCours(String coursId) {
         return daoAccessorService.getRepository(CoursProgrammerRepository.class)
                 .findByCoursId(coursId)
@@ -193,7 +256,35 @@ public class CoursProgrammerBusiness {
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
+    private CoursProgrammer mapToDto(CoursProgrammerEntity entity) {
+        CoursProgrammer dto = new CoursProgrammer();
+        dto.setId(entity.getId());
+        dto.setCoursId(entity.getCours().getId());
+        dto.setProfesseurId(entity.getProfesseur().getId());
+        dto.setDateCoursPrevue(entity.getDateCoursPrevue());
+        dto.setDateDebutEffectif(entity.getDateDebutEffectif());
+        dto.setDateFinEffectif(entity.getDateFinEffectif());
+        dto.setEtatCoursProgramme(entity.getEtatCoursProgramme());
+        dto.setLieu(entity.getLieu());
+        dto.setDescription(entity.getDescription());
 
+
+        // Map classes IDs
+        if (entity.getClasses() != null) {
+            dto.setClassesIds(entity.getClasses().stream()
+                    .map(ClassesEntity::getId)
+                    .collect(Collectors.toList()));
+        }
+
+        // Map participants IDs
+        if (entity.getParticipants() != null) {
+            dto.setParticipantsIds(entity.getParticipants().stream()
+                    .map(UtilisateursEntity::getId)
+                    .collect(Collectors.toList()));
+        }
+
+        return dto;
+    }
     public List<CoursProgrammer> obtenirProgrammationParClasse(String classeId) {
         return daoAccessorService.getRepository(CoursProgrammerRepository.class)
                 .findByClasseId(classeId)
@@ -204,34 +295,37 @@ public class CoursProgrammerBusiness {
 
     public List<CoursProgrammer> obtenirProgrammationParParticipant(String participantId) {
         return daoAccessorService.getRepository(CoursProgrammerRepository.class)
-                .findByParticipantsId(participantId)
+                .findByParticipantId(participantId)
                 .stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
 
-    private CoursProgrammer mapToDto(CoursProgrammerEntity entity) {
-        CoursProgrammer dto = new CoursProgrammer();
-        dto.setId(entity.getId());
-        dto.setCoursId(entity.getCours().getId());
-        dto.setDateCoursPrevue(entity.getDateCoursPrevue());
-        dto.setDateDebutEffectif(entity.getDateDebutEffectif());
-        dto.setDateFinEffectif(entity.getDateFinEffectif());
-        dto.setEtatCoursProgramme(entity.getEtatCoursProgramme());
-        dto.setLieu(entity.getLieu());
-        dto.setDescription(entity.getDescription());
-        dto.setCapaciteMax(entity.getCapaciteMax());
-
-        if (entity.getClasse() != null) {
-            dto.setClasseId(entity.getClasse().getId());
-        }
-
-        if (entity.getParticipants() != null) {
-            dto.setParticipantsIds(entity.getParticipants().stream()
-                    .map(UtilisateursEntity::getId)
-                    .collect(Collectors.toList()));
-        }
-
-        return dto;
+    public List<CoursProgrammer> obtenirProgrammationAccessible(String userId) {
+        return daoAccessorService.getRepository(CoursProgrammerRepository.class)
+                .findByUserAccess(userId)
+                .stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
     }
+    private void validateEffectiveDates(CoursProgrammer coursProgrammer) {
+        if (coursProgrammer.getDateDebutEffectif() == null) {
+            throw new IllegalArgumentException("La date de début effective est requise.");
+        }
+        if (coursProgrammer.getDateFinEffectif() == null) {
+            throw new IllegalArgumentException("La date de fin effective est requise.");
+        }
+        if (coursProgrammer.getDateDebutEffectif().isBefore(coursProgrammer.getDateCoursPrevue())) {
+            throw new IllegalArgumentException("La date de début effective ne peut pas être avant la date prévue du cours.");
+        }
+        if (coursProgrammer.getDateFinEffectif().isBefore(coursProgrammer.getDateDebutEffectif())) {
+            throw new IllegalArgumentException("La date de fin effective doit être après la date de début effective.");
+        }
+        if (coursProgrammer.getDateFinEffectif().isEqual(coursProgrammer.getDateDebutEffectif()) &&
+                coursProgrammer.getDateFinEffectif().toLocalTime().isBefore(coursProgrammer.getDateDebutEffectif().toLocalTime())) {
+            throw new IllegalArgumentException("Si la date de fin est le même jour que la date de début, l'heure de fin doit être après l'heure de début.");
+        }
+    }
+
+
 }

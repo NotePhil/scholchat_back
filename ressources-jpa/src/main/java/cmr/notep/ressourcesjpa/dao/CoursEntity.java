@@ -15,7 +15,6 @@ import java.util.List;
 @Entity
 @Table(name = "cours", schema = "ressources")
 public class CoursEntity {
-
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
@@ -38,18 +37,19 @@ public class CoursEntity {
     private String references;
 
     @Column(name = "restriction")
-    private String restriction; // PUBLIC/PRIVE
+    private String restriction;
 
-    @ManyToOne
+    @Column(name = "contenu", columnDefinition = "TEXT")
+    private String contenu;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "redacteur_id", nullable = false)
-    @Mapping("redacteur")
     private ProfesseursEntity redacteur;
 
-    @OneToMany(mappedBy = "cours", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Mapping("chapitres")
+    @OneToMany(mappedBy = "cours", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ChapitreEntity> chapitres = new ArrayList<>();
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "cours_matiere", schema = "ressources",
             joinColumns = @JoinColumn(name = "cours_id"),
             inverseJoinColumns = @JoinColumn(name = "matiere_id"))

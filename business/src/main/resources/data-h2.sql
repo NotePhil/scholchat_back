@@ -244,20 +244,17 @@
     ('660e8400-e29b-41d4-a716-446655441103', '550e8400-e29b-41d4-a716-446655441001'); -- Sciences
 
     -- Schedule some courses for Class A ('550e8400-e29b-41d4-a716-446655440400')
-    INSERT INTO ressources.cours_programmer
-    (id, cours_id, date_cours_prevue, date_debut_effectif, date_fin_effectif, etat_cours_programme, classe_id, lieu, description, capacite_max, date_creation, date_modification)
-    VALUES
-    ('770e8400-e29b-41d4-a716-446655442100', '660e8400-e29b-41d4-a716-446655441100', '2024-04-10 08:00:00', '2024-04-10 08:05:00', '2024-04-10 09:35:00', 'TERMINE', '550e8400-e29b-41d4-a716-446655440400', 'Salle A1', 'Cours introductif aux mathématiques', 30, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    ('770e8400-e29b-41d4-a716-446655442101', '660e8400-e29b-41d4-a716-446655441101', '2024-04-12 10:00:00', '2024-04-12 10:00:00', '2024-04-12 11:30:00', 'TERMINE', '550e8400-e29b-41d4-a716-446655440400', 'Salle A2', 'Algèbre linéaire avancée', 25, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    ('770e8400-e29b-41d4-a716-446655442102', '660e8400-e29b-41d4-a716-446655441102', '2024-04-15 14:00:00', NULL, NULL, 'PLANIFIE', '550e8400-e29b-41d4-a716-446655440400', 'Salle B1', 'Géométrie euclidienne', 20, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    ('770e8400-e29b-41d4-a716-446655442103', '660e8400-e29b-41d4-a716-446655441103', '2024-04-17 09:00:00', NULL, NULL, 'PLANIFIE', '550e8400-e29b-41d4-a716-446655440400', 'Labo Physique', 'Introduction à la physique quantique', 15, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+--     INSERT INTO ressources.cours_programmer
+--     (id, cours_id, professeur_id, date_cours_prevue, date_debut_effectif, date_fin_effectif, etat_cours_programme, classe_id, lieu, description, date_creation, date_modification)
+--     VALUES
+--         ('770e8400-e29b-41d4-a716-446655442100', '660e8400-e29b-41d4-a716-446655441100', '550e8400-e29b-41d4-a716-446655440007', '2024-04-10 08:00:00', '2024-04-10 08:05:00', '2024-04-10 09:35:00', 'TERMINE', '550e8400-e29b-41d4-a716-446655440400', 'Salle A1', 'Cours introductif aux mathématiques', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
-    -- Add student participation to scheduled courses
-    INSERT INTO ressources.cours_programmer_participants (cours_programmer_id, utilisateur_id) VALUES
-    ('770e8400-e29b-41d4-a716-446655442100', '550e8400-e29b-41d4-a716-446655440300'), -- Eleve A
-    ('770e8400-e29b-41d4-a716-446655442100', '550e8400-e29b-41d4-a716-446655440302'), -- Eleve C
-    ('770e8400-e29b-41d4-a716-446655442101', '550e8400-e29b-41d4-a716-446655440300'), -- Eleve A
-    ('770e8400-e29b-41d4-a716-446655442101', '550e8400-e29b-41d4-a716-446655440302'); -- Eleve C
+--     -- Add student participation to scheduled courses
+--     INSERT INTO ressources.cours_programmer_participants (cours_programmer_id, utilisateur_id) VALUES
+--     ('770e8400-e29b-41d4-a716-446655442100', '550e8400-e29b-41d4-a716-446655440300'), -- Eleve A
+--     ('770e8400-e29b-41d4-a716-446655442100', '550e8400-e29b-41d4-a716-446655440302'), -- Eleve C
+--     ('770e8400-e29b-41d4-a716-446655442101', '550e8400-e29b-41d4-a716-446655440300'), -- Eleve A
+--     ('770e8400-e29b-41d4-a716-446655442101', '550e8400-e29b-41d4-a716-446655440302'); -- Eleve C
 
 
     -- Supprimer les demandes d'accès existantes pour les professeurs

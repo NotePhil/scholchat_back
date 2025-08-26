@@ -43,7 +43,29 @@ public class CoursService implements CoursApi {
         log.info("Récupération des cours accessibles pour l'utilisateur: {}", userId);
         return coursBusiness.obtenirCoursAccessibles(userId);
     }
+    @Override
+    public Cours mettreAJourCours(@NonNull String coursId, @NonNull Cours cours) {
+        log.info("Mise à jour du cours: {}", coursId);
+        return coursBusiness.mettreAJourCours(coursId, cours);
+    }
 
+    @Override
+    public void supprimerCours(@NonNull String coursId) {
+        log.info("Suppression du cours: {}", coursId);
+        coursBusiness.supprimerCours(coursId);
+    }
+
+    @Override
+    public Cours obtenirCoursParId(@NonNull String coursId) {
+        log.info("Récupération du cours: {}", coursId);
+        return coursBusiness.obtenirCoursParId(coursId);
+    }
+
+    @Override
+    public List<Cours> obtenirCoursParRestriction(@NonNull String restriction) {
+        log.info("Récupération des cours avec restriction: {}", restriction);
+        return coursBusiness.obtenirCoursParRestriction(restriction);
+    }
     @Override
     public Cours obtenirCoursAvecChapitres(@NonNull String coursId) {
         log.info("Récupération du cours avec chapitres: {}", coursId);

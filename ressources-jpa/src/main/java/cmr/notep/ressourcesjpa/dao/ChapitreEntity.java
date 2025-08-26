@@ -9,7 +9,6 @@ import lombok.Setter;
 @Entity
 @Table(name = "chapitres", schema = "ressources")
 public class ChapitreEntity {
-
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
@@ -29,4 +28,8 @@ public class ChapitreEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cours_id", nullable = false)
     private CoursEntity cours;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "matiere_id", nullable = false)
+    private MatiereEntity matiere;
 }

@@ -273,23 +273,29 @@ CREATE TABLE IF NOT EXISTS ressources.cours (
     redacteur_id VARCHAR(255) NOT NULL,
     FOREIGN KEY (redacteur_id) REFERENCES ressources.professeurs(professeurs_id)
     );
+CREATE TABLE IF NOT EXISTS ressources.cours_matiere (
+                                                        cours_id UUID NOT NULL,
+                                                        matiere_id UUID NOT NULL,
+                                                        date_ajout TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                                        ordre_dans_cours INTEGER,
+                                                        PRIMARY KEY (cours_id, matiere_id),
+    FOREIGN KEY (cours_id) REFERENCES ressources.cours(id) ON DELETE CASCADE,
+    FOREIGN KEY (matiere_id) REFERENCES ressources.matieres(id) ON DELETE CASCADE
+    );
 CREATE TABLE IF NOT EXISTS ressources.chapitres (
                                                     id UUID PRIMARY KEY,
                                                     titre VARCHAR(255) NOT NULL,
     description TEXT,
     ordre INTEGER NOT NULL,
-    contenu TEXT NOT NULL,
+    contenu TEXT NOT NULL,  -- Corriger le nom de colonne: contuen -> contenu
     cours_id UUID NOT NULL,
-    FOREIGN KEY (cours_id) REFERENCES ressources.cours(id) ON DELETE CASCADE
+    matiere_id UUID NOT NULL,
+    FOREIGN KEY (cours_id) REFERENCES ressources.cours(id) ON DELETE CASCADE,
+    FOREIGN KEY (matiere_id) REFERENCES ressources.matieres(id) ON DELETE CASCADE
+    -- PAS de contrainte vers cours_matiere
     );
 -- Table de jointure pour la relation many-to-many entre cours et matieres
-CREATE TABLE IF NOT EXISTS ressources.cours_matiere (
-                                                        cours_id UUID NOT NULL,
-                                                        matiere_id UUID NOT NULL,
-                                                        PRIMARY KEY (cours_id, matiere_id),
-    FOREIGN KEY (cours_id) REFERENCES ressources.cours(id),
-    FOREIGN KEY (matiere_id) REFERENCES ressources.matieres(id)
-    );
+
 
 
 -- Table pour les cours programmés
@@ -297,13 +303,13 @@ CREATE TABLE IF NOT EXISTS ressources.cours_programmer (
     id VARCHAR(255) PRIMARY KEY,
     cours_id UUID NOT NULL,
     date_cours_prevue TIMESTAMP NOT NULL,
-    date_debut_effectif TIMESTAMP,
-    date_fin_effectif TIMESTAMP,
+    date_debut_effectif TIMESTAMP NOT NULL,
+    date_fin_effectif TIMESTAMP NOT NULL,
     etat_cours_programme VARCHAR(50) NOT NULL,
     classe_id UUID,
     lieu VARCHAR(255) NOT NULL,
     description TEXT,
-    capacite_max INTEGER,
+
     date_creation TIMESTAMP,
     date_modification TIMESTAMP,
     cree_par VARCHAR(255),
@@ -312,19 +318,25 @@ CREATE TABLE IF NOT EXISTS ressources.cours_programmer (
     FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
 );
 CREATE TABLE IF NOT EXISTS ressources.cours_programmer_participants (
-    cours_programmer_id VARCHAR(255) NOT NULL,
+                                                                        cours_programmer_id VARCHAR(255) NOT NULL,
     utilisateur_id VARCHAR(255) NOT NULL,
     PRIMARY KEY (cours_programmer_id, utilisateur_id),
     FOREIGN KEY (cours_programmer_id) REFERENCES ressources.cours_programmer(id) ON DELETE CASCADE,
     FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id) ON DELETE CASCADE
-);
+    );
 -- Table de jointure pour la participation aux cours
 CREATE TABLE IF NOT EXISTS ressources.evenement_participants (
     evenement_id UUID NOT NULL,
     utilisateur_id VARCHAR(255) NOT NULL,
     PRIMARY KEY (evenement_id, utilisateur_id)
 );
-
+CREATE TABLE IF NOT EXISTS ressources.cours_programmer_classes (
+                                                                   cours_programmer_id VARCHAR(255) NOT NULL,
+    classe_id UUID NOT NULL,
+    PRIMARY KEY (cours_programmer_id, classe_id),
+    FOREIGN KEY (cours_programmer_id) REFERENCES ressources.cours_programmer(id) ON DELETE CASCADE,
+    FOREIGN KEY (classe_id) REFERENCES ressources.classes(id) ON DELETE CASCADE
+    );
 -- Re-enable foreign key checks
 SET REFERENTIAL_INTEGRITY TRUE;
 
@@ -489,7 +501,12 @@ ALTER TABLE ressources.acceder
 
 
 ALTER TABLE ressources.messages ADD COLUMN IF NOT EXISTS objet VARCHAR(255);
+ALTER TABLE ressources.cours_programmer
+    ADD COLUMN professeur_id VARCHAR(255) NOT NULL;
 
+ALTER TABLE ressources.cours_programmer
+    ADD CONSTRAINT fk_cours_programmer_professeur
+        FOREIGN KEY (professeur_id) REFERENCES ressources.professeurs(professeurs_id);
 -- Create indexes (only once)
 CREATE INDEX IF NOT EXISTS idx_classes_etat ON ressources.classes(etat);
 CREATE INDEX IF NOT EXISTS idx_classes_moderator ON ressources.classes(moderator_id);
@@ -502,3 +519,4 @@ CREATE INDEX IF NOT EXISTS idx_acceder_utilisateur ON ressources.acceder(utilisa
 CREATE INDEX IF NOT EXISTS idx_chapitres_cours ON ressources.chapitres(cours_id);
 CREATE INDEX IF NOT EXISTS idx_chapitres_ordre ON ressources.chapitres(ordre);
 CREATE INDEX IF NOT EXISTS idx_cours_restriction ON ressources.cours(restriction);
+ALTER TABLE ressources.cours ALTER COLUMN contenu DROP NOT NULL;

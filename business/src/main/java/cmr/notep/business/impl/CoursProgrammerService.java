@@ -18,7 +18,17 @@ public class CoursProgrammerService implements CoursProgrammerApi {
     public CoursProgrammerService(CoursProgrammerBusiness coursProgrammerBusiness) {
         this.coursProgrammerBusiness = coursProgrammerBusiness;
     }
+    @Override
+    public List<CoursProgrammer> obtenirProgrammationParProfesseur(@NonNull String professeurId) {
+        log.info("Récupération de la programmation pour le professeur: {}", professeurId);
+        return coursProgrammerBusiness.obtenirProgrammationParProfesseur(professeurId);
+    }
 
+    @Override
+    public List<CoursProgrammer> obtenirProgrammationAccessible(@NonNull String userId) {
+        log.info("Récupération de la programmation accessible pour l'utilisateur: {}", userId);
+        return coursProgrammerBusiness.obtenirProgrammationAccessible(userId);
+    }
     @Override
     public CoursProgrammer programmerCours(@NonNull CoursProgrammer coursProgrammer) {
         log.info("Programming course: {} for date: {}",

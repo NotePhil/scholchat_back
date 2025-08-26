@@ -59,6 +59,12 @@ public interface CoursProgrammerApi {
     )
     @ResponseStatus(HttpStatus.OK)
     List<CoursProgrammer> obtenirProgrammationParClasse(@NonNull @PathVariable("classeId") String classeId);
+    @GetMapping(
+            path = "/by-professeur/{professeurId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    List<CoursProgrammer> obtenirProgrammationParProfesseur(@NonNull @PathVariable("professeurId") String professeurId);
 
     @GetMapping(
             path = "/by-participant/{participantId}",
@@ -66,4 +72,12 @@ public interface CoursProgrammerApi {
     )
     @ResponseStatus(HttpStatus.OK)
     List<CoursProgrammer> obtenirProgrammationParParticipant(@NonNull @PathVariable("participantId") String participantId);
+
+    @GetMapping(
+            path = "/accessible/{userId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    List<CoursProgrammer> obtenirProgrammationAccessible(@NonNull @PathVariable("userId") String userId);
+
 }

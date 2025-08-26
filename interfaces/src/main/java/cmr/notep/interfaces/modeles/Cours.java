@@ -24,10 +24,9 @@ public class Cours {
     private String references;
     private String restriction; // PUBLIC/PRIVE
     private List<Chapitre> chapitres;
-
+    private List<Matiere> matieres;
     @JsonProperty("redacteurId")
     private String redacteurId;
 
-    @JsonIgnore
-    private List<Matiere> matieres;
+
 }

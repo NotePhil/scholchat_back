@@ -24,10 +24,10 @@ public class CoursProgrammerEntity {
     @Column(name = "date_cours_prevue", nullable = false)
     private LocalDateTime dateCoursPrevue;
 
-    @Column(name = "date_debut_effectif")
+    @Column(name = "date_debut_effectif", nullable = false)
     private LocalDateTime dateDebutEffectif;
 
-    @Column(name = "date_fin_effectif")
+    @Column(name = "date_fin_effectif", nullable = false)
     private LocalDateTime dateFinEffectif;
 
     @Enumerated(EnumType.STRING)
@@ -40,16 +40,26 @@ public class CoursProgrammerEntity {
     @Column(name = "description")
     private String description;
 
-    @Column(name = "capacite_max")
-    private Integer capaciteMax;
+    // SUPPRIMER capacite_max
+    // @Column(name = "capacite_max")
+    // private Integer capaciteMax;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cours_id", nullable = false)
     private CoursEntity cours;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "classe_id")
-    private ClassesEntity classe;
+    @JoinColumn(name = "professeur_id", nullable = false)
+    private ProfesseursEntity professeur;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "cours_programmer_classes",
+            schema = "ressources",
+            joinColumns = @JoinColumn(name = "cours_programmer_id"),
+            inverseJoinColumns = @JoinColumn(name = "classe_id")
+    )
+    private List<ClassesEntity> classes;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -60,30 +70,30 @@ public class CoursProgrammerEntity {
     )
     private List<UtilisateursEntity> participants;
 
-    // Audit fields
-    @Column(name = "date_creation")
-    private LocalDateTime dateCreation;
+//    // Audit fields
+//    @Column(name = "date_creation")
+//    private LocalDateTime dateCreation;
+//
+//    @Column(name = "date_modification")
+//    private LocalDateTime dateModification;
+//
+//    @Column(name = "cree_par")
+//    private String creePar;
+//
+//    @Column(name = "modifie_par")
+//    private String modifiePar;
 
-    @Column(name = "date_modification")
-    private LocalDateTime dateModification;
-
-    @Column(name = "cree_par")
-    private String creePar;
-
-    @Column(name = "modifie_par")
-    private String modifiePar;
-
-    @PrePersist
-    protected void onCreate() {
-        dateCreation = LocalDateTime.now();
-        dateModification = LocalDateTime.now();
-        if (etatCoursProgramme == null) {
-            etatCoursProgramme = EtatCoursProgramme.PLANIFIE;
-        }
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        dateModification = LocalDateTime.now();
-    }
+//    @PrePersist
+//    protected void onCreate() {
+//        dateCreation = LocalDateTime.now();
+//        dateModification = LocalDateTime.now();
+//        if (etatCoursProgramme == null) {
+//            etatCoursProgramme = EtatCoursProgramme.PLANIFIE;
+//        }
+//    }
+//
+//    @PreUpdate
+//    protected void onUpdate() {
+//        dateModification = LocalDateTime.now();
+//    }
 }
