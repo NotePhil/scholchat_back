@@ -17,5 +17,5 @@ public class Chapitre {
     private Integer ordre;
     private String contenu;
     private String coursId;
-    private String matiereId;
+
 }

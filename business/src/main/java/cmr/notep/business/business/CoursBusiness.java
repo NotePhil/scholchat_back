@@ -29,7 +29,6 @@ public class CoursBusiness {
         this.daoAccessorService = daoAccessorService;
     }
 
-
     @Transactional
     public Cours creerCours(Cours cours) {
         // Validate professor
@@ -75,13 +74,6 @@ public class CoursBusiness {
                 // Set the course reference for the chapter
                 chapitreEntity.setCours(entity);
 
-                // Find the subject for this chapter
-                MatiereEntity matiereEntity = daoAccessorService.getRepository(MatiereRepository.class)
-                        .findById(chapitre.getMatiereId())
-                        .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND,
-                                "Matière introuvable: " + chapitre.getMatiereId()));
-                chapitreEntity.setMatiere(matiereEntity);
-
                 chapitreEntities.add(chapitreEntity);
 
                 // Add to global content
@@ -101,21 +93,21 @@ public class CoursBusiness {
         // Map back to DTO
         Cours result = dozerMapperBean.map(savedEntity, Cours.class);
         result.setRedacteurId(savedEntity.getRedacteur().getId());
-        result.setChapitres(mapChapitresToDto(savedEntity.getChapitres()));
+        result.setChapitres(mapChapitresToDto(savedEntity.getChapitres(), savedEntity.getId())); // Passer l'ID du cours
 
         return result;
     }
 
-    private List<Chapitre> mapChapitresToDto(List<ChapitreEntity> chapitreEntities) {
+    private List<Chapitre> mapChapitresToDto(List<ChapitreEntity> chapitreEntities, String coursId) {
         return chapitreEntities.stream()
                 .map(c -> {
                     Chapitre chapitre = dozerMapperBean.map(c, Chapitre.class);
-                    chapitre.setCoursId(c.getCours() != null ? c.getCours().getId() : null);
-                    chapitre.setMatiereId(c.getMatiere() != null ? c.getMatiere().getId() : null);
+                    chapitre.setCoursId(coursId); // Définir explicitement l'ID du cours
                     return chapitre;
                 })
                 .collect(Collectors.toList());
     }
+
     @Transactional
     public Cours mettreAJourCours(String coursId, Cours cours) {
         // Find existing course
@@ -172,13 +164,6 @@ public class CoursBusiness {
                 ChapitreEntity chapitreEntity = dozerMapperBean.map(chapitre, ChapitreEntity.class);
                 chapitreEntity.setCours(existingEntity);
 
-                // Find the subject for this chapter
-                MatiereEntity matiereEntity = daoAccessorService.getRepository(MatiereRepository.class)
-                        .findById(chapitre.getMatiereId())
-                        .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND,
-                                "Matière introuvable: " + chapitre.getMatiereId()));
-                chapitreEntity.setMatiere(matiereEntity);
-
                 chapitreEntities.add(chapitreEntity);
 
                 // Add to global content
@@ -197,12 +182,10 @@ public class CoursBusiness {
         // Map back to DTO
         Cours result = dozerMapperBean.map(updatedEntity, Cours.class);
         result.setRedacteurId(updatedEntity.getRedacteur().getId());
-        result.setChapitres(mapChapitresToDto(updatedEntity.getChapitres()));
+        result.setChapitres(mapChapitresToDto(updatedEntity.getChapitres(), updatedEntity.getId())); // Passer l'ID du cours
 
         return result;
     }
-
-
 
     @Transactional
     public void supprimerCours(String coursId) {
@@ -228,7 +211,7 @@ public class CoursBusiness {
 
         Cours cours = dozerMapperBean.map(coursEntity, Cours.class);
         cours.setRedacteurId(coursEntity.getRedacteur().getId());
-        cours.setChapitres(mapChapitresToDto(chapitres));
+        cours.setChapitres(mapChapitresToDto(chapitres, coursId)); // Passer l'ID du cours
         return cours;
     }
 
@@ -244,7 +227,7 @@ public class CoursBusiness {
 
                     Cours cours = dozerMapperBean.map(c, Cours.class);
                     cours.setRedacteurId(c.getRedacteur().getId());
-                    cours.setChapitres(mapChapitresToDto(chapitres));
+                    cours.setChapitres(mapChapitresToDto(chapitres, c.getId())); // Passer l'ID du cours
                     return cours;
                 })
                 .collect(Collectors.toList());
@@ -263,7 +246,7 @@ public class CoursBusiness {
 
                     Cours cours = dozerMapperBean.map(c, Cours.class);
                     cours.setRedacteurId(c.getRedacteur().getId());
-                    cours.setChapitres(mapChapitresToDto(chapitres));
+                    cours.setChapitres(mapChapitresToDto(chapitres, c.getId())); // Passer l'ID du cours
                     return cours;
                 })
                 .collect(Collectors.toList());
@@ -281,11 +264,12 @@ public class CoursBusiness {
 
                     Cours cours = dozerMapperBean.map(c, Cours.class);
                     cours.setRedacteurId(c.getRedacteur().getId());
-                    cours.setChapitres(mapChapitresToDto(chapitres));
+                    cours.setChapitres(mapChapitresToDto(chapitres, c.getId())); // Passer l'ID du cours
                     return cours;
                 })
                 .collect(Collectors.toList());
     }
+
     public List<Cours> obtenirCoursAccessibles(String userId) {
         List<CoursEntity> coursEntities = daoAccessorService.getRepository(CoursRepository.class)
                 .findAccessibleCours(userId);
@@ -298,7 +282,7 @@ public class CoursBusiness {
 
                     Cours cours = dozerMapperBean.map(c, Cours.class);
                     cours.setRedacteurId(c.getRedacteur().getId());
-                    cours.setChapitres(mapChapitresToDto(chapitres));
+                    cours.setChapitres(mapChapitresToDto(chapitres, c.getId())); // Passer l'ID du cours
                     return cours;
                 })
                 .collect(Collectors.toList());
@@ -316,7 +300,7 @@ public class CoursBusiness {
 
         Cours cours = dozerMapperBean.map(coursEntity, Cours.class);
         cours.setRedacteurId(coursEntity.getRedacteur().getId());
-        cours.setChapitres(mapChapitresToDto(chapitres));
+        cours.setChapitres(mapChapitresToDto(chapitres, coursId)); // Passer l'ID du cours
         return cours;
     }
 }

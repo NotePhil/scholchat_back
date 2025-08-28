@@ -29,7 +29,4 @@ public class ChapitreEntity {
     @JoinColumn(name = "cours_id", nullable = false)
     private CoursEntity cours;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "matiere_id", nullable = false)
-    private MatiereEntity matiere;
 }

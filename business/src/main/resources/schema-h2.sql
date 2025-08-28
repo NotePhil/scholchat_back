@@ -287,12 +287,9 @@ CREATE TABLE IF NOT EXISTS ressources.chapitres (
                                                     titre VARCHAR(255) NOT NULL,
     description TEXT,
     ordre INTEGER NOT NULL,
-    contenu TEXT NOT NULL,  -- Corriger le nom de colonne: contuen -> contenu
+    contenu TEXT NOT NULL,
     cours_id UUID NOT NULL,
-    matiere_id UUID NOT NULL,
-    FOREIGN KEY (cours_id) REFERENCES ressources.cours(id) ON DELETE CASCADE,
-    FOREIGN KEY (matiere_id) REFERENCES ressources.matieres(id) ON DELETE CASCADE
-    -- PAS de contrainte vers cours_matiere
+    FOREIGN KEY (cours_id) REFERENCES ressources.cours(id) ON DELETE CASCADE
     );
 -- Table de jointure pour la relation many-to-many entre cours et matieres
 
