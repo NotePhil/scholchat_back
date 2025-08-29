@@ -210,11 +210,18 @@ public class CoursBusiness {
         // Load chapters
         List<ChapitreEntity> chapitres = daoAccessorService.getRepository(ChapitreRepository.class)
                 .findByCoursIdOrderByOrdre(coursId);
-        coursEntity.setChapitres(chapitres);
+
+        // Correction ici
+        if (coursEntity.getChapitres() == null) {
+            coursEntity.setChapitres(new ArrayList<>());
+        } else {
+            coursEntity.getChapitres().clear();
+        }
+        coursEntity.getChapitres().addAll(chapitres);
 
         Cours cours = dozerMapperBean.map(coursEntity, Cours.class);
         cours.setRedacteurId(coursEntity.getRedacteur().getId());
-        cours.setChapitres(mapChapitresToDto(chapitres, coursId)); // Passer l'ID du cours
+        cours.setChapitres(mapChapitresToDto(chapitres, coursId));
         return cours;
     }
 
@@ -226,11 +233,18 @@ public class CoursBusiness {
                 .map(c -> {
                     List<ChapitreEntity> chapitres = daoAccessorService.getRepository(ChapitreRepository.class)
                             .findByCoursIdOrderByOrdre(c.getId());
-                    c.setChapitres(chapitres);
+
+                    // Correction ici
+                    if (c.getChapitres() == null) {
+                        c.setChapitres(new ArrayList<>());
+                    } else {
+                        c.getChapitres().clear();
+                    }
+                    c.getChapitres().addAll(chapitres);
 
                     Cours cours = dozerMapperBean.map(c, Cours.class);
                     cours.setRedacteurId(c.getRedacteur().getId());
-                    cours.setChapitres(mapChapitresToDto(chapitres, c.getId())); // Passer l'ID du cours
+                    cours.setChapitres(mapChapitresToDto(chapitres, c.getId()));
                     return cours;
                 })
                 .collect(Collectors.toList());
@@ -245,11 +259,19 @@ public class CoursBusiness {
                     // Charger explicitement les chapitres pour chaque cours
                     List<ChapitreEntity> chapitres = daoAccessorService.getRepository(ChapitreRepository.class)
                             .findByCoursIdOrderByOrdre(c.getId());
-                    c.setChapitres(chapitres);
+
+                    // NE PAS FAIRE: c.setChapitres(chapitres); ← Ça cause l'erreur
+                    // À la place, utilisez la collection existante
+                    if (c.getChapitres() == null) {
+                        c.setChapitres(new ArrayList<>());
+                    } else {
+                        c.getChapitres().clear();
+                    }
+                    c.getChapitres().addAll(chapitres);
 
                     Cours cours = dozerMapperBean.map(c, Cours.class);
                     cours.setRedacteurId(c.getRedacteur().getId());
-                    cours.setChapitres(mapChapitresToDto(chapitres, c.getId())); // Passer l'ID du cours
+                    cours.setChapitres(mapChapitresToDto(chapitres, c.getId()));
                     return cours;
                 })
                 .collect(Collectors.toList());
@@ -263,11 +285,18 @@ public class CoursBusiness {
                 .map(c -> {
                     List<ChapitreEntity> chapitres = daoAccessorService.getRepository(ChapitreRepository.class)
                             .findByCoursIdOrderByOrdre(c.getId());
-                    c.setChapitres(chapitres);
+
+                    // Correction ici
+                    if (c.getChapitres() == null) {
+                        c.setChapitres(new ArrayList<>());
+                    } else {
+                        c.getChapitres().clear();
+                    }
+                    c.getChapitres().addAll(chapitres);
 
                     Cours cours = dozerMapperBean.map(c, Cours.class);
                     cours.setRedacteurId(c.getRedacteur().getId());
-                    cours.setChapitres(mapChapitresToDto(chapitres, c.getId())); // Passer l'ID du cours
+                    cours.setChapitres(mapChapitresToDto(chapitres, c.getId()));
                     return cours;
                 })
                 .collect(Collectors.toList());
@@ -281,11 +310,18 @@ public class CoursBusiness {
                 .map(c -> {
                     List<ChapitreEntity> chapitres = daoAccessorService.getRepository(ChapitreRepository.class)
                             .findByCoursIdOrderByOrdre(c.getId());
-                    c.setChapitres(chapitres);
+
+                    // Correction ici
+                    if (c.getChapitres() == null) {
+                        c.setChapitres(new ArrayList<>());
+                    } else {
+                        c.getChapitres().clear();
+                    }
+                    c.getChapitres().addAll(chapitres);
 
                     Cours cours = dozerMapperBean.map(c, Cours.class);
                     cours.setRedacteurId(c.getRedacteur().getId());
-                    cours.setChapitres(mapChapitresToDto(chapitres, c.getId())); // Passer l'ID du cours
+                    cours.setChapitres(mapChapitresToDto(chapitres, c.getId()));
                     return cours;
                 })
                 .collect(Collectors.toList());
@@ -299,11 +335,18 @@ public class CoursBusiness {
         // Load chapters
         List<ChapitreEntity> chapitres = daoAccessorService.getRepository(ChapitreRepository.class)
                 .findByCoursIdOrderByOrdre(coursId);
-        coursEntity.setChapitres(chapitres);
+
+        // Correction ici
+        if (coursEntity.getChapitres() == null) {
+            coursEntity.setChapitres(new ArrayList<>());
+        } else {
+            coursEntity.getChapitres().clear();
+        }
+        coursEntity.getChapitres().addAll(chapitres);
 
         Cours cours = dozerMapperBean.map(coursEntity, Cours.class);
         cours.setRedacteurId(coursEntity.getRedacteur().getId());
-        cours.setChapitres(mapChapitresToDto(chapitres, coursId)); // Passer l'ID du cours
+        cours.setChapitres(mapChapitresToDto(chapitres, coursId));
         return cours;
     }
 }
