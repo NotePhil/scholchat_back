@@ -155,9 +155,9 @@ public class CoursBusiness {
             existingEntity.setMatieres(matieres);
         }
 
-        // Process chapters if provided - FIXED: Proper orphan removal handling
+
         if (cours.getChapitres() != null) {
-            // Clear existing chapters and let orphan removal handle deletion
+
             existingEntity.getChapitres().clear();
 
             List<ChapitreEntity> chapitreEntities = new ArrayList<>();
@@ -168,12 +168,11 @@ public class CoursBusiness {
                 chapitreEntity.setCours(existingEntity);
                 chapitreEntities.add(chapitreEntity);
 
-                // Add to global content
                 contentBuilder.append("=== ").append(chapitre.getTitre()).append(" ===\n");
                 contentBuilder.append(chapitre.getContenu()).append("\n\n");
             }
 
-            // Add all new chapters to the existing collection
+
             existingEntity.getChapitres().addAll(chapitreEntities);
             existingEntity.setContenu(contentBuilder.toString());
         }
@@ -182,7 +181,7 @@ public class CoursBusiness {
         CoursEntity updatedEntity = daoAccessorService.getRepository(CoursRepository.class).save(existingEntity);
         log.info("Updated course entity ID: {}", updatedEntity.getId());
 
-        // Map back to DTO
+
         Cours result = dozerMapperBean.map(updatedEntity, Cours.class);
         result.setRedacteurId(updatedEntity.getRedacteur().getId());
         result.setChapitres(mapChapitresToDto(updatedEntity.getChapitres(), updatedEntity.getId()));
@@ -192,12 +191,12 @@ public class CoursBusiness {
 
 
     public void supprimerCours(String coursId) {
-        // Check if course exists
+
         CoursEntity coursEntity = daoAccessorService.getRepository(CoursRepository.class)
                 .findById(coursId)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Cours introuvable"));
 
-        // Delete the course (cascade should handle chapters)
+
         daoAccessorService.getRepository(CoursRepository.class).delete(coursEntity);
         log.info("Deleted course ID: {}", coursId);
     }
@@ -207,11 +206,11 @@ public class CoursBusiness {
                 .findById(coursId)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Cours introuvable"));
 
-        // Load chapters
+
         List<ChapitreEntity> chapitres = daoAccessorService.getRepository(ChapitreRepository.class)
                 .findByCoursIdOrderByOrdre(coursId);
 
-        // Correction ici
+
         if (coursEntity.getChapitres() == null) {
             coursEntity.setChapitres(new ArrayList<>());
         } else {
@@ -234,7 +233,7 @@ public class CoursBusiness {
                     List<ChapitreEntity> chapitres = daoAccessorService.getRepository(ChapitreRepository.class)
                             .findByCoursIdOrderByOrdre(c.getId());
 
-                    // Correction ici
+
                     if (c.getChapitres() == null) {
                         c.setChapitres(new ArrayList<>());
                     } else {
@@ -256,12 +255,11 @@ public class CoursBusiness {
 
         return coursEntities.stream()
                 .map(c -> {
-                    // Charger explicitement les chapitres pour chaque cours
+
                     List<ChapitreEntity> chapitres = daoAccessorService.getRepository(ChapitreRepository.class)
                             .findByCoursIdOrderByOrdre(c.getId());
 
-                    // NE PAS FAIRE: c.setChapitres(chapitres); ← Ça cause l'erreur
-                    // À la place, utilisez la collection existante
+
                     if (c.getChapitres() == null) {
                         c.setChapitres(new ArrayList<>());
                     } else {
@@ -286,7 +284,7 @@ public class CoursBusiness {
                     List<ChapitreEntity> chapitres = daoAccessorService.getRepository(ChapitreRepository.class)
                             .findByCoursIdOrderByOrdre(c.getId());
 
-                    // Correction ici
+
                     if (c.getChapitres() == null) {
                         c.setChapitres(new ArrayList<>());
                     } else {
