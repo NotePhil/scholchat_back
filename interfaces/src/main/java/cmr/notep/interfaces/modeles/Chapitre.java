@@ -16,6 +16,8 @@ public class Chapitre {
     private String description;
     private Integer ordre;
     private String contenu;
+    private String imageUrl;
+
     private String coursId;
 
 }

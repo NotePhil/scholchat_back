@@ -288,6 +288,7 @@ CREATE TABLE IF NOT EXISTS ressources.chapitres (
     description TEXT,
     ordre INTEGER NOT NULL,
     contenu TEXT NOT NULL,
+    image_url VARCHAR(255),
     cours_id UUID NOT NULL,
     FOREIGN KEY (cours_id) REFERENCES ressources.cours(id) ON DELETE CASCADE
     );

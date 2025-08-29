@@ -25,6 +25,9 @@ public class ChapitreEntity {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String contenu;
 
+    @Column(name = "image_url")
+    private String imageUrl;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cours_id", nullable = false)
     private CoursEntity cours;

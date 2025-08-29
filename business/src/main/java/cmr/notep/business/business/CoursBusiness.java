@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 
+@Transactional
 @Component
 @Slf4j
 public class CoursBusiness {
@@ -29,7 +30,7 @@ public class CoursBusiness {
         this.daoAccessorService = daoAccessorService;
     }
 
-    @Transactional
+
     public Cours creerCours(Cours cours) {
         // Validate professor
         ProfesseursEntity professeur = daoAccessorService.getRepository(ProfesseursRepository.class)
@@ -71,6 +72,9 @@ public class CoursBusiness {
             for (Chapitre chapitre : cours.getChapitres()) {
                 ChapitreEntity chapitreEntity = dozerMapperBean.map(chapitre, ChapitreEntity.class);
 
+                // Ensure ID is null for new chapters to avoid the "id must not be null" error
+                chapitreEntity.setId(null);
+
                 // Set the course reference for the chapter
                 chapitreEntity.setCours(entity);
 
@@ -93,22 +97,21 @@ public class CoursBusiness {
         // Map back to DTO
         Cours result = dozerMapperBean.map(savedEntity, Cours.class);
         result.setRedacteurId(savedEntity.getRedacteur().getId());
-        result.setChapitres(mapChapitresToDto(savedEntity.getChapitres(), savedEntity.getId())); // Passer l'ID du cours
+        result.setChapitres(mapChapitresToDto(savedEntity.getChapitres(), savedEntity.getId()));
 
         return result;
     }
-
     private List<Chapitre> mapChapitresToDto(List<ChapitreEntity> chapitreEntities, String coursId) {
         return chapitreEntities.stream()
                 .map(c -> {
                     Chapitre chapitre = dozerMapperBean.map(c, Chapitre.class);
-                    chapitre.setCoursId(coursId); // Définir explicitement l'ID du cours
+                    chapitre.setCoursId(coursId);
+                    // imageUrl is automatically mapped by Dozer
                     return chapitre;
                 })
                 .collect(Collectors.toList());
     }
 
-    @Transactional
     public Cours mettreAJourCours(String coursId, Cours cours) {
         // Find existing course
         CoursEntity existingEntity = daoAccessorService.getRepository(CoursRepository.class)
@@ -152,10 +155,10 @@ public class CoursBusiness {
             existingEntity.setMatieres(matieres);
         }
 
-        // Process chapters if provided
+        // Process chapters if provided - FIXED: Proper orphan removal handling
         if (cours.getChapitres() != null) {
-            // First, remove existing chapters
-            daoAccessorService.getRepository(ChapitreRepository.class).deleteByCoursId(coursId);
+            // Clear existing chapters and let orphan removal handle deletion
+            existingEntity.getChapitres().clear();
 
             List<ChapitreEntity> chapitreEntities = new ArrayList<>();
             StringBuilder contentBuilder = new StringBuilder();
@@ -163,7 +166,6 @@ public class CoursBusiness {
             for (Chapitre chapitre : cours.getChapitres()) {
                 ChapitreEntity chapitreEntity = dozerMapperBean.map(chapitre, ChapitreEntity.class);
                 chapitreEntity.setCours(existingEntity);
-
                 chapitreEntities.add(chapitreEntity);
 
                 // Add to global content
@@ -171,7 +173,8 @@ public class CoursBusiness {
                 contentBuilder.append(chapitre.getContenu()).append("\n\n");
             }
 
-            existingEntity.setChapitres(chapitreEntities);
+            // Add all new chapters to the existing collection
+            existingEntity.getChapitres().addAll(chapitreEntities);
             existingEntity.setContenu(contentBuilder.toString());
         }
 
@@ -182,12 +185,12 @@ public class CoursBusiness {
         // Map back to DTO
         Cours result = dozerMapperBean.map(updatedEntity, Cours.class);
         result.setRedacteurId(updatedEntity.getRedacteur().getId());
-        result.setChapitres(mapChapitresToDto(updatedEntity.getChapitres(), updatedEntity.getId())); // Passer l'ID du cours
+        result.setChapitres(mapChapitresToDto(updatedEntity.getChapitres(), updatedEntity.getId()));
 
         return result;
     }
 
-    @Transactional
+
     public void supprimerCours(String coursId) {
         // Check if course exists
         CoursEntity coursEntity = daoAccessorService.getRepository(CoursRepository.class)
