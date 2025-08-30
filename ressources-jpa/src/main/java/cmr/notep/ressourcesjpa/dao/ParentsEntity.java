@@ -13,7 +13,16 @@ import java.util.List;
 @PrimaryKeyJoinColumn(name = "parents_id")
 @Table(name = "parents", schema = "ressources")
 public class ParentsEntity extends UtilisateursEntity {
-    @ManyToMany(mappedBy = "parentsEntities")
-    @Mapping("classes")
-    private List<ClassesEntity> classesEntities;
+//    @ManyToMany(mappedBy = "parentsEntities")
+//    @Mapping("classes")
+//    private List<ClassesEntity> classesEntities;
+
+    @ManyToMany
+    @JoinTable(
+            name = "parent_eleve",
+            schema = "ressources",
+            joinColumns = @JoinColumn(name = "parent_id"),
+            inverseJoinColumns = @JoinColumn(name = "eleve_id")
+    )
+    private List<ElevesEntity> enfants;
 }

@@ -24,4 +24,10 @@ public interface MotifsRejetClasseApi {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     void supprimerMotifRejetClasse(@PathVariable String id);
+
+    @GetMapping(
+            path = "/code/{code}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    MotifRejetClasse obtenirMotifClasseParCode(@PathVariable String code);
 }

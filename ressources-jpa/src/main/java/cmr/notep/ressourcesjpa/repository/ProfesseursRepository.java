@@ -4,7 +4,9 @@ import cmr.notep.ressourcesjpa.dao.ProfesseursEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface ProfesseursRepository extends JpaRepository<ProfesseursEntity, String> {
-    ProfesseursEntity findByMatriculeProfesseur(String matriculeProfesseur);
+    Optional<ProfesseursEntity> findByMatriculeProfesseur(String matriculeProfesseur);
 }

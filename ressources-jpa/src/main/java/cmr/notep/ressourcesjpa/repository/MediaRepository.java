@@ -13,4 +13,7 @@ public interface MediaRepository extends JpaRepository<MediaEntity, String> {
     Optional<MediaEntity> findByFilePath(String filePath);
     List<MediaEntity> findByMediaType(String mediaType);
     Optional<MediaEntity> findByFileNameAndOwnerId(String fileName, String ownerId);
+
+    // Add this new method
+    Optional<MediaEntity> findByFileName(String fileName);
 }

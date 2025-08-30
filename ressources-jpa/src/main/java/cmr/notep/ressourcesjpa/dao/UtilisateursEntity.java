@@ -7,6 +7,7 @@ import lombok.Setter;
 import lombok.NoArgsConstructor;
 import org.dozer.Mapping;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.time.LocalDateTime;
 
@@ -64,4 +65,15 @@ public class UtilisateursEntity {
             inverseJoinColumns = @JoinColumn(name = "message_id"))
     @Mapping("messagesRecus")
     private List<MessagesEntity> messagesRecusEntities;
+
+    @OneToMany(mappedBy = "utilisateur")
+    private List<AccederEntity> accesClasses;
+
+    @ManyToMany
+    @JoinTable(
+            name = "classe_eleves",
+            joinColumns = @JoinColumn(name = "eleve_id"),
+            inverseJoinColumns = @JoinColumn(name = "classe_id")
+    )
+    private List<ClassesEntity> classes;
 }

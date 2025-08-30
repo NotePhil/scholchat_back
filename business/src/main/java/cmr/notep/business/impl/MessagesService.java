@@ -1,13 +1,16 @@
 package cmr.notep.business.impl;
 
 import cmr.notep.business.business.MessagesBusiness;
+import cmr.notep.interfaces.dto.GroupMessageDto;
 import cmr.notep.interfaces.api.MessagesApi;
 import cmr.notep.interfaces.modeles.Messages;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+
 @RestController
 @Slf4j
 public class MessagesService implements MessagesApi {
@@ -20,7 +23,7 @@ public class MessagesService implements MessagesApi {
     @Override
     public Messages avoirMessage(@NonNull String idMessage) {
         log.info("Récupération du message avec ID: {}", idMessage);
-            return messagesBusiness.avoirMessage(idMessage);
+        return messagesBusiness.avoirMessage(idMessage);
     }
 
     @Override
@@ -34,4 +37,19 @@ public class MessagesService implements MessagesApi {
         log.info("Envoi d'un nouveau message");
         return messagesBusiness.posterMessage(message);
     }
+
+    @Override
+    public Messages posterMessageGroupe(@NonNull @RequestBody GroupMessageDto groupMessageDto) {
+        log.info("Envoi d'un message de groupe aux classes {} avec {} copie(s)",
+                groupMessageDto.getClassIds(),
+                groupMessageDto.getCopieRecipientIds() != null ? groupMessageDto.getCopieRecipientIds().size() : 0);
+        return messagesBusiness.posterMessageGroupe(groupMessageDto);
+    }
+
+    @Override
+    public List<Messages> obtenirMessagesParUtilisateur(String utilisateurId) {
+        log.info("Obtenir tous les messages pour l'utilisateur {}", utilisateurId);
+        return messagesBusiness.obtenirMessagesParUtilisateur(utilisateurId);
+    }
+
 }

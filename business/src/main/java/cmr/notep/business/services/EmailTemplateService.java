@@ -9,6 +9,9 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
+import java.util.Date;
+import java.util.List;
+
 @Service
 
 public class EmailTemplateService {
@@ -37,6 +40,60 @@ public class EmailTemplateService {
         };
 
         return templateEngine.process(templateName, context);
+    }
+    public String generateAccessConfirmationEmail(Utilisateurs utilisateur, Classes classe) {
+        Context context = new Context();
+        context.setVariable("user", utilisateur);
+        context.setVariable("classe", classe);
+
+        return templateEngine.process("email/access-confirmation-email", context);
+    }
+
+    public String generateAccessRequestNotification(Utilisateurs moderator, Utilisateurs demandeur, Classes classe, Date dateDemande) {
+        Context context = new Context();
+        context.setVariable("moderator", moderator);
+        context.setVariable("demandeur", demandeur);
+        context.setVariable("classe", classe);
+        context.setVariable("dateDemande", dateDemande);
+        context.setVariable("dashboardUrl", "http://your-frontend-url.com/moderator/dashboard");
+
+        return templateEngine.process("email/access-request-notification", context);
+    }
+
+    public String generateAccessRejectionEmail(Utilisateurs utilisateur, Classes classe, String motifRejet) {
+        Context context = new Context();
+        context.setVariable("user", utilisateur);
+        context.setVariable("classe", classe);
+        context.setVariable("motifRejet", motifRejet);
+        return templateEngine.process("email/access-rejection", context);
+    }
+
+    public String generateAwaitingValidationEmail(Utilisateurs utilisateur) {
+        Context context = new Context();
+        context.setVariable("userName", utilisateur.getNom());
+        context.setVariable("userEmail", utilisateur.getEmail());
+
+        return templateEngine.process("email/professor-awaiting-validation", context);
+    }
+    public String generateClassCreationNotificationEmail(Classes classe, Professeurs professeur, String validationUrl) {
+        Context context = new Context();
+        context.setVariable("classe", classe);
+        context.setVariable("professeur", professeur);
+        context.setVariable("validationUrl", validationUrl);
+
+        return templateEngine.process("email/class-creation-notification", context);
+    }
+
+    public String generateParentAccessRequestEmail(Utilisateurs moderator, Utilisateurs parent, Classes classe, List<String> eleves, boolean accesMajeur) {
+        Context context = new Context();
+        context.setVariable("moderator", moderator);
+        context.setVariable("parent", parent);
+        context.setVariable("classe", classe);
+        context.setVariable("eleves", eleves);
+        context.setVariable("accesMajeur", accesMajeur);
+        context.setVariable("dashboardUrl", "http://votre-frontend.com/moderator/dashboard");
+
+        return templateEngine.process("email/parent-access-request", context);
     }
 
     public String generateRejectionEmail(ProfesseursEntity professeur, MotifRejetEntity motif, String motifSupplementaire) {

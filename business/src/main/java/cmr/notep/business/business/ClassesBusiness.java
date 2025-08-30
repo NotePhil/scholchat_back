@@ -2,27 +2,16 @@ package cmr.notep.business.business;
 
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
-import cmr.notep.interfaces.modeles.Classes;
-import cmr.notep.interfaces.modeles.Eleves;
-import cmr.notep.interfaces.modeles.Parents;
-import cmr.notep.interfaces.modeles.Professeurs;
+import cmr.notep.interfaces.modeles.*;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
-import cmr.notep.ressourcesjpa.dao.ClassesEntity;
-import cmr.notep.ressourcesjpa.dao.ElevesEntity;
-import cmr.notep.ressourcesjpa.dao.EtablissementEntity;
-import cmr.notep.ressourcesjpa.dao.ParentsEntity;
-import cmr.notep.ressourcesjpa.dao.ProfesseursEntity;
-import cmr.notep.ressourcesjpa.repository.ClassesRepository;
-import cmr.notep.ressourcesjpa.repository.ElevesRepository;
-import cmr.notep.ressourcesjpa.repository.EtablissementRepository;
-import cmr.notep.ressourcesjpa.repository.ParentsRepository;
-import cmr.notep.ressourcesjpa.repository.ProfesseursRepository;
+import cmr.notep.ressourcesjpa.dao.*;
+import cmr.notep.ressourcesjpa.repository.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import cmr.notep.modele.DroitPublication;
 import cmr.notep.modele.EtatClasse;
-import cmr.notep.ressourcesjpa.dao.HistoActivationEntity;
-import cmr.notep.ressourcesjpa.repository.HistoActivationRepository;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,6 +19,7 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 
 @Component
 @Slf4j
+@Transactional
 public class ClassesBusiness {
 
     private final DaoAccessorService daoAccessorService;
@@ -121,29 +111,6 @@ public class ClassesBusiness {
             classeExistante.setEtablissement(etablissement);
         }
 
-        // Parents Update
-        if (classeModifiee.getParents() != null) {
-            classeExistante.getParentsEntities().clear();
-            for (Parents parent : classeModifiee.getParents()) {
-                ParentsEntity parentEntity = daoAccessorService
-                        .getRepository(ParentsRepository.class)
-                        .findById(parent.getId())
-                        .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Parent introuvable"));
-                classeExistante.getParentsEntities().add(parentEntity);
-            }
-        }
-
-        // Eleves Update
-        if (classeModifiee.getEleves() != null) {
-            classeExistante.getElevesEntities().clear();
-            for (Eleves eleve : classeModifiee.getEleves()) {
-                ElevesEntity eleveEntity = daoAccessorService
-                        .getRepository(ElevesRepository.class)
-                        .findById(eleve.getId())
-                        .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "élève introuvable"));
-                classeExistante.getElevesEntities().add(eleveEntity);
-            }
-        }
 
         ClassesEntity classeSauvegardee = classesRepository.save(classeExistante);
         log.info("Classe modifiée avec succès: {}", idClasse);
@@ -324,6 +291,12 @@ public class ClassesBusiness {
      */
     public List<Classes> obtenirClassesParEtat(EtatClasse etat) throws SchoolException {
         ClassesRepository classesRepository = daoAccessorService.getRepository(ClassesRepository.class);
+        if (etat == null) {
+            return classesRepository.findAll()
+                    .stream()
+                    .map(c -> dozerMapperBean.map(c, Classes.class))
+                    .collect(Collectors.toList());
+        }
         return classesRepository.findByEtat(etat)
                 .stream()
                 .map(c -> dozerMapperBean.map(c, Classes.class))
@@ -352,4 +325,8 @@ public class ClassesBusiness {
     private String generateActivationCode() {
         return String.format("%06d", new java.util.Random().nextInt(999999));
     }
+
+
+
+
 }

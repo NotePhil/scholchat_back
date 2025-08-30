@@ -1,6 +1,7 @@
 package cmr.notep.interfaces.api;
 
 import cmr.notep.interfaces.modeles.HistoActivation;
+import cmr.notep.modele.EtatClasse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -9,7 +10,6 @@ import java.util.List;
 
 @RequestMapping("/histo-activations")
 public interface HistoActivationApi {
-
     @PostMapping(
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
@@ -34,11 +34,11 @@ public interface HistoActivationApi {
     List<HistoActivation> obtenirHistoriqueParClasse(@PathVariable("classeId") String classeId);
 
     @GetMapping(
-            path = "/professeur/{professeurId}",
+            path = "/utilisateur/{utilisateurId}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @ResponseStatus(HttpStatus.OK)
-    List<HistoActivation> obtenirHistoriqueParProfesseur(@PathVariable("professeurId") String professeurId);
+    List<HistoActivation> obtenirHistoriqueParUtilisateur(@PathVariable("utilisateurId") String utilisateurId);
 
     @GetMapping(
             path = "/actives",
@@ -46,4 +46,11 @@ public interface HistoActivationApi {
     )
     @ResponseStatus(HttpStatus.OK)
     List<HistoActivation> obtenirActivationsActives();
+
+    @GetMapping(
+            path = "/etat/{etatClasse}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    List<HistoActivation> obtenirParEtatClasse(@PathVariable("etatClasse") EtatClasse etatClasse);
 }

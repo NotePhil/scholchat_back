@@ -24,7 +24,7 @@ public interface MediaApi {
     MediaDto getMediaById(@PathVariable String mediaId);
 
     @GetMapping(
-            path = "/download/{mediaId}",
+            path = "/{mediaId}/download-url",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     MediaDto generateDownloadUrl(@PathVariable String mediaId);
@@ -40,4 +40,17 @@ public interface MediaApi {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     void deleteMedia(@PathVariable String mediaId);
+
+    @GetMapping(
+            path = "/download-by-path",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    MediaDto generateDownloadUrlByPath(@RequestParam String filePath);
+
+    @PostMapping(
+            path = "/{mediaId}/transfer",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    MediaDto transferMediaOwnership(@PathVariable String mediaId,
+                                    @RequestParam String newOwnerId);
 }

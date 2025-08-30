@@ -29,4 +29,9 @@ public class MotifsRejetClasseService implements MotifsRejetClasseApi {
     public void supprimerMotifRejetClasse(String id) {
         motifsRejetClasseBusiness.supprimerMotifRejetClasse(id);
     }
+
+    @Override
+    public MotifRejetClasse obtenirMotifClasseParCode(String code) {
+        return motifsRejetClasseBusiness.obtenirMotifClasseParCode(code);
+    }
 }

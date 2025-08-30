@@ -1,7 +1,9 @@
 package cmr.notep.interfaces.api;
 
 import cmr.notep.interfaces.modeles.Eleves;
+import cmr.notep.interfaces.modeles.Parents;
 import lombok.NonNull;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,4 +28,17 @@ public interface ElevesApi {
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
     Eleves posterEleve(@NonNull @RequestBody Eleves Eleve);
+
+    @PatchMapping(
+            path = "/{idEleve}",
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    Eleves modifierElevePartiellement(
+            @NonNull @PathVariable String idEleve,
+            @NonNull @RequestBody Eleves partialEleve);
+
+    @GetMapping("/{eleveId}/parents")
+    @ResponseStatus(HttpStatus.OK)
+    List<Parents> obtenirParents(@PathVariable String eleveId);
 }

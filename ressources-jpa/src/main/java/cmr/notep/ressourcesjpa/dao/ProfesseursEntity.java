@@ -14,10 +14,10 @@ import java.util.List;
 @PrimaryKeyJoinColumn(name = "professeurs_id")
 public class ProfesseursEntity extends UtilisateursEntity {
 
-    @Column(name = "cni_url_front", nullable = false)
+    @Column(name = "cni_url_front", nullable = true )
     private String cniUrlRecto;
 
-    @Column(name = "cni_url_back", nullable = false)
+    @Column(name = "cni_url_back", nullable = true)
     private String cniUrlVerso;
 
     @Column(name = "selfie_url")
@@ -41,4 +41,6 @@ public class ProfesseursEntity extends UtilisateursEntity {
 
     @OneToMany(mappedBy = "createur", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EvenementEntity> evenementsCrees = new ArrayList<>();
+
+
 }

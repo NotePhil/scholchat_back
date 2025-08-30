@@ -14,6 +14,7 @@ public enum SchoolErrorCode {
     MAPPING_FAILED("User entity mapping failed"),
     TOKEN_EXPIRED("Token Expired"),
     INACTIVE_USER("Cannot create refresh token for inactive user"),
+    EMAIL_ERROR("Email processing error"),
 
     // New codes needed for MediaExceptionHandler
     RESOURCE_NOT_FOUND("Resource not found"),
@@ -21,8 +22,10 @@ public enum SchoolErrorCode {
     FORBIDDEN("Access forbidden"),
     DUPLICATE_RESOURCE("Resource already exists"),
     OPERATION_FAILURE("Operation failed"),
-    INIT_ERROR("Initialization error");
-
+    INIT_ERROR("Initialization error"),
+    ALREADY_EXISTS("Existing entity"),
+    INVALID_CODE("Code d'activation invalide"),
+    CONFLICT("Utilisateur existe deja");
     private final String message;
 
     SchoolErrorCode(String message) {

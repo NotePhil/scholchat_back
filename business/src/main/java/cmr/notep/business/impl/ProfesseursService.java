@@ -34,6 +34,11 @@ public class ProfesseursService implements ProfesseursApi {
     }
 
     @Override
+    public Professeurs modifierProfesseurPartiellement(@NonNull String idProfesseur, @NonNull Professeurs professeur) {
+        return professeursBusiness.modifierProfesseurPartiellement(idProfesseur, professeur);
+    }
+
+    @Override
     public Professeurs avoirProfesseurParMatricule(@NonNull String matriculeProfesseur) {
         return professeursBusiness.avoirProfesseurParMatricule(matriculeProfesseur);
     }

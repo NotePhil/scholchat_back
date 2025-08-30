@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Nouvelle demande d'accès parent</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #f8f9fa; padding: 10px; text-align: center; }
+        .content { padding: 20px; }
+        .footer { margin-top: 20px; font-size: 0.8em; text-align: center; color: #6c757d; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Nouvelle demande d'accès parent</h1>
+    </div>
+    <div class="content">
+        <p>Bonjour <span th:text="${moderator.prenom} + ' ' + ${moderator.nom}"></span>,</p>
+
+        <p>Un parent a demandé l'accès à votre classe <strong th:text="${classe.nom}"></strong>.</p>
+
+        <h3>Détails du parent :</h3>
+        <p>
+            <strong>Nom :</strong> <span th:text="${parent.prenom} + ' ' + ${parent.nom}"></span><br>
+            <strong>Email :</strong> <span th:text="${parent.email}"></span>
+        </p>
+
+        <h3 th:if="${classe.accesMajeur}">Élèves associés :</h3>
+        <h3 th:unless="${classe.accesMajeur}">Nouveaux élèves à créer :</h3>
+
+        <ul>
+            <li th:each="eleve : ${eleves}" th:text="${eleve}"></li>
+        </ul>
+
+        <p>Veuillez traiter cette demande dans votre interface modérateur.</p>
+
+        <a th:href="${dashboardUrl}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">
+            Accéder au tableau de bord
+        </a>
+    </div>
+    <div class="footer">
+        <p>© 2025 ScholChat. Tous droits réservés.</p>
+    </div>
+</div>
+</body>
+</html>

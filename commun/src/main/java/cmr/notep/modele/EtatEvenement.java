@@ -1,6 +1,7 @@
 package cmr.notep.modele;
 
 public enum EtatEvenement {
+    PLANIFIE,
     A_VENIR,
     EN_COURS,
     ANNULE,

@@ -1,5 +1,6 @@
 package cmr.notep.ressourcesjpa.dao;
 
+import cmr.notep.modele.EtatClasse;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,8 +21,8 @@ public class HistoActivationEntity {
     private ClassesEntity classe;
 
     @ManyToOne
-    @JoinColumn(name = "professeur_id", nullable = false)
-    private ProfesseursEntity professeur;
+    @JoinColumn(name = "utilisateur_id", nullable = false)
+    private UtilisateursEntity utilisateur;
 
     @Column(name = "date_activation", nullable = false)
     private LocalDateTime dateActivation;
@@ -34,4 +35,8 @@ public class HistoActivationEntity {
 
     @Column(name = "is_active", nullable = false)
     private boolean isActive;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "etat_classe")
+    private EtatClasse etatClasse;
 }

@@ -3,7 +3,10 @@ package cmr.notep.ressourcesjpa.dao;
 import cmr.notep.modele.DroitPublication;
 import cmr.notep.modele.EtatClasse;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.dozer.Mapping;
 
 import java.util.ArrayList;
@@ -52,23 +55,18 @@ public class ClassesEntity {
     @Mapping("moderator")
     private ProfesseursEntity moderator;
 
-    @ManyToMany
-    @JoinTable(name = "classe_parents", schema = "ressources",
-            joinColumns = @JoinColumn(name = "classe_id"),
-            inverseJoinColumns = @JoinColumn(name = "parent_id"))
-    @Mapping("parents")
-    private List<ParentsEntity> parentsEntities = new ArrayList<>();
-
-    @ManyToMany
-    @JoinTable(name = "classe_eleves", schema = "ressources",
-            joinColumns = @JoinColumn(name = "classe_id"),
-            inverseJoinColumns = @JoinColumn(name = "eleve_id"))
-    @Mapping("eleves")
-    private List<ElevesEntity> elevesEntities = new ArrayList<>();
+    @ManyToMany(mappedBy = "classes")
+    private List<MessagesEntity> messages;
 
     @OneToMany(mappedBy = "classe")
     private List<CanalEntity> canaux = new ArrayList<>();
 
     @OneToMany(mappedBy = "classe")
     private List<HistoActivationEntity> activationHistory = new ArrayList<>();
+
+    @OneToMany(mappedBy = "classe")
+    private List<AccederEntity> utilisateursAccedant;
+
+    @Column(name = "acces_majeur")
+    private boolean accesMajeur;
 }

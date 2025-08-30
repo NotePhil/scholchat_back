@@ -27,15 +27,9 @@ public class Classes implements Serializable {
     private EtatClasse etat;
     private Etablissement etablissement;
 
-    // Remove moderatorId and keep only moderator object
+
     private Professeurs moderator;
 
-    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
-    @JsonIdentityReference(alwaysAsId = true)
-    private List<Parents> parents;
 
-    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
-    @JsonIdentityReference(alwaysAsId = true)
-    private List<Eleves> eleves;
     private DroitPublication droitPublication;
 }

@@ -54,13 +54,15 @@ public class SecurityConfig {
                                 "/auth/login", "/auth/login/",
                                 "/auth/activate", "/auth/activate/",
                                 "/auth/refresh", "/auth/refresh/",
-                                "/utilisateurs", "/utilisateurs/",
+                                "/utilisateurs", "/utilisateurs/**",
                                 "/auth/reset-password-request",  // Keep this public
                                 "/auth/reset-password",
+                                "/auth/registerPassword", "/auth/registerPassword/",
                                 "/auth/users/byEmail",
                                 "/auth/users/register",
                                 "/etablissements","/etablissements/**",
                                 "/reset-password-request",
+                                "/utilisateurs/regenerate-activation",
                                 "/evenements/**",
                                 "/matieres/**",
                                 "/interactions/**",
@@ -70,7 +72,14 @@ public class SecurityConfig {
                                 "/canaux","/canaux/**",
                                 "/histo-activations/**",
                                 "/profil-eleves","/profil-eleves/**",
-                                "/histo-activations","/histo-activations/**"
+                                "/histo-activations","/histo-activations/**",
+                                "/acceder/**",
+                                "/parent-access/demande",
+                                "/parent-access/infos-classe",
+                                "/acceder/classes/{classeId}/utilisateurs",
+                                "/acceder/utilisateurs/{utilisateurId}/classes",
+                                "/utilisateurs/professors/{professorId}/validate",
+                                "/utilisateurs/professeurs/{professorId}/rejet"
 
                         ).permitAll()
                         .requestMatchers(
@@ -116,7 +125,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT","PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With"));
         configuration.setExposedHeaders(Arrays.asList("Authorization"));
         configuration.setAllowCredentials(true);

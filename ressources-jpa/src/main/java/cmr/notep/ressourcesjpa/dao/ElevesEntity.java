@@ -17,7 +17,11 @@ public class ElevesEntity extends UtilisateursEntity {
     @Column(name = "niveau", nullable = false)
     private String niveau;
 
-    @ManyToMany(mappedBy = "elevesEntities")
-    @Mapping("classes")
-    private List<ClassesEntity> classesEntities;
+//    @ManyToMany(mappedBy = "elevesEntities")
+//    @Mapping("classes")
+//    private List<ClassesEntity> classesEntities;
+
+
+    @ManyToMany(mappedBy = "enfants")
+    private List<ParentsEntity> parents;
 }

@@ -1,5 +1,6 @@
 package cmr.notep.interfaces.api;
 
+import cmr.notep.interfaces.dto.GroupMessageDto;
 import cmr.notep.interfaces.modeles.Messages;
 import lombok.NonNull;
 import org.springframework.http.MediaType;
@@ -25,4 +26,16 @@ public interface MessagesApi {
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
     Messages posterMessage(@NonNull @RequestBody Messages message);
+
+    @GetMapping(
+            path = "/utilisateur/{utilisateurId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    List<Messages> obtenirMessagesParUtilisateur(@PathVariable String utilisateurId);
+    @PostMapping(
+            path = "/group",
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    Messages posterMessageGroupe(@NonNull @RequestBody GroupMessageDto groupMessageDto);
 }

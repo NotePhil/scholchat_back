@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Nouvelle demande d'accès</title>
+    <style>
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+        }
+        .header {
+            background-color: #4A90E2;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            color: white;
+            margin: 0;
+        }
+        .content {
+            padding: 20px;
+            background-color: #ffffff;
+        }
+        .footer {
+            background-color: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666666;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4A90E2;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        .details {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="header">
+        <h1>Nouvelle demande d'accès</h1>
+    </div>
+    <div class="content">
+        <p>Bonjour Professeur <span th:text="${moderator.prenom + ' ' + moderator.nom}"></span>,</p>
+
+        <p>Vous avez reçu une nouvelle demande d'accès à votre classe :</p>
+
+        <div class="details">
+            <p><strong>Classe :</strong> <span th:text="${classe.nom}"></span></p>
+            <p><strong>Demandeur :</strong> <span th:text="${demandeur.prenom + ' ' + demandeur.nom}"></span></p>
+            <p><strong>Email du demandeur :</strong> <span th:text="${demandeur.email}"></span></p>
+            <p><strong>Date de la demande :</strong> <span th:text="${#dates.format(dateDemande, 'dd/MM/yyyy HH:mm')}"></span></p>
+        </div>
+
+        <p>Veuillez traiter cette demande dans votre interface modérateur :</p>
+
+        <center>
+            <a th:href="${dashboardUrl}" class="button">Accéder au tableau de bord</a>
+        </center>
+
+        <p style="margin-top: 20px;">Cordialement,<br>L'équipe ScholChat</p>
+    </div>
+    <div class="footer">
+        <p>© 2025 ScholChat. Tous droits réservés.</p>
+    </div>
+</div>
+</body>
+</html>

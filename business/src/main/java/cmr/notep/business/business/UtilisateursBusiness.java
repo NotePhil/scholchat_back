@@ -1,5 +1,6 @@
 package cmr.notep.business.business;
 import cmr.notep.business.services.*;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
@@ -28,6 +29,7 @@ import cmr.notep.ressourcesjpa.repository.MotifRejetRepository;
 import cmr.notep.ressourcesjpa.repository.ProfesseursRepository;
 
 
+import java.net.URI;
 import java.time.LocalDateTime;
 
 import java.util.ArrayList;
@@ -35,7 +37,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
-
+import cmr.notep.business.services.MediaService;
 @Component
 @Slf4j
 @Transactional(noRollbackFor = SchoolException.class)
@@ -45,8 +47,10 @@ public class UtilisateursBusiness {
     private final JwtUtil jwtUtil;
     private final MailServiceInterface mailService;
     private final IRejectionEmailService rejectionEmailService;
-
-
+    private final RoleService roleService;
+    private final UserValidationService userValidationService;
+    private final AwaitingValidationEmailService awaitingValidationEmailService;
+    private final MediaService mediaService;
 
     @Autowired
     private TemplateEngine templateEngine;
@@ -55,87 +59,178 @@ public class UtilisateursBusiness {
                                 ActivationEmailService activationEmailService,
                                 JwtUtil jwtUtil,
                                 MailServiceInterface mailService,
-                                IRejectionEmailService rejectionEmailService) {
+                                IRejectionEmailService rejectionEmailService,
+                                RoleService roleService, UserValidationService userValidationService, UserValidationService userValidationService1,
+                                AwaitingValidationEmailService awaitingValidationEmailService,
+                                MediaService mediaService) {
         this.daoAccessorService = daoAccessorService;
         this.activationEmailService = activationEmailService;
         this.jwtUtil = jwtUtil;
         this.mailService = mailService;
         this.rejectionEmailService = rejectionEmailService;
+        this.roleService = roleService;
+        this.userValidationService = userValidationService1;
+        this.awaitingValidationEmailService = awaitingValidationEmailService;
+        this.mediaService = mediaService;
+    }
+    public Utilisateurs patcherUtilisateur(String idUtilisateur, Utilisateurs partialUpdate) {
+        log.info("Patching user with ID: {}", idUtilisateur);
+
+        // 1. Fetch and validate existing user
+        UtilisateursEntity existingEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
+                .findById(idUtilisateur)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND,
+                        "Utilisateur introuvable avec l'ID: " + idUtilisateur));
+
+        // 2. Map to model for easier manipulation
+        Utilisateurs existingUser = mapUtilisateursEntityToModele(existingEntity);
+
+        // 4. Update common fields with null checks
+        updateCommonFields(existingUser, partialUpdate);
+
+        // 5. Handle type-specific updates
+        if (existingUser instanceof Professeurs && partialUpdate instanceof Professeurs) {
+            handleProfessorUpdates((Professeurs) existingUser, (Professeurs) partialUpdate);
+        } else if (existingUser instanceof Eleves && partialUpdate instanceof Eleves) {
+            handleStudentUpdates((Eleves) existingUser, (Eleves) partialUpdate);
+        }
+
+        // 6. Map back to entity and save
+        UtilisateursEntity updatedEntity = mapUtilisateursModeleToEntity(existingUser);
+        updatedEntity = daoAccessorService.getRepository(UtilisateursRepository.class).save(updatedEntity);
+
+        // 7. Return updated model
+        return mapUtilisateursEntityToModele(updatedEntity);
     }
 
+    private void updateCommonFields(Utilisateurs existing, Utilisateurs updates) {
+        if (updates.getNom() != null && !updates.getNom().isBlank()) {
+            existing.setNom(updates.getNom().trim());
+        }
+        if (updates.getPrenom() != null && !updates.getPrenom().isBlank()) {
+            existing.setPrenom(updates.getPrenom().trim());
+        }
+        if (updates.getEmail() != null && !updates.getEmail().isBlank()) {
+            existing.setEmail(updates.getEmail().trim().toLowerCase());
+        }
+        if (updates.getTelephone() != null && !updates.getTelephone().isBlank()) {
+            existing.setTelephone(updates.getTelephone().trim());
+        }
+        if (updates.getAdresse() != null && !updates.getAdresse().isBlank()) {
+            existing.setAdresse(updates.getAdresse().trim());
+        }
+        if (updates.getEtat() != null) {
+            existing.setEtat(updates.getEtat());
+        }
+    }
+
+    private void handleProfessorUpdates(Professeurs existingProf, Professeurs updateProf) {
+        // Validate and update CNI Recto
+        if (updateProf.getCniUrlRecto() != null) {
+            validateMediaUrl(updateProf.getCniUrlRecto());
+            existingProf.setCniUrlRecto(updateProf.getCniUrlRecto());
+        }
+
+        // Validate and update CNI Verso
+        if (updateProf.getCniUrlVerso() != null) {
+            validateMediaUrl(updateProf.getCniUrlVerso());
+            existingProf.setCniUrlVerso(updateProf.getCniUrlVerso());
+        }
+
+        // Validate and update Selfie
+        if (updateProf.getSelfieUrl() != null) {
+            validateMediaUrl(updateProf.getSelfieUrl());
+            existingProf.setSelfieUrl(updateProf.getSelfieUrl());
+        }
+
+        // Update matricule if provided
+        if (updateProf.getMatriculeProfesseur() != null && !updateProf.getMatriculeProfesseur().isBlank()) {
+            existingProf.setMatriculeProfesseur(updateProf.getMatriculeProfesseur().trim());
+        }
+    }
+
+    private void handleStudentUpdates(Eleves existingEleve, Eleves updateEleve) {
+        if (updateEleve.getNiveau() != null && !updateEleve.getNiveau().isBlank()) {
+            existingEleve.setNiveau(updateEleve.getNiveau().trim());
+        }
+    }
+
+    private void validateMediaUrl(String url) {
+        if (url == null || url.isBlank()) {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "L'URL du média ne peut pas être vide");
+        }
+
+        try {
+            new URI(url).toURL(); // Validate URL format
+        } catch (Exception e) {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
+                    "L'URL du média n'est pas valide: " + url);
+        }
+
+        // Optionally verify the URL points to your Minio storage
+        if (!url.startsWith("http://localhost:9000") && !url.startsWith("https://your-minio-domain")) {
+            log.warn("Media URL points to external storage: {}", url);
+        }
+    }
     public Utilisateurs avoirUtilisateur(String idUtilisateur) {
         log.info("Récupération de l'utilisateur avec ID: {}", idUtilisateur);
-        return mapUtilisateursEntityToModele(daoAccessorService.getRepository(UtilisateursRepository.class)
+        UtilisateursEntity utilisateurEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .findById(idUtilisateur)
-                .orElseThrow(()-> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable avec l'ID: " + idUtilisateur)));
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable avec l'ID: " + idUtilisateur));
+
+        // Force loading of received messages
+        Hibernate.initialize(utilisateurEntity.getMessagesEnvoyerEntities());
+        Hibernate.initialize(utilisateurEntity.getMessagesRecusEntities());
+
+        return mapUtilisateursEntityToModele(utilisateurEntity);
     }
 
+
     public Utilisateurs posterUtilisateur(Utilisateurs utilisateur) {
-        log.info("Création d'un nouvel utilisateur");
+        log.info("Creating new user: {}", utilisateur.getEmail());
 
-        if (dozerMapperBean == null) {
-            throw new IllegalStateException("DozerBeanMapper is not initialized.");
-        }
+        // Validation des données
+        userValidationService.validateUserData(utilisateur);
 
-        // Set user state based on user type
-        if (utilisateur instanceof Professeurs) {
-            utilisateur.setEtat(EtatUtilisateur.AWAITING_VALIDATION);
-        } else {
-            utilisateur.setEtat(EtatUtilisateur.PENDING);
-        }
-
-        // Set creation date
+        // Configuration par défaut
+        utilisateur.setAdmin(false);
+        utilisateur.setEtat(utilisateur instanceof Professeurs ?
+                EtatUtilisateur.AWAITING_VALIDATION : EtatUtilisateur.PENDING);
         utilisateur.setCreationDate(LocalDateTime.now());
 
-        // Map the user model to entity
+        // Mapping et sauvegarde
         UtilisateursEntity userEntity = mapUtilisateursModeleToEntity(utilisateur);
-        if (userEntity == null) {
-            throw new SchoolException(SchoolErrorCode.MAPPING_FAILED, "User entity mapping failed.");
-        }
-
-        // Set role information here:
-        // If the user is a professor, mark them as a professor and ensure they aren't an admin by default
-        if (utilisateur instanceof Professeurs) {
-            userEntity.setAdmin(false);  // Professors are not admins by default, unless explicitly set
-        } else {
-            // If not a professor, handle based on type and admin flag
-            userEntity.setAdmin(utilisateur.isAdmin());
-        }
-
-        // Save the user entity
         UtilisateursEntity savedUserEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .save(userEntity);
+        try {
+            if (savedUserEntity.getId() != null && !savedUserEntity.getId().equals("temp")) {
+                String userFolderPath = "users/" + savedUserEntity.getId();
+                mediaService.ensureFolderExists(userFolderPath);
+                log.info("Created user folder for ID: {}", savedUserEntity.getId());
 
-        // Only generate token and send email for non-professor users
-        if (!(savedUserEntity instanceof ProfesseursEntity)) {
-            // Here we handle the roles based on user type and admin status
-            List<String> roles = new ArrayList<>();
-            if (savedUserEntity.getAdmin()) {
-                roles.add("ROLE_ADMIN");
-            } else {
-                roles.add("ROLE_USER");
+                // Create standard subfolders
+                mediaService.ensureFolderExists(userFolderPath + "/photos");
+                mediaService.ensureFolderExists(userFolderPath + "/documents");
+                mediaService.ensureFolderExists(userFolderPath + "/videos");
             }
-
-            // Add user type as a role, e.g., "ROLE_PROFESSOR", "ROLE_STUDENT", etc.
-            if (savedUserEntity instanceof ProfesseursEntity) {
-                roles.add("ROLE_PROFESSOR");
-            } else if (savedUserEntity instanceof ElevesEntity) {
-                roles.add("ROLE_STUDENT");
-            }
-
-            // Generate token with the roles included
-            String activationToken = jwtUtil.generateAccessToken(savedUserEntity.getEmail(), roles);
-            savedUserEntity.setActivationToken(activationToken);
-            savedUserEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
-                    .save(savedUserEntity);
-
-            // Send activation email
-            Utilisateurs savedUtilisateur = mapUtilisateursEntityToModele(savedUserEntity);
-            activationEmailService.sendActivationEmail(savedUtilisateur, activationToken);
-            log.info("Activation email process triggered successfully for {}", savedUserEntity.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to create user folder for ID: {}", savedUserEntity.getId(), e);
+            // Don't fail the operation, just log the error
         }
 
-        // Return the saved user model
+        // Génération du token et envoi d'email (sauf pour les professeurs)
+        if (!(savedUserEntity instanceof ProfesseursEntity)) {
+            List<String> roles = roleService.determineUserRoles(mapUtilisateursEntityToModele(savedUserEntity));
+            String activationToken = jwtUtil.generateAccessToken(savedUserEntity.getEmail(), roles);
+            savedUserEntity.setActivationToken(activationToken);
+            savedUserEntity = daoAccessorService.getRepository(UtilisateursRepository.class).save(savedUserEntity);
+
+            activationEmailService.sendActivationEmail(
+                    mapUtilisateursEntityToModele(savedUserEntity),
+                    activationToken
+            );
+        }
+
         return mapUtilisateursEntityToModele(savedUserEntity);
     }
 
@@ -178,10 +273,11 @@ public class UtilisateursBusiness {
             return dozerMapperBean.map(utilisateurEntity, Utilisateurs.class);
     }
 
-    private static UtilisateursEntity mapUtilisateursModeleToEntity(IUtilisateurs utilisateur) {
-        if(utilisateur instanceof Professeurs)
+
+    public static UtilisateursEntity mapUtilisateursModeleToEntity(IUtilisateurs utilisateur) {
+        if (utilisateur instanceof Professeurs)
             return dozerMapperBean.map(utilisateur, ProfesseursEntity.class);
-        else if(utilisateur instanceof Eleves)
+        else if (utilisateur instanceof Eleves)
             return dozerMapperBean.map(utilisateur, ElevesEntity.class);
         else if (utilisateur instanceof Repetiteurs)
             return dozerMapperBean.map(utilisateur, RepetiteursEntity.class);
@@ -191,79 +287,56 @@ public class UtilisateursBusiness {
             return dozerMapperBean.map(utilisateur, UtilisateursEntity.class);
     }
 
-    @Transactional(readOnly = true)
+
     public Utilisateurs avoirUtilisateurParEmail(String email) {
         log.info("Fetching user with email: {}", email);
-        return mapUtilisateursEntityToModele(
-                daoAccessorService.getRepository(UtilisateursRepository.class)
-                        .findByEmail(email)
-                        .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable avec l'email: " + email))
-        );
+        try {
+            UtilisateursEntity entity = daoAccessorService.getRepository(UtilisateursRepository.class)
+                    .findByEmail(email)
+                    .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable avec l'email: " + email));
+
+            return mapUtilisateursEntityToModele(entity);
+        } catch (Exception e) {
+            log.error("Error fetching user by email: {}", email, e);
+            throw new SchoolException(SchoolErrorCode.EMAIL_ERROR, "Erreur lors de la récupération de l'utilisateur par email");
+        }
     }
 
 
-    @Retryable(
-            value = MessagingException.class,
-            maxAttempts = 3,
-            backoff = @Backoff(delay = 5000)
-    )
     public Utilisateurs regenererActivationEmail(String email) {
         log.info("Regenerating activation email for: {}", email);
 
-        // Fetch the user
         UtilisateursEntity utilisateurEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .findByEmail(email)
-                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable avec l'email: " + email));
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND,
+                        "Utilisateur introuvable avec l'email: " + email));
 
-        // Check if the user is in PENDING state (only allow email regeneration for users in this state)
         if (utilisateurEntity.getEtat() != EtatUtilisateur.PENDING) {
-            throw new SchoolException(SchoolErrorCode.INVALID_STATE, "Activation email can only be regenerated for users in PENDING state");
+            throw new SchoolException(SchoolErrorCode.INVALID_STATE,
+                    "Activation email can only be regenerated for users in PENDING state");
         }
 
-        // Determine the roles based on the user type
-        List<String> roles = new ArrayList<>();
+        // Utilisation du service de rôles
+        Utilisateurs utilisateur = mapUtilisateursEntityToModele(utilisateurEntity);
+        List<String> roles = roleService.determineUserRoles(utilisateur);
 
-        // Check the type of user and assign roles accordingly
-        if (utilisateurEntity instanceof ProfesseursEntity) {
-            roles.add("ROLE_PROFESSOR");
-        } else if (utilisateurEntity instanceof ElevesEntity) {
-            roles.add("ROLE_STUDENT");
-        } else if (utilisateurEntity instanceof ParentsEntity) {
-            roles.add("ROLE_PARENT");
-        } else if (utilisateurEntity instanceof RepetiteursEntity) {
-            roles.add("ROLE_TUTOR");
-        } else {
-            roles.add("ROLE_USER");
-        }
-
-        // If the user is an admin, add the admin role
-        if (utilisateurEntity.getAdmin()) {
-            roles.add("ROLE_ADMIN");
-        }
-
-        // Generate a new activation token with email and roles
         String activationToken = jwtUtil.generateAccessToken(utilisateurEntity.getEmail(), roles);
-
-        // Set the new activation token in the entity
         utilisateurEntity.setActivationToken(activationToken);
-
-        // Save the updated user entity
         utilisateurEntity = daoAccessorService.getRepository(UtilisateursRepository.class).save(utilisateurEntity);
 
-        // Map the entity to the model
-        Utilisateurs utilisateur = mapUtilisateursEntityToModele(utilisateurEntity);
-
-        // Send the activation email
         try {
             activationEmailService.sendActivationEmail(utilisateur, activationToken);
             log.info("New activation email sent successfully to {}", utilisateur.getEmail());
         } catch (Exception e) {
             log.error("Failed to send activation email to {}: {}", utilisateur.getEmail(), e.getMessage());
-            throw new SchoolException(SchoolErrorCode.EMAIL_NOT_SENT, "L'email d'activation n'a pas pu être envoyé.");
+            throw new SchoolException(SchoolErrorCode.EMAIL_NOT_SENT,
+                    "L'email d'activation n'a pas pu être envoyé.");
         }
 
         return utilisateur;
     }
+
+
 
 
     public Utilisateurs validerProfesseur(String professorId) {
@@ -293,18 +366,15 @@ public class UtilisateursBusiness {
             );
         }
 
-        // Change the state to 'VALIDATED'
-        userEntity.setEtat(EtatUtilisateur.VALIDATED);
+        // Change the state to 'PENDING' (not 'VALIDATED' directly)
+        userEntity.setEtat(EtatUtilisateur.PENDING);
 
-        // Assign the 'ROLE_PROFESSOR' if not already assigned
-        if (!userEntity.getAdmin()) {
-            List<String> roles = new ArrayList<>();
-            roles.add("ROLE_PROFESSOR");
+        // Generate activation token with professor's email, not admin's
+        List<String> roles = new ArrayList<>();
+        roles.add("ROLE_PROFESSOR");
 
-            // Assuming `generateAccessToken` now handles roles, we pass the email and roles
-            String activationToken = jwtUtil.generateAccessToken(userEntity.getEmail(), roles);
-            userEntity.setActivationToken(activationToken);
-        }
+        String activationToken = jwtUtil.generateAccessToken(userEntity.getEmail(), roles); // Utilisez l'email du professeur ici
+        userEntity.setActivationToken(activationToken);
 
         // Save the validated professor entity
         userEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
@@ -312,11 +382,10 @@ public class UtilisateursBusiness {
 
         // Convert the entity to model and send activation email
         Utilisateurs utilisateur = mapUtilisateursEntityToModele(userEntity);
-        activationEmailService.sendActivationEmail(utilisateur, userEntity.getActivationToken());
+        activationEmailService.sendActivationEmail(utilisateur, activationToken);
 
         log.info("Professor {} validated successfully", professorId);
 
-        // Return the updated professor
         return utilisateur;
     }
 

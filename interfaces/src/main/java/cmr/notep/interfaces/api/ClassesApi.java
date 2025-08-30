@@ -2,6 +2,7 @@ package cmr.notep.interfaces.api;
 
 import cmr.notep.interfaces.modeles.Classes;
 import cmr.notep.interfaces.modeles.HistoActivation;
+import cmr.notep.interfaces.modeles.Utilisateurs;
 import cmr.notep.modele.DroitPublication;
 import cmr.notep.modele.EtatClasse;
 import org.springframework.http.HttpStatus;
@@ -43,7 +44,7 @@ public interface ClassesApi {
 
     @GetMapping(path = "/by-status", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.OK)
-    List<Classes> obtenirClassesParEtat(@RequestParam EtatClasse etat);
+    List<Classes> obtenirClassesParEtat(@RequestParam(required = false) EtatClasse etat);
 
     @DeleteMapping("/{idClasse}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -95,4 +96,13 @@ public interface ClassesApi {
     )
     @ResponseStatus(HttpStatus.OK)
     Classes retirerModerator(@PathVariable("idClasse") String idClasse);
+
+
+//    @GetMapping(
+//            path = "/{idClasse}/users",
+//            produces = MediaType.APPLICATION_JSON_VALUE
+//    )
+//    @ResponseStatus(HttpStatus.OK)
+//    List<Utilisateurs> obtenirUtilisateursParClasse(@PathVariable("idClasse") String idClasse);
+
 }

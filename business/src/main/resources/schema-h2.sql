@@ -34,12 +34,13 @@ CREATE TABLE IF NOT EXISTS ressources.etablissements (
 
 CREATE TABLE IF NOT EXISTS ressources.professeurs (
     professeurs_id VARCHAR(255) NOT NULL,
-    cni_url_front VARCHAR(255) NOT NULL,
-    cni_url_back VARCHAR(255) NOT NULL,
+    cni_url_front VARCHAR(255) ,
+    cni_url_back VARCHAR(255) ,
     selfie_url VARCHAR(255),
     matricule_professeur VARCHAR(255) UNIQUE,
     PRIMARY KEY (professeurs_id)
 );
+
 
 CREATE TABLE IF NOT EXISTS ressources.classes (
     id UUID PRIMARY KEY,
@@ -50,8 +51,12 @@ CREATE TABLE IF NOT EXISTS ressources.classes (
     etat VARCHAR(50),
     etablissement_id UUID,
     moderator_id VARCHAR(255),
-    droit_publication VARCHAR(50)
+    droit_publication VARCHAR(50),
+    acces_majeur BOOLEAN DEFAULT FALSE
 );
+
+
+
 
 -- 2. Create other tables that depend on the base tables
 CREATE TABLE IF NOT EXISTS ressources.parents (
@@ -79,6 +84,13 @@ CREATE TABLE IF NOT EXISTS ressources.matieres (
     date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     etat VARCHAR(50) DEFAULT 'ACTIF'
 );
+CREATE TABLE IF NOT EXISTS ressources.parent_eleve (
+                                                       parent_id VARCHAR(255) NOT NULL,
+    eleve_id VARCHAR(255) NOT NULL,
+    PRIMARY KEY (parent_id, eleve_id),
+    FOREIGN KEY (parent_id) REFERENCES ressources.parents(parents_id),
+    FOREIGN KEY (eleve_id) REFERENCES ressources.eleves(eleves_id)
+    );
 
 CREATE TABLE IF NOT EXISTS ressources.messages (
     id VARCHAR(255) NOT NULL,
@@ -139,7 +151,16 @@ CREATE TABLE IF NOT EXISTS ressources.classe_matieres (
     classe_id UUID NOT NULL,
     PRIMARY KEY (matiere_id, classe_id)
 );
-
+CREATE TABLE IF NOT EXISTS ressources.droit_publication (
+    utilisateur_id VARCHAR(255) NOT NULL,
+    classe_id UUID NOT NULL,
+    date_attribution TIMESTAMP NOT NULL,
+    peut_publier BOOLEAN NOT NULL DEFAULT FALSE,
+    peut_moderer BOOLEAN NOT NULL DEFAULT FALSE,
+    PRIMARY KEY (utilisateur_id, classe_id),
+    CONSTRAINT fk_droit_publication_utilisateur FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id),
+    CONSTRAINT fk_droit_publication_classe FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
+);
 CREATE TABLE IF NOT EXISTS ressources.recevoir (
     message_id VARCHAR(255) NOT NULL,
     utilisateur_id VARCHAR(255) NOT NULL
@@ -200,13 +221,120 @@ CREATE TABLE IF NOT EXISTS ressources.refresh_tokens (
 CREATE TABLE IF NOT EXISTS ressources.histo_activation (
     id UUID PRIMARY KEY,
     classe_id UUID NOT NULL,
-    professeur_id VARCHAR(255) NOT NULL,
+    utilisateur_id VARCHAR(255) NOT NULL,
     date_activation TIMESTAMP NOT NULL,
     date_desactivation TIMESTAMP,
     motif_desactivation VARCHAR(255),
-    is_active BOOLEAN NOT NULL
+    is_active BOOLEAN NOT NULL,
+    etat_classe VARCHAR(50)
 );
 
+
+CREATE TABLE IF NOT EXISTS ressources.message_classes (
+                                                          message_id VARCHAR(255) NOT NULL,
+    classe_id UUID NOT NULL,
+    PRIMARY KEY (message_id, classe_id),
+    CONSTRAINT fk_message_classes_message FOREIGN KEY (message_id) REFERENCES ressources.messages(id),
+    CONSTRAINT fk_message_classes_classe FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
+    );
+CREATE TABLE IF NOT EXISTS ressources.acceder (
+                                                  utilisateur_id VARCHAR(255) NOT NULL,
+    classe_id VARCHAR(255) NOT NULL,
+    date_acces TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (utilisateur_id, classe_id),
+    FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id),
+    FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
+    );
+
+CREATE TABLE IF NOT EXISTS ressources.demandes_acces (
+                                                         id VARCHAR(255) PRIMARY KEY,
+    utilisateur_id VARCHAR(255) NOT NULL,
+    classe_id VARCHAR(255) NOT NULL,
+    code_activation VARCHAR(255) NOT NULL,
+    etat VARCHAR(50) NOT NULL,
+    date_demande TIMESTAMP NOT NULL,
+    date_traitement TIMESTAMP,
+    motif_rejet VARCHAR(255),
+    est_parent BOOLEAN NOT NULL DEFAULT FALSE,
+    eleve_associe_id VARCHAR(255),
+    FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id),
+    FOREIGN KEY (classe_id) REFERENCES ressources.classes(id),
+    FOREIGN KEY (eleve_associe_id) REFERENCES ressources.eleves(eleves_id)
+    );
+-- Table pour les cours
+CREATE TABLE IF NOT EXISTS ressources.cours (
+                                                id UUID PRIMARY KEY,
+                                                titre VARCHAR(255) NOT NULL,
+    description TEXT,
+    date_creation TIMESTAMP NOT NULL,
+    etat VARCHAR(50) NOT NULL,
+    references TEXT,
+    contenu TEXT NOT NULL,
+    redacteur_id VARCHAR(255) NOT NULL,
+    FOREIGN KEY (redacteur_id) REFERENCES ressources.professeurs(professeurs_id)
+    );
+CREATE TABLE IF NOT EXISTS ressources.cours_matiere (
+                                                        cours_id UUID NOT NULL,
+                                                        matiere_id UUID NOT NULL,
+                                                        date_ajout TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                                        ordre_dans_cours INTEGER,
+                                                        PRIMARY KEY (cours_id, matiere_id),
+    FOREIGN KEY (cours_id) REFERENCES ressources.cours(id) ON DELETE CASCADE,
+    FOREIGN KEY (matiere_id) REFERENCES ressources.matieres(id) ON DELETE CASCADE
+    );
+CREATE TABLE IF NOT EXISTS ressources.chapitres (
+                                                    id UUID PRIMARY KEY,
+                                                    titre VARCHAR(255) NOT NULL,
+    description TEXT,
+    ordre INTEGER NOT NULL,
+    contenu TEXT NOT NULL,
+    image_url VARCHAR(255),
+    cours_id UUID NOT NULL,
+    FOREIGN KEY (cours_id) REFERENCES ressources.cours(id) ON DELETE CASCADE
+    );
+-- Table de jointure pour la relation many-to-many entre cours et matieres
+
+
+
+-- Table pour les cours programmés
+CREATE TABLE IF NOT EXISTS ressources.cours_programmer (
+    id VARCHAR(255) PRIMARY KEY,
+    cours_id UUID NOT NULL,
+    date_cours_prevue TIMESTAMP NOT NULL,
+    date_debut_effectif TIMESTAMP NOT NULL,
+    date_fin_effectif TIMESTAMP NOT NULL,
+    etat_cours_programme VARCHAR(50) NOT NULL,
+    classe_id UUID,
+    lieu VARCHAR(255) NOT NULL,
+    description TEXT,
+
+    date_creation TIMESTAMP,
+    date_modification TIMESTAMP,
+    cree_par VARCHAR(255),
+    modifie_par VARCHAR(255),
+    FOREIGN KEY (cours_id) REFERENCES ressources.cours(id),
+    FOREIGN KEY (classe_id) REFERENCES ressources.classes(id)
+);
+CREATE TABLE IF NOT EXISTS ressources.cours_programmer_participants (
+                                                                        cours_programmer_id VARCHAR(255) NOT NULL,
+    utilisateur_id VARCHAR(255) NOT NULL,
+    PRIMARY KEY (cours_programmer_id, utilisateur_id),
+    FOREIGN KEY (cours_programmer_id) REFERENCES ressources.cours_programmer(id) ON DELETE CASCADE,
+    FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id) ON DELETE CASCADE
+    );
+-- Table de jointure pour la participation aux cours
+CREATE TABLE IF NOT EXISTS ressources.evenement_participants (
+    evenement_id UUID NOT NULL,
+    utilisateur_id VARCHAR(255) NOT NULL,
+    PRIMARY KEY (evenement_id, utilisateur_id)
+);
+CREATE TABLE IF NOT EXISTS ressources.cours_programmer_classes (
+                                                                   cours_programmer_id VARCHAR(255) NOT NULL,
+    classe_id UUID NOT NULL,
+    PRIMARY KEY (cours_programmer_id, classe_id),
+    FOREIGN KEY (cours_programmer_id) REFERENCES ressources.cours_programmer(id) ON DELETE CASCADE,
+    FOREIGN KEY (classe_id) REFERENCES ressources.classes(id) ON DELETE CASCADE
+    );
 -- Re-enable foreign key checks
 SET REFERENTIAL_INTEGRITY TRUE;
 
@@ -242,8 +370,7 @@ ALTER TABLE ressources.interactions DROP CONSTRAINT IF EXISTS fk_interaction_use
 ALTER TABLE ressources.interactions DROP CONSTRAINT IF EXISTS fk_interaction_event;
 ALTER TABLE ressources.interactions DROP CONSTRAINT IF EXISTS fk_interaction_message;
 ALTER TABLE ressources.refresh_tokens DROP CONSTRAINT IF EXISTS fk_refresh_tokens_utilisateur;
-ALTER TABLE ressources.histo_activation DROP CONSTRAINT IF EXISTS fk_histo_classe;
-ALTER TABLE ressources.histo_activation DROP CONSTRAINT IF EXISTS fk_histo_professeur;
+ALTER TABLE ressources.cours ADD COLUMN IF NOT EXISTS restriction VARCHAR(50) DEFAULT 'PRIVE';
 
 -- Now add the constraints
 ALTER TABLE ressources.professeurs
@@ -366,17 +493,28 @@ ALTER TABLE ressources.refresh_tokens
     ADD CONSTRAINT fk_refresh_tokens_utilisateur
     FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id) ON DELETE CASCADE;
 
-ALTER TABLE ressources.histo_activation
-    ADD CONSTRAINT fk_histo_classe
-    FOREIGN KEY (classe_id) REFERENCES ressources.classes(id);
+ALTER TABLE ressources.acceder
+    ADD CONSTRAINT fk_acceder_classe
+        FOREIGN KEY (classe_id) REFERENCES ressources.classes(id);
 
-ALTER TABLE ressources.histo_activation
-    ADD CONSTRAINT fk_histo_professeur
-    FOREIGN KEY (professeur_id) REFERENCES ressources.professeurs(professeurs_id);
 
+ALTER TABLE ressources.messages ADD COLUMN IF NOT EXISTS objet VARCHAR(255);
+ALTER TABLE ressources.cours_programmer
+    ADD COLUMN professeur_id VARCHAR(255) NOT NULL;
+
+ALTER TABLE ressources.cours_programmer
+    ADD CONSTRAINT fk_cours_programmer_professeur
+        FOREIGN KEY (professeur_id) REFERENCES ressources.professeurs(professeurs_id);
 -- Create indexes (only once)
 CREATE INDEX IF NOT EXISTS idx_classes_etat ON ressources.classes(etat);
 CREATE INDEX IF NOT EXISTS idx_classes_moderator ON ressources.classes(moderator_id);
 CREATE INDEX IF NOT EXISTS idx_prof_moderated_classes ON ressources.professeur_classes_moderees(professeur_id);
 CREATE INDEX IF NOT EXISTS idx_classe_etablissement ON ressources.classes(etablissement_id);
 CREATE INDEX IF NOT EXISTS idx_utilisateur_email ON ressources.utilisateurs(email);
+CREATE INDEX IF NOT EXISTS idx_acceder_classe ON ressources.acceder(classe_id);
+CREATE INDEX IF NOT EXISTS idx_acceder_utilisateur ON ressources.acceder(utilisateur_id);
+-- Create index for better performance
+CREATE INDEX IF NOT EXISTS idx_chapitres_cours ON ressources.chapitres(cours_id);
+CREATE INDEX IF NOT EXISTS idx_chapitres_ordre ON ressources.chapitres(ordre);
+CREATE INDEX IF NOT EXISTS idx_cours_restriction ON ressources.cours(restriction);
+ALTER TABLE ressources.cours ALTER COLUMN contenu DROP NOT NULL;
