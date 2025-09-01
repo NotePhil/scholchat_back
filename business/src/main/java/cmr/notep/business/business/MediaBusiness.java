@@ -227,7 +227,7 @@ public class MediaBusiness {
         if (ownerId == null || ownerId.equals("temp")) {
             return "temp";
         }
-        return "users/" + ownerId;
+        return "users/" + ownerId;  // Keep the "users/" prefix for folder structure
     }
 
     private String sanitizeFileName(String fileName) {
@@ -237,8 +237,8 @@ public class MediaBusiness {
 
     private String buildUserMediaPath(String ownerId, String mediaType,
                                       String documentType, String fileName) {
-        return String.format("%s/%s/%s/%s",
-                getUserFolderPath(ownerId),
+        return String.format("users/%s/%s/%s/%s",  // Add "users/" prefix here
+                ownerId,
                 mediaType.toLowerCase(),
                 documentType.toLowerCase(),
                 fileName);

@@ -26,19 +26,22 @@ public class S3MediaServiceImpl implements MediaService {
     @Override
     public String generateUploadPresignedUrl(String filePath, String contentType) {
         try {
+            // 1. THE CRITICAL FIX: Use the bucket name from config (s3Config.getBucketName())
+            //    and the filePath as the key (folder + filename)
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                    .bucket(s3Config.getBucketName())
-                    .key(filePath)
+                    .bucket(s3Config.getBucketName()) // <- Use the configured bucket name "scholchat"
+                    .key(filePath)                   // <- This is the full path *inside* the bucket: "users/.../file.jpg"
                     .contentType(contentType)
                     .build();
 
             PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
-                    .signatureDuration(Duration.ofMinutes(15)) // 15 minutes expiry
+                    .signatureDuration(Duration.ofMinutes(s3Config.getPresignedUrlExpiry()))
                     .putObjectRequest(putObjectRequest)
                     .build();
 
             PresignedPutObjectRequest presignedRequest = s3Presigner.presignPutObject(presignRequest);
             return presignedRequest.url().toString();
+
         } catch (Exception e) {
             log.error("Error generating upload URL for path: {}", filePath, e);
             throw new RuntimeException("Failed to generate upload URL", e);
@@ -49,12 +52,12 @@ public class S3MediaServiceImpl implements MediaService {
     public String generateDownloadPresignedUrl(String filePath) {
         try {
             GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                    .bucket(s3Config.getBucketName())
-                    .key(filePath)
+                    .bucket(s3Config.getBucketName()) // <- FIX HERE TOO
+                    .key(filePath)                   // <- FIX HERE TOO
                     .build();
 
             GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-                    .signatureDuration(Duration.ofHours(1)) // 1 hour expiry
+                    .signatureDuration(Duration.ofHours(1))
                     .getObjectRequest(getObjectRequest)
                     .build();
 
@@ -65,6 +68,7 @@ public class S3MediaServiceImpl implements MediaService {
             throw new RuntimeException("Failed to generate download URL", e);
         }
     }
+
 
     @Override
     public void deleteMedia(String filePath) {
@@ -132,22 +136,22 @@ public class S3MediaServiceImpl implements MediaService {
     @Override
     public void ensureFolderExists(String folderPath) {
         try {
-            // S3 doesn't actually have folders, but we can create a placeholder object
             String folderKey = folderPath.endsWith("/") ? folderPath : folderPath + "/";
             folderKey += ".keep";
 
+            // Check if the placeholder already exists using the correct bucket
             if (!doesObjectExist(folderKey)) {
                 PutObjectRequest putRequest = PutObjectRequest.builder()
-                        .bucket(s3Config.getBucketName())
-                        .key(folderKey)
+                        .bucket(s3Config.getBucketName()) // <- FIX HERE
+                        .key(folderKey)                  // <- FIX HERE
                         .build();
-
                 s3Client.putObject(putRequest, RequestBody.fromString(""));
-                log.info("Created folder placeholder: {}", folderKey);
             }
         } catch (Exception e) {
             log.error("Error ensuring folder exists: {}", folderPath, e);
             throw new RuntimeException("Failed to create folder", e);
         }
     }
+
+
 }

@@ -8,6 +8,7 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 import java.net.URI;
@@ -41,17 +42,23 @@ public class S3Config {
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(accessKey, secretKey)))
                 .region(Region.of(region))
-                .forcePathStyle(true)
+                .forcePathStyle(true) // ← This is correct
                 .build();
     }
 
     @Bean
     public S3Presigner s3Presigner() {
+        // Create S3Configuration with path style enabled
+        S3Configuration s3Configuration = S3Configuration.builder()
+                .pathStyleAccessEnabled(true) // ← CRITICAL: Enable path style for presigner
+                .build();
+
         return S3Presigner.builder()
                 .endpointOverride(URI.create(endpoint))
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(accessKey, secretKey)))
                 .region(Region.of(region))
+                .serviceConfiguration(s3Configuration) // ← Apply the configuration
                 .build();
     }
 }
