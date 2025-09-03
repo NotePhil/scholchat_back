@@ -16,6 +16,7 @@ public class Chapitre {
     private String description;
     private Integer ordre;
     private String contenu;
+//    private String imageMediaId;  // ID du média dans la table media
     private String imageUrl;
 
     private String coursId;

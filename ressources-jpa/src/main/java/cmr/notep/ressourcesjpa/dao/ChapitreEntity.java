@@ -28,6 +28,9 @@ public class ChapitreEntity {
     @Column(name = "image_url")
     private String imageUrl;
 
+//    @Column(name = "image_path")
+//    private String imagePath;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cours_id", nullable = false)
     private CoursEntity cours;
