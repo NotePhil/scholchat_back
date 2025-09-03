@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
@@ -31,6 +32,21 @@ public class InteractionBusiness {
     }
 
     public Interaction createInteraction(Interaction interaction) {
+        // Check if user already has an interaction of this type on the same target
+        if (interaction.getType().name().equals("LIKE")) {
+            Optional<InteractionEntity> existingLike = findExistingLike(
+                    interaction.getCreatedById(),
+                    interaction.getEventId(),
+                    interaction.getMessageId()
+            );
+
+            if (existingLike.isPresent()) {
+                // Remove the existing like (dislike)
+                daoAccessorService.getRepository(InteractionRepository.class).delete(existingLike.get());
+                return null; // Return null to indicate removal
+            }
+        }
+
         InteractionEntity entity = dozerMapperBean.map(interaction, InteractionEntity.class);
 
         // Ensure creation date is set
@@ -69,6 +85,18 @@ public class InteractionBusiness {
         return mapEntityToInteraction(savedEntity);
     }
 
+    private Optional<InteractionEntity> findExistingLike(String userId, String eventId, String messageId) {
+        InteractionRepository repository = daoAccessorService.getRepository(InteractionRepository.class);
+
+        if (eventId != null) {
+            return repository.findByCreatedByIdAndEventIdAndType(userId, eventId, cmr.notep.modele.InteractionType.LIKE);
+        } else if (messageId != null) {
+            return repository.findByCreatedByIdAndMessageIdAndType(userId, messageId, cmr.notep.modele.InteractionType.LIKE);
+        }
+
+        return Optional.empty();
+    }
+
     private Interaction mapEntityToInteraction(InteractionEntity entity) {
         Interaction interaction = dozerMapperBean.map(entity, Interaction.class);
 
@@ -84,11 +112,6 @@ public class InteractionBusiness {
         List<InteractionEntity> interactions = daoAccessorService.getRepository(InteractionRepository.class)
                 .findByEventId(eventId);
 
-        if (interactions.isEmpty()) {
-            throw new SchoolException(SchoolErrorCode.NOT_FOUND,
-                    "No interactions found for event with id: " + eventId);
-        }
-
         return interactions.stream()
                 .map(this::mapEntityToInteraction)
                 .collect(Collectors.toList());
@@ -97,11 +120,6 @@ public class InteractionBusiness {
     public List<Interaction> getInteractionsByMessage(String messageId) {
         List<InteractionEntity> interactions = daoAccessorService.getRepository(InteractionRepository.class)
                 .findByMessageId(messageId);
-
-        if (interactions.isEmpty()) {
-            throw new SchoolException(SchoolErrorCode.NOT_FOUND,
-                    "No interactions found for message with id: " + messageId);
-        }
 
         return interactions.stream()
                 .map(this::mapEntityToInteraction)
@@ -112,13 +130,20 @@ public class InteractionBusiness {
         List<InteractionEntity> interactions = daoAccessorService.getRepository(InteractionRepository.class)
                 .findByCreatedById(userId);
 
-        if (interactions.isEmpty()) {
-            throw new SchoolException(SchoolErrorCode.NOT_FOUND,
-                    "No interactions found for user with this id: " + userId);
-        }
-
         return interactions.stream()
                 .map(this::mapEntityToInteraction)
                 .collect(Collectors.toList());
+    }
+
+    public boolean hasUserLikedEvent(String userId, String eventId) {
+        return daoAccessorService.getRepository(InteractionRepository.class)
+                .findByCreatedByIdAndEventIdAndType(userId, eventId, cmr.notep.modele.InteractionType.LIKE)
+                .isPresent();
+    }
+
+    public boolean hasUserLikedMessage(String userId, String messageId) {
+        return daoAccessorService.getRepository(InteractionRepository.class)
+                .findByCreatedByIdAndMessageIdAndType(userId, messageId, cmr.notep.modele.InteractionType.LIKE)
+                .isPresent();
     }
 }

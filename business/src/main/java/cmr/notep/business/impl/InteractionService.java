@@ -5,7 +5,8 @@ import cmr.notep.interfaces.api.InteractionApi;
 import cmr.notep.interfaces.modeles.Interaction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -17,8 +18,18 @@ public class InteractionService implements InteractionApi {
 
     @Override
     public Interaction createInteraction(Interaction interaction) {
-        log.info("Creating new interaction of type: {}", interaction.getType());
-        return interactionBusiness.createInteraction(interaction);
+        log.info("Creating new interaction of type: {} for user: {}",
+                interaction.getType(), interaction.getCreatedById());
+
+        Interaction result = interactionBusiness.createInteraction(interaction);
+
+        if (result == null) {
+            // This means a like was removed (dislike)
+            log.info("Like removed by user: {}", interaction.getCreatedById());
+            return null;
+        }
+
+        return result;
     }
 
     @Override
@@ -37,5 +48,33 @@ public class InteractionService implements InteractionApi {
     public List<Interaction> getInteractionsByUser(String userId) {
         log.info("Getting interactions for user: {}", userId);
         return interactionBusiness.getInteractionsByUser(userId);
+    }
+
+    @GetMapping("/event/{eventId}/likes/count")
+    @ResponseStatus(HttpStatus.OK)
+    public int getLikeCountForEvent(@PathVariable String eventId) {
+        return interactionBusiness.getInteractionsByEvent(eventId).stream()
+                .filter(i -> i.getType().name().equals("LIKE"))
+                .toArray().length;
+    }
+
+    @GetMapping("/message/{messageId}/likes/count")
+    @ResponseStatus(HttpStatus.OK)
+    public int getLikeCountForMessage(@PathVariable String messageId) {
+        return interactionBusiness.getInteractionsByMessage(messageId).stream()
+                .filter(i -> i.getType().name().equals("LIKE"))
+                .toArray().length;
+    }
+
+    @GetMapping("/event/{eventId}/user/{userId}/has-liked")
+    @ResponseStatus(HttpStatus.OK)
+    public boolean hasUserLikedEvent(@PathVariable String eventId, @PathVariable String userId) {
+        return interactionBusiness.hasUserLikedEvent(userId, eventId);
+    }
+
+    @GetMapping("/message/{messageId}/user/{userId}/has-liked")
+    @ResponseStatus(HttpStatus.OK)
+    public boolean hasUserLikedMessage(@PathVariable String messageId, @PathVariable String userId) {
+        return interactionBusiness.hasUserLikedMessage(userId, messageId);
     }
 }
