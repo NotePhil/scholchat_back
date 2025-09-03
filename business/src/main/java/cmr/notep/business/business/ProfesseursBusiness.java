@@ -2,6 +2,8 @@ package cmr.notep.business.business;
 
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
+import cmr.notep.business.services.ActivationEmailService;
+import cmr.notep.business.utils.JwtUtil;
 import cmr.notep.interfaces.modeles.Classes;
 import cmr.notep.interfaces.modeles.Professeurs;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
@@ -11,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,9 +24,12 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 @Transactional
 public class ProfesseursBusiness {
     private final DaoAccessorService daoAccessorService;
-
-    public ProfesseursBusiness(DaoAccessorService daoAccessorService) {
+    private final ActivationEmailService activationEmailService;
+    private final JwtUtil jwtUtil;
+    public ProfesseursBusiness(DaoAccessorService daoAccessorService, ActivationEmailService activationEmailService, JwtUtil jwtUtil) {
         this.daoAccessorService = daoAccessorService;
+        this.activationEmailService = activationEmailService;
+        this.jwtUtil = jwtUtil;
     }
 
     public Professeurs avoirProfesseur(String idProfesseur) {
@@ -98,11 +104,37 @@ public class ProfesseursBusiness {
             existingProfesseur.setMatriculeProfesseur(partialUpdate.getMatriculeProfesseur());
         }
 
+        // Update hasUploaded status based on document presence
+        boolean hasUploaded = existingProfesseur.getCniUrlRecto() != null &&
+                existingProfesseur.getCniUrlVerso() != null &&
+                existingProfesseur.getSelfieUrl() != null;
+        existingProfesseur.setHasUploaded(hasUploaded);
+
         // Save the updated entity
         ProfesseursEntity updatedEntity = repository.save(dozerMapperBean.map(existingProfesseur, ProfesseursEntity.class));
+
+        // Check if we need to send activation email after upload
+        boolean wasNotUploaded = !existingEntity.getHasUploaded();
+        boolean nowHasUploaded = hasUploaded;
+
+        if (wasNotUploaded && nowHasUploaded) {
+            // Professor just completed uploads - send activation email
+            List<String> roles = new ArrayList<>();
+            roles.add("ROLE_PROFESSOR");
+
+            String activationToken = jwtUtil.generateAccessToken(existingProfesseur.getEmail(), roles);
+            existingProfesseur.setActivationToken(activationToken);
+
+            // Update entity with activation token
+            updatedEntity.setActivationToken(activationToken);
+            updatedEntity = repository.save(updatedEntity);
+
+            // Send activation email
+            activationEmailService.sendActivationEmail(existingProfesseur, activationToken);
+        }
+
         return dozerMapperBean.map(updatedEntity, Professeurs.class);
     }
-
     public List<Professeurs> avoirToutProfesseurs() {
         return daoAccessorService.getRepository(ProfesseursRepository.class).findAll()
                 .stream()

@@ -26,6 +26,9 @@ public class ProfesseursEntity extends UtilisateursEntity {
     @Column(name = "matricule_professeur", unique = true)
     private String matriculeProfesseur;
 
+    @Column(name = "has_uploaded")
+    private Boolean hasUploaded = false;
+
     @OneToMany(mappedBy = "professeur", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CanalEntity> canaux = new ArrayList<>();
 

@@ -18,7 +18,7 @@ public class Professeurs extends Utilisateurs {
     private String cniUrlVerso;
     private String selfieUrl;
     private String matriculeProfesseur;
-
+    private boolean hasUploaded;
     @JsonIdentityReference(alwaysAsId = true)
     private List<Classes> moderatedClasses;
 

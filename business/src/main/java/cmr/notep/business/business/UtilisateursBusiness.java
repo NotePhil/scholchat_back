@@ -75,33 +75,43 @@ public class UtilisateursBusiness {
     }
     public Utilisateurs patcherUtilisateur(String idUtilisateur, Utilisateurs partialUpdate) {
         log.info("Patching user with ID: {}", idUtilisateur);
-
         // 1. Fetch and validate existing user
         UtilisateursEntity existingEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .findById(idUtilisateur)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND,
                         "Utilisateur introuvable avec l'ID: " + idUtilisateur));
-
         // 2. Map to model for easier manipulation
         Utilisateurs existingUser = mapUtilisateursEntityToModele(existingEntity);
-
         // 4. Update common fields with null checks
         updateCommonFields(existingUser, partialUpdate);
-
         // 5. Handle type-specific updates
         if (existingUser instanceof Professeurs && partialUpdate instanceof Professeurs) {
             handleProfessorUpdates((Professeurs) existingUser, (Professeurs) partialUpdate);
+            // Check if we need to send activation email after upload
+            Professeurs existingProf = (Professeurs) existingUser;
+            Professeurs updateProf = (Professeurs) partialUpdate;
+            boolean wasNotUploaded = !existingProf.isHasUploaded();
+            boolean nowHasUploaded = updateProf.getCniUrlRecto() != null &&
+                    updateProf.getCniUrlVerso() != null &&
+                    updateProf.getSelfieUrl() != null;
+            if (wasNotUploaded && nowHasUploaded) {
+                existingProf.setHasUploaded(true);
+                // Send activation email for professor who just completed uploads
+                List<String> roles = roleService.determineUserRoles(existingProf);
+                String activationToken = jwtUtil.generateAccessToken(existingProf.getEmail(), roles);
+                existingProf.setActivationToken(activationToken);
+                activationEmailService.sendActivationEmail(existingProf, activationToken);
+            }
         } else if (existingUser instanceof Eleves && partialUpdate instanceof Eleves) {
             handleStudentUpdates((Eleves) existingUser, (Eleves) partialUpdate);
         }
-
         // 6. Map back to entity and save
         UtilisateursEntity updatedEntity = mapUtilisateursModeleToEntity(existingUser);
         updatedEntity = daoAccessorService.getRepository(UtilisateursRepository.class).save(updatedEntity);
-
         // 7. Return updated model
         return mapUtilisateursEntityToModele(updatedEntity);
     }
+
 
     private void updateCommonFields(Utilisateurs existing, Utilisateurs updates) {
         if (updates.getNom() != null && !updates.getNom().isBlank()) {
@@ -130,23 +140,25 @@ public class UtilisateursBusiness {
             validateMediaUrl(updateProf.getCniUrlRecto());
             existingProf.setCniUrlRecto(updateProf.getCniUrlRecto());
         }
-
         // Validate and update CNI Verso
         if (updateProf.getCniUrlVerso() != null) {
             validateMediaUrl(updateProf.getCniUrlVerso());
             existingProf.setCniUrlVerso(updateProf.getCniUrlVerso());
         }
-
         // Validate and update Selfie
         if (updateProf.getSelfieUrl() != null) {
             validateMediaUrl(updateProf.getSelfieUrl());
             existingProf.setSelfieUrl(updateProf.getSelfieUrl());
         }
-
         // Update matricule if provided
         if (updateProf.getMatriculeProfesseur() != null && !updateProf.getMatriculeProfesseur().isBlank()) {
             existingProf.setMatriculeProfesseur(updateProf.getMatriculeProfesseur().trim());
         }
+        // Update hasUploaded status based on document presence
+        boolean hasUploaded = existingProf.getCniUrlRecto() != null &&
+                existingProf.getCniUrlVerso() != null &&
+                existingProf.getSelfieUrl() != null;
+        existingProf.setHasUploaded(hasUploaded);
     }
 
     private void handleStudentUpdates(Eleves existingEleve, Eleves updateEleve) {
@@ -188,26 +200,32 @@ public class UtilisateursBusiness {
 
     public Utilisateurs posterUtilisateur(Utilisateurs utilisateur) {
         log.info("Creating new user: {}", utilisateur.getEmail());
-
         // Validation des données
         userValidationService.validateUserData(utilisateur);
-
         // Configuration par défaut
         utilisateur.setAdmin(false);
         utilisateur.setEtat(utilisateur instanceof Professeurs ?
                 EtatUtilisateur.AWAITING_VALIDATION : EtatUtilisateur.PENDING);
         utilisateur.setCreationDate(LocalDateTime.now());
 
+        // For professors, set hasUploaded based on whether documents are provided
+        if (utilisateur instanceof Professeurs professeur) {
+            boolean hasUploaded = professeur.getCniUrlRecto() != null &&
+                    professeur.getCniUrlVerso() != null &&
+                    professeur.getSelfieUrl() != null;
+            professeur.setHasUploaded(hasUploaded);
+        }
+
         // Mapping et sauvegarde
         UtilisateursEntity userEntity = mapUtilisateursModeleToEntity(utilisateur);
         UtilisateursEntity savedUserEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .save(userEntity);
+
         try {
             if (savedUserEntity.getId() != null && !savedUserEntity.getId().equals("temp")) {
                 String userFolderPath = "users/" + savedUserEntity.getId();
                 mediaService.ensureFolderExists(userFolderPath);
                 log.info("Created user folder for ID: {}", savedUserEntity.getId());
-
                 // Create standard subfolders
                 mediaService.ensureFolderExists(userFolderPath + "/photos");
                 mediaService.ensureFolderExists(userFolderPath + "/documents");
@@ -218,18 +236,29 @@ public class UtilisateursBusiness {
             // Don't fail the operation, just log the error
         }
 
-        // Génération du token et envoi d'email (sauf pour les professeurs)
-        if (!(savedUserEntity instanceof ProfesseursEntity)) {
+        // Send activation email only for non-professors or professors who have uploaded documents
+        if (!(savedUserEntity instanceof ProfesseursEntity professeurEntity)) {
+            // For non-professors, send activation email immediately
             List<String> roles = roleService.determineUserRoles(mapUtilisateursEntityToModele(savedUserEntity));
             String activationToken = jwtUtil.generateAccessToken(savedUserEntity.getEmail(), roles);
             savedUserEntity.setActivationToken(activationToken);
             savedUserEntity = daoAccessorService.getRepository(UtilisateursRepository.class).save(savedUserEntity);
-
+            activationEmailService.sendActivationEmail(
+                    mapUtilisateursEntityToModele(savedUserEntity),
+                    activationToken
+            );
+        } else if (Boolean.TRUE.equals(professeurEntity.getHasUploaded())) {
+            // For professors who already have uploaded documents during creation
+            List<String> roles = roleService.determineUserRoles(mapUtilisateursEntityToModele(savedUserEntity));
+            String activationToken = jwtUtil.generateAccessToken(savedUserEntity.getEmail(), roles);
+            savedUserEntity.setActivationToken(activationToken);
+            savedUserEntity = daoAccessorService.getRepository(UtilisateursRepository.class).save(savedUserEntity);
             activationEmailService.sendActivationEmail(
                     mapUtilisateursEntityToModele(savedUserEntity),
                     activationToken
             );
         }
+        // For professors without uploads, DO NOT send any email during creation
 
         return mapUtilisateursEntityToModele(savedUserEntity);
     }
@@ -355,6 +384,15 @@ public class UtilisateursBusiness {
             throw new SchoolException(
                     SchoolErrorCode.INVALID_OPERATION,
                     "L'utilisateur n'est pas un professeur"
+            );
+        }
+
+        // Ensure the professor has uploaded all required documents
+        ProfesseursEntity professeurEntity = (ProfesseursEntity) userEntity;
+        if (!Boolean.TRUE.equals(professeurEntity.getHasUploaded())) {
+            throw new SchoolException(
+                    SchoolErrorCode.INVALID_STATE,
+                    "Le professeur n'a pas encore uploadé tous les documents requis"
             );
         }
 
