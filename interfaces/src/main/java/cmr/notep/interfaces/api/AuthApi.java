@@ -80,9 +80,4 @@ public interface AuthApi {
     )
     Utilisateurs activerUtilisateur(@RequestParam String activationToken);
 
-//    @PostMapping(
-//            path = "/refresh",
-//            produces = MediaType.APPLICATION_JSON_VALUE
-//    )
-//    String refreshToken(@RequestParam String refreshToken);
 }

@@ -352,24 +352,7 @@ public class AuthBusiness {
         return utilisateur;
     }
 
-//    public void requestPasswordReset(String email) {
-//        log.info("Processing password reset request for email: {}", email);
-//
-//        // Retrieve user by email
-//        Utilisateurs user = utilisateursBusiness.avoirUtilisateurParEmail(email);
-//
-//        // Generate reset token
-//        String resetToken = jwtUtil.generatePasswordResetToken(user.getEmail());
-//
-//        // Save token to user entity
-//        user.setResetPasswordToken(resetToken);
-//        utilisateursBusiness.mettreUtilisateurAJour(user);
-//
-//        // Send email
-//        passwordResetEmailService.sendPasswordResetEmail(user, resetToken);
-//
-//        log.info("Password reset email sent to: {}", email);
-//    }
+
     public void requestPasswordReset(String email) {
         log.info("Processing password reset request for email: {}", email);
 
