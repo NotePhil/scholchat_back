@@ -19,6 +19,19 @@ public interface MotifsRejetApi {
     )
     List<MotifRejet> obtenirTousMotifsRejet();
 
+    @GetMapping(
+            path = "/{id}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    MotifRejet obtenirMotifParId(@PathVariable String id);
+
+    @PatchMapping(
+            path = "/{id}",
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    MotifRejet modifierMotifRejet(@PathVariable String id, @RequestBody MotifRejet motifRejet);
+
     @DeleteMapping(
             path = "/{id}",
             produces = MediaType.APPLICATION_JSON_VALUE

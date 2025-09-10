@@ -12,19 +12,20 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 
 @Slf4j
 @Component
-
 public class MotifsRejetBusiness {
     private final DaoAccessorService daoAccessorService;
 
- public MotifsRejetBusiness(DaoAccessorService daoAccessorService) {
-     this.daoAccessorService = daoAccessorService;
- }
+    public MotifsRejetBusiness(DaoAccessorService daoAccessorService) {
+        this.daoAccessorService = daoAccessorService;
+    }
+
     public MotifRejet creerMotifRejet(MotifRejet motifRejet) {
         log.info("Création d'un nouveau motif de rejet: {}", motifRejet.getCode());
 
@@ -56,6 +57,37 @@ public class MotifsRejetBusiness {
         MotifRejetEntity entity = daoAccessorService.getRepository(MotifRejetRepository.class)
                 .findByCode(code)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Motif de rejet introuvable avec le code: " + code));
+        return dozerMapperBean.map(entity, MotifRejet.class);
+    }
+
+    // NEW METHOD: Update rejection motif
+    public MotifRejet modifierMotifRejet(String id, MotifRejet motifRejet) {
+        log.info("Modification du motif de rejet avec l'ID: {}", id);
+
+        MotifRejetEntity existingEntity = daoAccessorService.getRepository(MotifRejetRepository.class).findById(id)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Motif de rejet introuvable avec l'ID: " + id));
+
+        // Check if code is being changed and if it already exists
+        if (!existingEntity.getCode().equals(motifRejet.getCode())) {
+            Optional<MotifRejetEntity> existingWithCode = daoAccessorService.getRepository(MotifRejetRepository.class)
+                    .findByCode(motifRejet.getCode());
+            if (existingWithCode.isPresent() && !existingWithCode.get().getId().equals(id)) {
+                throw new SchoolException(SchoolErrorCode.CONFLICT, "Un motif de rejet avec le code " + motifRejet.getCode() + " existe déjà");
+            }
+        }
+
+        // Update fields
+        existingEntity.setCode(motifRejet.getCode());
+        existingEntity.setDescriptif(motifRejet.getDescriptif());
+
+        MotifRejetEntity updatedEntity = daoAccessorService.getRepository(MotifRejetRepository.class).save(existingEntity);
+        return dozerMapperBean.map(updatedEntity, MotifRejet.class);
+    }
+
+    // NEW METHOD: Get motif by ID
+    public MotifRejet obtenirMotifParId(String id) {
+        MotifRejetEntity entity = daoAccessorService.getRepository(MotifRejetRepository.class).findById(id)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Motif de rejet introuvable avec l'ID: " + id));
         return dozerMapperBean.map(entity, MotifRejet.class);
     }
 }
