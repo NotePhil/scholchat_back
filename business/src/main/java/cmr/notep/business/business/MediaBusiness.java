@@ -81,31 +81,36 @@ public class MediaBusiness {
         }
     }
 
-    public String generateDownloadUrl(String filePath) {
+    public String generateDownloadUrl(String identifier) {
         try {
-            // First try to find the media by exact file path
-            Optional<MediaEntity> mediaOpt = mediaRepository.findByFilePath(filePath);
+            // First try to find by ID
+            Optional<MediaEntity> mediaOpt = mediaRepository.findById(identifier);
             if (mediaOpt.isPresent()) {
-                return mediaService.generateDownloadPresignedUrl(filePath);
+                return mediaService.generateDownloadPresignedUrl(mediaOpt.get().getFilePath());
+            }
+
+            // If not found by ID, try to find by file path
+            mediaOpt = mediaRepository.findByFilePath(identifier);
+            if (mediaOpt.isPresent()) {
+                return mediaService.generateDownloadPresignedUrl(mediaOpt.get().getFilePath());
             }
 
             // If not found by exact path, try to find by filename
-            String fileName = extractFileNameFromPath(filePath);
+            String fileName = extractFileNameFromPath(identifier);
             mediaOpt = mediaRepository.findByFileName(fileName);
             if (mediaOpt.isPresent()) {
                 return mediaService.generateDownloadPresignedUrl(mediaOpt.get().getFilePath());
             }
 
             throw new SchoolException(SchoolErrorCode.RESOURCE_NOT_FOUND,
-                    "Media not found with path: " + filePath);
+                    "Media not found with identifier: " + identifier);
         } catch (SchoolException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Error generating download URL for path: {}", filePath, e);
+            log.error("Error generating download URL for identifier: {}", identifier, e);
             throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR, "Failed to generate download URL");
         }
     }
-
     // Helper method to extract filename from path
     private String extractFileNameFromPath(String filePath) {
         if (filePath == null || filePath.isEmpty()) {

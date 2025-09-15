@@ -4,6 +4,7 @@ import cmr.notep.business.services.MediaService;
 import cmr.notep.business.business.MediaBusiness;
 import cmr.notep.interfaces.dto.MediaDto;
 import cmr.notep.ressourcesjpa.dao.MediaEntity;
+import cmr.notep.ressourcesjpa.repository.MediaRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -22,11 +24,13 @@ public class MediaServiceImpl {
 
     private final MediaBusiness mediaBusiness;
     private final MediaService mediaService;
+    private final MediaRepository mediaRepository;
 
     @Autowired
-    public MediaServiceImpl(MediaBusiness mediaBusiness, MediaService mediaService) {
+    public MediaServiceImpl(MediaBusiness mediaBusiness, MediaService mediaService, MediaRepository mediaRepository) {
         this.mediaBusiness = mediaBusiness;
         this.mediaService = mediaService;
+        this.mediaRepository = mediaRepository;
     }
 
     @PostMapping("/presigned-url")
@@ -74,6 +78,40 @@ public class MediaServiceImpl {
         ));
     }
 
+    @GetMapping("/download-by-path")
+    public ResponseEntity<Map<String, String>> generateDownloadUrlByPath(
+            @RequestParam String filePath) {
+        log.debug("Generating download URL by path: {}", filePath);
+
+        try {
+            String presignedUrl = mediaBusiness.generateDownloadUrl(filePath);
+
+            // Try to get media metadata for additional info
+            Optional<MediaEntity> mediaOpt = mediaRepository.findByFilePath(filePath);
+            if (mediaOpt.isPresent()) {
+                MediaEntity media = mediaOpt.get();
+                return ResponseEntity.ok(Map.of(
+                        "url", presignedUrl,
+                        "fileName", media.getFileName(),
+                        "contentType", media.getContentType(),
+                        "ownerId", media.getOwnerId()
+                ));
+            } else {
+                // If no metadata found, extract filename from path
+                String fileName = extractFileNameFromPath(filePath);
+                return ResponseEntity.ok(Map.of(
+                        "url", presignedUrl,
+                        "fileName", fileName,
+                        "contentType", "application/octet-stream",
+                        "ownerId", ""
+                ));
+            }
+        } catch (Exception e) {
+            log.error("Failed to generate download URL by path: {}", filePath, e);
+            throw e;
+        }
+    }
+
     @GetMapping("/{mediaId}")
     public ResponseEntity<MediaDto> getMediaById(@PathVariable String mediaId) {
         MediaEntity media = mediaBusiness.getMediaById(mediaId);
@@ -119,6 +157,17 @@ public class MediaServiceImpl {
         mediaBusiness.updateMediaOwner(mediaId, newOwnerId);
         MediaEntity media = mediaBusiness.getMediaById(mediaId);
         return ResponseEntity.ok(convertToDto(media));
+    }
+
+    private String extractFileNameFromPath(String filePath) {
+        if (filePath == null || filePath.isEmpty()) {
+            return "unknown";
+        }
+        int lastSeparator = Math.max(
+                filePath.lastIndexOf('/'),
+                filePath.lastIndexOf('\\')
+        );
+        return lastSeparator >= 0 ? filePath.substring(lastSeparator + 1) : filePath;
     }
 
     private MediaDto convertToDto(MediaEntity entity) {
