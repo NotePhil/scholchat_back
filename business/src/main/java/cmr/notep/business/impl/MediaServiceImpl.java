@@ -43,6 +43,9 @@ public class MediaServiceImpl {
                     .replaceAll("\\s+", "_")
                     .replaceAll("[^a-zA-Z0-9._-]", "");
 
+            // Clean up any existing duplicates before creating new upload
+            mediaBusiness.cleanupDuplicateMedia(sanitizedFileName);
+
             String presignedUrl = mediaBusiness.generateUploadUrl(
                     sanitizedFileName,
                     request.getContentType(),
@@ -86,8 +89,13 @@ public class MediaServiceImpl {
         try {
             String presignedUrl = mediaBusiness.generateDownloadUrl(filePath);
 
-            // Try to get media metadata for additional info
-            Optional<MediaEntity> mediaOpt = mediaRepository.findByFilePath(filePath);
+            // Try to get media metadata for additional info using the new method
+            Optional<MediaEntity> mediaOpt = mediaRepository.findByFilePathWithOwner(filePath);
+            if (!mediaOpt.isPresent()) {
+                // Fallback to original method
+                mediaOpt = mediaRepository.findByFilePath(filePath);
+            }
+
             if (mediaOpt.isPresent()) {
                 MediaEntity media = mediaOpt.get();
                 return ResponseEntity.ok(Map.of(
@@ -157,6 +165,24 @@ public class MediaServiceImpl {
         mediaBusiness.updateMediaOwner(mediaId, newOwnerId);
         MediaEntity media = mediaBusiness.getMediaById(mediaId);
         return ResponseEntity.ok(convertToDto(media));
+    }
+
+    // New endpoint to clean up duplicates
+    @PostMapping("/cleanup-duplicates/{fileName}")
+    public ResponseEntity<Map<String, Object>> cleanupDuplicates(@PathVariable String fileName) {
+        try {
+            mediaBusiness.cleanupDuplicateMedia(fileName);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Duplicate cleanup initiated for file: " + fileName,
+                    "status", "success"
+            ));
+        } catch (Exception e) {
+            log.error("Failed to clean up duplicates for file: {}", fileName, e);
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "message", "Failed to clean up duplicates: " + e.getMessage(),
+                    "status", "error"
+            ));
+        }
     }
 
     private String extractFileNameFromPath(String filePath) {

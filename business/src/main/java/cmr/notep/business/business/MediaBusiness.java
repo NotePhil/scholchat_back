@@ -30,7 +30,6 @@ public class MediaBusiness {
     public MediaEntity saveMediaMetadata(String fileName, String filePath,
                                          String contentType, String mediaType, String ownerId) {
         try {
-            // Validate owner exists if provided (except for temp)
             UtilisateursEntity owner = null;
             if (ownerId != null && !ownerId.equals("temp")) {
                 owner = utilisateursRepository.findById(ownerId)
@@ -38,15 +37,30 @@ public class MediaBusiness {
                                 SchoolErrorCode.RESOURCE_NOT_FOUND,
                                 "User not found with ID: " + ownerId));
 
-                // Create user-specific folder structure
                 String userFolderPath = "users/" + ownerId;
                 mediaService.ensureFolderExists(userFolderPath);
                 mediaService.ensureFolderExists(userFolderPath + "/" + mediaType.toLowerCase());
             }
 
-            // Create media entity
+            // Check if media with same file path already exists
+            Optional<MediaEntity> existingMedia = mediaRepository.findByFilePath(filePath);
+            if (existingMedia.isPresent()) {
+                log.warn("Media with file path {} already exists. Updating metadata.", filePath);
+                MediaEntity media = existingMedia.get();
+                media.setFileName(fileName);
+                media.setContentType(contentType);
+                media.setMediaType(mediaType);
+                media.setUploadedDate(LocalDateTime.now());
+                media.setOwnerId(ownerId);
+
+                MediaEntity savedMedia = mediaRepository.save(media);
+                log.debug("Media entity updated successfully with ID: {}", savedMedia.getId());
+                return savedMedia;
+            }
+
             MediaEntity media = new MediaEntity();
-            media.setId(UUID.randomUUID().toString());
+            String mediaId = UUID.randomUUID().toString();
+            media.setId(mediaId);
             media.setFileName(fileName);
             media.setFilePath(filePath);
             media.setContentType(contentType);
@@ -55,10 +69,15 @@ public class MediaBusiness {
             media.setBucketName(mediaService.getDefaultBucketName());
             media.setOwnerId(ownerId);
 
-            return mediaRepository.save(media);
+            log.debug("Saving media entity with ID: {} and filePath: {}", mediaId, filePath);
+            MediaEntity savedMedia = mediaRepository.save(media);
+            log.debug("Media entity saved successfully with ID: {}", savedMedia.getId());
+
+            return savedMedia;
         } catch (Exception e) {
-            log.error("Error saving media metadata for file: {}", fileName, e);
-            throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR, "Failed to save media metadata");
+            log.error("Error saving media metadata for file: {} - {}", fileName, e.getMessage(), e);
+            throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR,
+                    "Failed to save media metadata: " + e.getMessage());
         }
     }
 
@@ -68,36 +87,41 @@ public class MediaBusiness {
             String sanitizedFileName = sanitizeFileName(fileName);
             String filePath = buildUserMediaPath(ownerId, mediaType, documentType, sanitizedFileName);
 
-            // Ensure folders exist (including user folder if not temp)
             ensureUserMediaFoldersExist(ownerId, mediaType, documentType);
 
-            // Save metadata first
-            saveMediaMetadata(fileName, filePath, contentType, mediaType, ownerId);
+            MediaEntity savedMedia = saveMediaMetadata(fileName, filePath, contentType, mediaType, ownerId);
+            log.debug("Media metadata saved with ID: {}", savedMedia.getId());
 
             return mediaService.generateUploadPresignedUrl(filePath, contentType);
         } catch (Exception e) {
-            log.error("Error generating upload URL for file: {}", fileName, e);
-            throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR, "Failed to generate upload URL");
+            log.error("Error generating upload URL for file: {} - {}", fileName, e.getMessage(), e);
+            throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR,
+                    "Failed to generate upload URL: " + e.getMessage());
         }
     }
 
     public String generateDownloadUrl(String identifier) {
         try {
-            // First try to find by ID
+            // First try by ID
             Optional<MediaEntity> mediaOpt = mediaRepository.findById(identifier);
             if (mediaOpt.isPresent()) {
                 return mediaService.generateDownloadPresignedUrl(mediaOpt.get().getFilePath());
             }
 
-            // If not found by ID, try to find by file path
-            mediaOpt = mediaRepository.findByFilePath(identifier);
+            // Then try by file path with owner validation
+            mediaOpt = mediaRepository.findByFilePathWithOwner(identifier);
             if (mediaOpt.isPresent()) {
                 return mediaService.generateDownloadPresignedUrl(mediaOpt.get().getFilePath());
             }
 
-            // If not found by exact path, try to find by filename
-            String fileName = extractFileNameFromPath(identifier);
-            mediaOpt = mediaRepository.findByFileName(fileName);
+            // Then try by file name with latest result
+            mediaOpt = mediaRepository.findLatestByFileName(identifier);
+            if (mediaOpt.isPresent()) {
+                return mediaService.generateDownloadPresignedUrl(mediaOpt.get().getFilePath());
+            }
+
+            // If all else fails, try the original findByFilePath (may return multiple)
+            mediaOpt = mediaRepository.findByFilePath(identifier);
             if (mediaOpt.isPresent()) {
                 return mediaService.generateDownloadPresignedUrl(mediaOpt.get().getFilePath());
             }
@@ -107,16 +131,16 @@ public class MediaBusiness {
         } catch (SchoolException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Error generating download URL for identifier: {}", identifier, e);
-            throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR, "Failed to generate download URL");
+            log.error("Error generating download URL for identifier: {} - {}", identifier, e.getMessage(), e);
+            throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR,
+                    "Failed to generate download URL: " + e.getMessage());
         }
     }
-    // Helper method to extract filename from path
+
     private String extractFileNameFromPath(String filePath) {
         if (filePath == null || filePath.isEmpty()) {
             return "";
         }
-        // Handle both forward and backward slashes
         int lastSeparator = Math.max(
                 filePath.lastIndexOf('/'),
                 filePath.lastIndexOf('\\')
@@ -132,8 +156,9 @@ public class MediaBusiness {
             mediaRepository.delete(media);
             log.info("Deleted media with ID: {}", mediaId);
         } catch (Exception e) {
-            log.error("Error deleting media with ID: {}", mediaId, e);
-            throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR, "Failed to delete media");
+            log.error("Error deleting media with ID: {} - {}", mediaId, e.getMessage(), e);
+            throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR,
+                    "Failed to delete media: " + e.getMessage());
         }
     }
 
@@ -151,8 +176,9 @@ public class MediaBusiness {
             }
             return mediaRepository.findByOwnerId(ownerId);
         } catch (Exception e) {
-            log.error("Error getting media for owner: {}", ownerId, e);
-            throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR, "Failed to get media by owner");
+            log.error("Error getting media for owner: {} - {}", ownerId, e.getMessage(), e);
+            throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR,
+                    "Failed to get media by owner: " + e.getMessage());
         }
     }
 
@@ -160,8 +186,9 @@ public class MediaBusiness {
         try {
             return mediaRepository.findByMediaType(mediaType);
         } catch (Exception e) {
-            log.error("Error getting media by type: {}", mediaType, e);
-            throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR, "Failed to get media by type");
+            log.error("Error getting media by type: {} - {}", mediaType, e.getMessage(), e);
+            throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR,
+                    "Failed to get media by type: " + e.getMessage());
         }
     }
 
@@ -177,8 +204,9 @@ public class MediaBusiness {
             }
             return mediaRepository.save(media);
         } catch (Exception e) {
-            log.error("Error updating media metadata for ID: {}", mediaId, e);
-            throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR, "Failed to update media metadata");
+            log.error("Error updating media metadata for ID: {} - {}", mediaId, e.getMessage(), e);
+            throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR,
+                    "Failed to update media metadata: " + e.getMessage());
         }
     }
 
@@ -186,8 +214,9 @@ public class MediaBusiness {
         try {
             return mediaRepository.findByFilePath(filePath).isPresent();
         } catch (Exception e) {
-            log.error("Error checking media existence for path: {}", filePath, e);
-            throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR, "Failed to check media existence");
+            log.error("Error checking media existence for path: {} - {}", filePath, e.getMessage(), e);
+            throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR,
+                    "Failed to check media existence: " + e.getMessage());
         }
     }
 
@@ -211,12 +240,12 @@ public class MediaBusiness {
             log.info("Updated media owner from {} to {} for media ID: {}",
                     media.getOwnerId(), newOwnerId, mediaId);
         } catch (Exception e) {
-            log.error("Error updating media owner for ID: {}", mediaId, e);
-            throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR, "Failed to update media owner");
+            log.error("Error updating media owner for ID: {} - {}", mediaId, e.getMessage(), e);
+            throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR,
+                    "Failed to update media owner: " + e.getMessage());
         }
     }
 
-    // Helper methods
     private void validateUserExists(String ownerId) {
         if (ownerId == null || ownerId.equals("temp")) {
             return;
@@ -232,17 +261,20 @@ public class MediaBusiness {
         if (ownerId == null || ownerId.equals("temp")) {
             return "temp";
         }
-        return "users/" + ownerId;  // Keep the "users/" prefix for folder structure
+        return "users/" + ownerId;
     }
 
     private String sanitizeFileName(String fileName) {
+        if (fileName == null || fileName.trim().isEmpty()) {
+            return "unnamed_file_" + System.currentTimeMillis();
+        }
         return fileName.replaceAll("\\s+", "_")
                 .replaceAll("[^a-zA-Z0-9._-]", "");
     }
 
     private String buildUserMediaPath(String ownerId, String mediaType,
                                       String documentType, String fileName) {
-        return String.format("users/%s/%s/%s/%s",  // Add "users/" prefix here
+        return String.format("users/%s/%s/%s/%s",
                 ownerId,
                 mediaType.toLowerCase(),
                 documentType.toLowerCase(),
@@ -250,12 +282,50 @@ public class MediaBusiness {
     }
 
     private void ensureUserMediaFoldersExist(String ownerId, String mediaType, String documentType) {
-        String basePath = getUserFolderPath(ownerId);
-        String mediaPath = basePath + "/" + mediaType.toLowerCase();
-        String documentPath = mediaPath + "/" + documentType.toLowerCase();
+        try {
+            String basePath = getUserFolderPath(ownerId);
+            String mediaPath = basePath + "/" + mediaType.toLowerCase();
+            String documentPath = mediaPath + "/" + documentType.toLowerCase();
 
-        mediaService.ensureFolderExists(basePath);
-        mediaService.ensureFolderExists(mediaPath);
-        mediaService.ensureFolderExists(documentPath);
+            mediaService.ensureFolderExists(basePath);
+            mediaService.ensureFolderExists(mediaPath);
+            mediaService.ensureFolderExists(documentPath);
+        } catch (Exception e) {
+            log.error("Error ensuring folders exist for owner: {} - {}", ownerId, e.getMessage(), e);
+            throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR,
+                    "Failed to create folder structure: " + e.getMessage());
+        }
+    }
+
+    // New method to handle duplicate file names
+    @Transactional
+    public void cleanupDuplicateMedia(String fileName) {
+        try {
+            List<MediaEntity> duplicates = mediaRepository.findByFileName(fileName);
+            if (duplicates.size() > 1) {
+                log.warn("Found {} duplicate media entries for file: {}", duplicates.size(), fileName);
+
+                // Keep the latest one and delete others
+                MediaEntity latest = duplicates.stream()
+                        .max((m1, m2) -> m2.getUploadedDate().compareTo(m1.getUploadedDate()))
+                        .orElse(null);
+
+                if (latest != null) {
+                    for (MediaEntity media : duplicates) {
+                        if (!media.getId().equals(latest.getId())) {
+                            try {
+                                mediaService.deleteMedia(media.getFilePath());
+                                mediaRepository.delete(media);
+                                log.info("Deleted duplicate media: {}", media.getId());
+                            } catch (Exception e) {
+                                log.error("Failed to delete duplicate media: {}", media.getId(), e);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error cleaning up duplicate media for file: {}", fileName, e);
+        }
     }
 }
