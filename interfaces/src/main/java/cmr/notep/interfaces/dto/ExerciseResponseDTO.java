@@ -1,7 +1,7 @@
-package cmr.notep.interfaces.modeles;
+package cmr.notep.interfaces.dto;
 
 import cmr.notep.modele.EtatCours;
-import com.fasterxml.jackson.annotation.*;
+import cmr.notep.modele.ListeNiveau;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,20 +14,14 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-
-public class Cours {
+public class ExerciseResponseDTO {
     private String id;
-    private String titre;
+    private String nom;
     private String description;
     private Date dateCreation;
     private EtatCours etat;
-    private String references;
-    private String restriction; // PUBLIC/PRIVE
-    private List<Chapitre> chapitres;
-    private List<Matiere> matieres;
-    @JsonProperty("redacteurId")
+    private String restriction;
+    private ListeNiveau niveau;
     private String redacteurId;
-    @JsonBackReference
-    private List<Exercise> exercisesLies;
-
+    private List<CoursSummaryDTO> coursLies;
 }

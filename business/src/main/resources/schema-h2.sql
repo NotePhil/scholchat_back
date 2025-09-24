@@ -336,6 +336,29 @@ CREATE TABLE IF NOT EXISTS ressources.cours_programmer_classes (
     FOREIGN KEY (cours_programmer_id) REFERENCES ressources.cours_programmer(id) ON DELETE CASCADE,
     FOREIGN KEY (classe_id) REFERENCES ressources.classes(id) ON DELETE CASCADE
     );
+
+
+CREATE TABLE IF NOT EXISTS ressources.exercises (
+                                                    id UUID PRIMARY KEY,
+                                                    nom VARCHAR(255) NOT NULL,
+    description TEXT,
+    date_creation TIMESTAMP NOT NULL,
+    etat VARCHAR(50) NOT NULL,
+    restriction VARCHAR(50) NOT NULL DEFAULT 'PRIVE',
+    niveau VARCHAR(50) NOT NULL,
+    redacteur_id VARCHAR(255) NOT NULL,
+    FOREIGN KEY (redacteur_id) REFERENCES ressources.professeurs(professeurs_id)
+    );
+
+
+CREATE TABLE IF NOT EXISTS ressources.cours_exercises (
+                                                          exercise_id UUID NOT NULL,
+                                                          cours_id UUID NOT NULL,
+                                                          date_liaison TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                                          PRIMARY KEY (exercise_id, cours_id),
+    FOREIGN KEY (exercise_id) REFERENCES ressources.exercises(id) ON DELETE CASCADE,
+    FOREIGN KEY (cours_id) REFERENCES ressources.cours(id) ON DELETE CASCADE
+    );
 -- Re-enable foreign key checks
 SET REFERENTIAL_INTEGRITY TRUE;
 
@@ -518,4 +541,10 @@ CREATE INDEX IF NOT EXISTS idx_acceder_utilisateur ON ressources.acceder(utilisa
 CREATE INDEX IF NOT EXISTS idx_chapitres_cours ON ressources.chapitres(cours_id);
 CREATE INDEX IF NOT EXISTS idx_chapitres_ordre ON ressources.chapitres(ordre);
 CREATE INDEX IF NOT EXISTS idx_cours_restriction ON ressources.cours(restriction);
+
 ALTER TABLE ressources.cours ALTER COLUMN contenu DROP NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_exercises_redacteur ON ressources.exercises(redacteur_id);
+CREATE INDEX IF NOT EXISTS idx_exercises_niveau ON ressources.exercises(niveau);
+CREATE INDEX IF NOT EXISTS idx_exercises_restriction ON ressources.exercises(restriction);
+CREATE INDEX IF NOT EXISTS idx_cours_exercises_cours ON ressources.cours_exercises(cours_id);

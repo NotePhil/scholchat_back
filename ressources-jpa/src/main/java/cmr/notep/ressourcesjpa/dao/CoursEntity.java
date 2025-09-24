@@ -55,4 +55,7 @@ public class CoursEntity {
             inverseJoinColumns = @JoinColumn(name = "matiere_id"))
     @Mapping("matieres")
     private List<MatiereEntity> matieres = new ArrayList<>();
+
+    @ManyToMany(mappedBy = "coursLies", fetch = FetchType.LAZY)
+    private List<ExerciseEntity> exercisesLies = new ArrayList<>();
 }
