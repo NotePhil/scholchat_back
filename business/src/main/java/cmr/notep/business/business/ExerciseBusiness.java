@@ -4,13 +4,17 @@ import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.interfaces.modeles.Exercise;
 import cmr.notep.modele.EtatCours;
+import cmr.notep.modele.EtatExercise;
+import cmr.notep.modele.EtatX;
 import cmr.notep.modele.ListeNiveau;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.CoursEntity;
 import cmr.notep.ressourcesjpa.dao.ExerciseEntity;
+import cmr.notep.ressourcesjpa.dao.MatiereEntity;
 import cmr.notep.ressourcesjpa.dao.ProfesseursEntity;
 import cmr.notep.ressourcesjpa.repository.CoursRepository;
 import cmr.notep.ressourcesjpa.repository.ExerciseRepository;
+import cmr.notep.ressourcesjpa.repository.MatiereRepository;
 import cmr.notep.ressourcesjpa.repository.ProfesseursRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +48,7 @@ public class ExerciseBusiness {
             entity.setCoursLies(new ArrayList<>());
         }
         if (entity.getEtat() == null) {
-            entity.setEtat(EtatCours.BROUILLON);
+            entity.setEtat(EtatExercise.ACTIF);  // Par défaut, ACTIF
         }
         if (entity.getRestriction() == null) {
             entity.setRestriction("PRIVE");
@@ -80,6 +84,35 @@ public class ExerciseBusiness {
     public List<ExerciseEntity> obtenirExercisesEntityParCours(String coursId) {
         return daoAccessorService.getRepository(ExerciseRepository.class)
                 .findByCoursId(coursId);
+    }
+    public ExerciseEntity lierExerciseAMatiere(String exerciseId, String matiereId) {
+        ExerciseEntity exerciseEntity = daoAccessorService.getRepository(ExerciseRepository.class)
+                .findById(exerciseId)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Exercice introuvable"));
+        MatiereEntity matiereEntity = daoAccessorService.getRepository(MatiereRepository.class)
+                .findById(matiereId)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Matière introuvable"));
+        if (!exerciseEntity.getMatieres().contains(matiereEntity)) {
+            exerciseEntity.getMatieres().add(matiereEntity);
+            exerciseEntity = daoAccessorService.getRepository(ExerciseRepository.class).save(exerciseEntity);
+        }
+        return exerciseEntity;
+    }
+    public ExerciseEntity delierExerciseDeMatiere(String exerciseId, String matiereId) {
+        ExerciseEntity exerciseEntity = daoAccessorService.getRepository(ExerciseRepository.class)
+                .findById(exerciseId)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Exercice introuvable"));
+
+        MatiereEntity matiereEntity = daoAccessorService.getRepository(MatiereRepository.class)
+                .findById(matiereId)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Matière introuvable"));
+
+        if (exerciseEntity.getMatieres().contains(matiereEntity)) {
+            exerciseEntity.getMatieres().remove(matiereEntity);
+            exerciseEntity = daoAccessorService.getRepository(ExerciseRepository.class).save(exerciseEntity);
+        }
+
+        return exerciseEntity;
     }
 
     public Exercise mettreAJourExercise(String exerciseId, Exercise exercise) {

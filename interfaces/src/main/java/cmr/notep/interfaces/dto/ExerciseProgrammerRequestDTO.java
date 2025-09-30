@@ -1,13 +1,12 @@
 package cmr.notep.interfaces.dto;
 
-import cmr.notep.modele.EtatCours;
 import cmr.notep.modele.EtatExercise;
-import cmr.notep.modele.EtatX;
 import cmr.notep.modele.ListeNiveau;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.util.Date;
 import java.util.List;
 
@@ -15,16 +14,17 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ExerciseResponseDTO {
-    private String id;
+public class ExerciseProgrammerRequestDTO {
     private String nom;
     private String description;
-    private Date dateCreation;
-    private EtatExercise etat;
-    private String restriction;
     private ListeNiveau niveau;
+    private String restriction;
     private String redacteurId;
-    private List<CoursSummaryDTO> coursLies;
-    private List<MatiereSummaryDTO> matieres;
-    private List<QuestionReponseSummaryDTO> questions;
+    private String programmeParId;
+    private Date dateExoPrevue;
+    private Date dateDebutExoEffectif;
+    private Date dateFinExoEffectif;
+    private EtatExercise etat;
+    private List<String> matiereIds;
+    private List<String> coursIds;
 }

@@ -1,11 +1,9 @@
 package cmr.notep.ressourcesjpa.dao;
 
 import cmr.notep.modele.EtatMatieres;
-
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.dozer.Mapping;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -16,7 +14,6 @@ import java.util.List;
 @Entity
 @Table(name = "matieres", schema = "ressources")
 public class MatiereEntity {
-
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
@@ -35,16 +32,23 @@ public class MatiereEntity {
     private EtatMatieres etat;
 
     @ManyToMany
-    @JoinTable(name = "classe_matieres", schema = "ressources",
+    @JoinTable(
+            name = "classe_matieres",
+            schema = "ressources",
             joinColumns = @JoinColumn(name = "matiere_id"),
-            inverseJoinColumns = @JoinColumn(name = "classe_id"))
-
-    @Mapping("classes")
+            inverseJoinColumns = @JoinColumn(name = "classe_id")
+    )
     private List<ClassesEntity> classes = new ArrayList<>();
 
     @ManyToMany(mappedBy = "matieresEnseignees")
-
-    @Mapping("professeurs")
     private List<ProfesseursEntity> professeurs = new ArrayList<>();
 
+    @ManyToMany
+    @JoinTable(
+            name = "exercise_matieres",
+            schema = "ressources",
+            joinColumns = @JoinColumn(name = "matiere_id"),
+            inverseJoinColumns = @JoinColumn(name = "exercise_id")
+    )
+    private List<ExerciseEntity> exercises = new ArrayList<>();
 }

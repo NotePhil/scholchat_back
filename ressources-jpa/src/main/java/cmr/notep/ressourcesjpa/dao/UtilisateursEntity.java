@@ -76,4 +76,7 @@ public class UtilisateursEntity {
             inverseJoinColumns = @JoinColumn(name = "classe_id")
     )
     private List<ClassesEntity> classes;
+
+    @OneToMany(mappedBy = "utilisateur", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RepondreEntity> reponsesQuestions = new ArrayList<>();
 }

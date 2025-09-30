@@ -351,6 +351,7 @@ CREATE TABLE IF NOT EXISTS ressources.exercises (
     );
 
 
+
 CREATE TABLE IF NOT EXISTS ressources.cours_exercises (
                                                           exercise_id UUID NOT NULL,
                                                           cours_id UUID NOT NULL,
@@ -359,6 +360,58 @@ CREATE TABLE IF NOT EXISTS ressources.cours_exercises (
     FOREIGN KEY (exercise_id) REFERENCES ressources.exercises(id) ON DELETE CASCADE,
     FOREIGN KEY (cours_id) REFERENCES ressources.cours(id) ON DELETE CASCADE
     );
+
+CREATE TABLE IF NOT EXISTS ressources.questions_reponses (
+                                                             id UUID PRIMARY KEY,
+                                                             intitule VARCHAR(1000) NOT NULL,
+    reponse TEXT,
+    type_question VARCHAR(50) NOT NULL,
+    exercise_id UUID NOT NULL,
+    FOREIGN KEY (exercise_id) REFERENCES ressources.exercises(id) ON DELETE CASCADE
+    );
+
+CREATE TABLE IF NOT EXISTS ressources.exercise_matieres (
+                                                            exercise_id UUID NOT NULL,
+                                                            matiere_id UUID NOT NULL,
+                                                            date_association TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                                            PRIMARY KEY (exercise_id, matiere_id),
+    FOREIGN KEY (exercise_id) REFERENCES ressources.exercises(id) ON DELETE CASCADE,
+    FOREIGN KEY (matiere_id) REFERENCES ressources.matieres(id) ON DELETE CASCADE
+    );
+
+CREATE TABLE IF NOT EXISTS ressources.repondre (
+                                                   utilisateur_id VARCHAR(255) NOT NULL,
+    question_id UUID NOT NULL,
+    note VARCHAR(50),
+    appreciation VARCHAR(255),
+    reponse_utilisateur TEXT,
+    date_reponse TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    est_correcte BOOLEAN,
+    PRIMARY KEY (utilisateur_id, question_id),
+    FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id) ON DELETE CASCADE,
+    FOREIGN KEY (question_id) REFERENCES ressources.questions_reponses(id) ON DELETE CASCADE
+    );
+CREATE TABLE IF NOT EXISTS ressources.exercises_programmer (
+                                                               exercise_id UUID PRIMARY KEY,
+                                                               date_exo_prevue TIMESTAMP NOT NULL,
+                                                               date_debut_exo_effectif TIMESTAMP NOT NULL,
+                                                               date_fin_exo_effectif TIMESTAMP NOT NULL,
+                                                               etat_exercise_programmer VARCHAR(50) NOT NULL,
+    programme_par_id VARCHAR(255) NOT NULL,
+    FOREIGN KEY (exercise_id) REFERENCES ressources.exercises(id) ON DELETE CASCADE,
+    FOREIGN KEY (programme_par_id) REFERENCES ressources.professeurs(professeurs_id)
+    );
+
+CREATE TABLE IF NOT EXISTS ressources.exercise_programmer_classes (
+                                                                      exercise_programmer_id UUID NOT NULL,
+                                                                      classe_id UUID NOT NULL,
+                                                                      date_diffusion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                                                      PRIMARY KEY (exercise_programmer_id, classe_id),
+    FOREIGN KEY (exercise_programmer_id) REFERENCES ressources.exercises_programmer(exercise_id) ON DELETE CASCADE,
+    FOREIGN KEY (classe_id) REFERENCES ressources.classes(id) ON DELETE CASCADE
+    );
+
+
 -- Re-enable foreign key checks
 SET REFERENTIAL_INTEGRITY TRUE;
 
@@ -548,3 +601,11 @@ CREATE INDEX IF NOT EXISTS idx_exercises_redacteur ON ressources.exercises(redac
 CREATE INDEX IF NOT EXISTS idx_exercises_niveau ON ressources.exercises(niveau);
 CREATE INDEX IF NOT EXISTS idx_exercises_restriction ON ressources.exercises(restriction);
 CREATE INDEX IF NOT EXISTS idx_cours_exercises_cours ON ressources.cours_exercises(cours_id);
+CREATE INDEX IF NOT EXISTS idx_repondre_utilisateur ON ressources.repondre(utilisateur_id);
+CREATE INDEX IF NOT EXISTS idx_repondre_question ON ressources.repondre(question_id);
+CREATE INDEX IF NOT EXISTS idx_repondre_date ON ressources.repondre(date_reponse);
+
+CREATE INDEX IF NOT EXISTS idx_exercise_programmer_prof ON ressources.exercises_programmer(programme_par_id);
+CREATE INDEX IF NOT EXISTS idx_exercise_programmer_date_prevue ON ressources.exercises_programmer(date_exo_prevue);
+CREATE INDEX IF NOT EXISTS idx_exercise_programmer_etat ON ressources.exercises_programmer(etat_exercise_programmer);
+CREATE INDEX IF NOT EXISTS idx_exercise_programmer_classes_classe ON ressources.exercise_programmer_classes(classe_id);

@@ -1,7 +1,5 @@
 package cmr.notep.interfaces.dto;
 
-import cmr.notep.modele.EtatExercise; // Doit être EtatExercise
-import cmr.notep.modele.ListeNiveau;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,10 +9,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ExerciseSummaryDTO {
+public class MatiereSummaryDTO {
     private String id;
     private String nom;
     private String description;
-    private EtatExercise etat; // Doit être EtatExercise, pas EtatCours
-    private ListeNiveau niveau;
 }

@@ -1,6 +1,6 @@
 package cmr.notep.ressourcesjpa.repository;
 
-import cmr.notep.modele.EtatCours;
+import cmr.notep.modele.EtatExercise; // Changez de EtatCours à EtatExercise
 import cmr.notep.modele.ListeNiveau;
 import cmr.notep.ressourcesjpa.dao.ExerciseEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,7 +15,7 @@ public interface ExerciseRepository extends JpaRepository<ExerciseEntity, String
     List<ExerciseEntity> findByRedacteurId(String professeurId);
     List<ExerciseEntity> findByNiveau(ListeNiveau niveau);
     List<ExerciseEntity> findByRestriction(String restriction);
-    List<ExerciseEntity> findByEtat(EtatCours etat);
+    List<ExerciseEntity> findByEtat(EtatExercise etat); // Utilisez EtatExercise ici
 
     @Query("SELECT e FROM ExerciseEntity e WHERE e.restriction = 'PUBLIC' OR e.redacteur.id = :userId")
     List<ExerciseEntity> findAccessibleExercises(@Param("userId") String userId);

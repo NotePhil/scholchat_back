@@ -1,0 +1,18 @@
+package cmr.notep.ressourcesjpa.dao;
+
+import jakarta.persistence.Embeddable;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Embeddable
+public class RepondreId implements Serializable {
+
+    private String utilisateurId;
+    private String questionId;
+}

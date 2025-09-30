@@ -1,7 +1,9 @@
 package cmr.notep.interfaces.modeles;
 
 
-import cmr.notep.modele.EtatCours;
+
+import cmr.notep.modele.EtatExercise;
+import cmr.notep.modele.EtatX;
 import cmr.notep.modele.ListeNiveau;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -24,10 +26,12 @@ public class Exercise {
     private String nom;
     private String description;
     private Date dateCreation;
-    private EtatCours etat;
+    private EtatExercise etat;
     private String restriction; // PUBLIC/PRIVE
     private ListeNiveau niveau;
     private String redacteurId;
 
     private List<Cours> coursLies;
+    private List<Matiere> matieres;
+    private List<QuestionReponse> questions;
 }

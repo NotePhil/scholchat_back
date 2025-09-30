@@ -33,6 +33,18 @@ public class ExerciseService implements ExerciseApi {
         ExerciseEntity exerciseEntity = exerciseBusiness.obtenirExerciseEntityParId(createdExercise.getId());
         return exerciseMapper.toResponseDTO(exerciseEntity);
     }
+    @Override
+    public ExerciseResponseDTO lierExerciseAMatiere(@NonNull String exerciseId, @NonNull String matiereId) {
+        log.info("Liaison de l'exercice {} à la matière {}", exerciseId, matiereId);
+        ExerciseEntity exerciseEntity = exerciseBusiness.lierExerciseAMatiere(exerciseId, matiereId);
+        return exerciseMapper.toResponseDTO(exerciseEntity);
+    }
+    @Override
+    public ExerciseResponseDTO delierExerciseDeMatiere(@NonNull String exerciseId, @NonNull String matiereId) {
+        log.info("Déliaison de l'exercice {} de la matière {}", exerciseId, matiereId);
+        ExerciseEntity exerciseEntity = exerciseBusiness.delierExerciseDeMatiere(exerciseId, matiereId);
+        return exerciseMapper.toResponseDTO(exerciseEntity);
+    }
 
     @Override
     public ExerciseResponseDTO mettreAJourExercise(@NonNull String exerciseId, @NonNull ExerciseRequestDTO exerciseRequestDTO) {

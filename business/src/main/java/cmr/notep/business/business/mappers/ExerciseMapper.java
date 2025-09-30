@@ -1,23 +1,17 @@
 package cmr.notep.business.business.mappers;
 
-import cmr.notep.interfaces.dto.CoursSummaryDTO;
-import cmr.notep.interfaces.dto.ExerciseRequestDTO;
-import cmr.notep.interfaces.dto.ExerciseResponseDTO;
+import cmr.notep.interfaces.dto.*;
 import cmr.notep.interfaces.modeles.Exercise;
 import cmr.notep.ressourcesjpa.dao.CoursEntity;
 import cmr.notep.ressourcesjpa.dao.ExerciseEntity;
 import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 
 @Component
 public class ExerciseMapper {
-
-    // Convertit un ExerciseRequestDTO en Exercise
     public Exercise toEntity(ExerciseRequestDTO requestDTO) {
         return Exercise.builder()
                 .nom(requestDTO.getNom())
@@ -25,10 +19,10 @@ public class ExerciseMapper {
                 .niveau(requestDTO.getNiveau())
                 .restriction(requestDTO.getRestriction())
                 .redacteurId(requestDTO.getRedacteurId())
+                .etat(requestDTO.getEtat())
                 .build();
     }
 
-    // Convertit un ExerciseEntity en ExerciseResponseDTO
     public ExerciseResponseDTO toResponseDTO(ExerciseEntity entity) {
         List<CoursSummaryDTO> coursSummaryList = (entity.getCoursLies() != null) ?
                 entity.getCoursLies().stream()
@@ -36,6 +30,26 @@ public class ExerciseMapper {
                                 .id(cours.getId())
                                 .titre(cours.getTitre())
                                 .description(cours.getDescription())
+                                .build())
+                        .collect(Collectors.toList()) :
+                new ArrayList<>();
+
+        List<MatiereSummaryDTO> matiereSummaryList = (entity.getMatieres() != null) ?
+                entity.getMatieres().stream()
+                        .map(matiere -> MatiereSummaryDTO.builder()
+                                .id(matiere.getId())
+                                .nom(matiere.getNom())
+                                .description(matiere.getDescription())
+                                .build())
+                        .collect(Collectors.toList()) :
+                new ArrayList<>();
+
+        List<QuestionReponseSummaryDTO> questionSummaryList = (entity.getQuestions() != null) ?
+                entity.getQuestions().stream()
+                        .map(question -> QuestionReponseSummaryDTO.builder()
+                                .id(question.getId())
+                                .intitule(question.getIntitule())
+                                .typeQuestion(question.getTypeQuestion())
                                 .build())
                         .collect(Collectors.toList()) :
                 new ArrayList<>();
@@ -50,15 +64,15 @@ public class ExerciseMapper {
                 .niveau(entity.getNiveau())
                 .redacteurId(entity.getRedacteur().getId())
                 .coursLies(coursSummaryList)
+                .matieres(matiereSummaryList)
+                .questions(questionSummaryList)
                 .build();
     }
 
-    // Convertit un Exercise en ExerciseEntity
     public ExerciseEntity toEntity(Exercise exercise) {
         return dozerMapperBean.map(exercise, ExerciseEntity.class);
     }
 
-    // Convertit un ExerciseEntity en Exercise
     public Exercise toModel(ExerciseEntity entity) {
         return dozerMapperBean.map(entity, Exercise.class);
     }

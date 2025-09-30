@@ -20,6 +20,21 @@ public interface ExerciseApi {
     @ResponseStatus(HttpStatus.CREATED)
     ExerciseResponseDTO creerExercise(@NonNull @RequestBody ExerciseRequestDTO exercise);
 
+    @PostMapping(
+            path = "/{exerciseId}/lier-matiere/{matiereId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    ExerciseResponseDTO lierExerciseAMatiere(@NonNull @PathVariable String exerciseId, @NonNull @PathVariable String matiereId);
+
+
+    @PostMapping(
+            path = "/{exerciseId}/delier-matiere/{matiereId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    ExerciseResponseDTO delierExerciseDeMatiere(@NonNull @PathVariable String exerciseId, @NonNull @PathVariable String matiereId);
+
     @PutMapping(
             path = "/{exerciseId}",
             produces = MediaType.APPLICATION_JSON_VALUE,
