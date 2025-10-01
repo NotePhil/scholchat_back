@@ -2,6 +2,7 @@ package cmr.notep.business.business;
 
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
+import cmr.notep.interfaces.modeles.Classes;
 import cmr.notep.interfaces.modeles.ExerciseProgrammer;
 import cmr.notep.modele.EtatExercise;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,26 +27,84 @@ public class ExerciseProgrammerBusiness {
     private final DaoAccessorService daoAccessorService;
 
     public ExerciseProgrammer programmerExercise(ExerciseProgrammer exerciseProgrammer) {
-        log.info("Programmation d'un nouvel exercice: {}", exerciseProgrammer.getNom());
+        log.info("Programmation d'un nouvel exercice à partir de l'exercice ID: {}", exerciseProgrammer.getExerciseId());
+
+        // Récupérer l'exercice existant
+        ExerciseEntity exerciseExistante = daoAccessorService.getRepository(ExerciseRepository.class)
+                .findById(exerciseProgrammer.getExerciseId())
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Exercice source introuvable"));
+
+        // Validate and fetch required entities
         ProfesseursEntity professeur = daoAccessorService.getRepository(ProfesseursRepository.class)
                 .findById(exerciseProgrammer.getProgrammeParId())
-                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Professeur introuvable"));
-        ProfesseursEntity redacteur = daoAccessorService.getRepository(ProfesseursRepository.class)
-                .findById(exerciseProgrammer.getRedacteurId())
-                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Rédacteur introuvable"));
-        ExerciseProgrammerEntity entity = dozerMapperBean.map(exerciseProgrammer, ExerciseProgrammerEntity.class);
-        entity.setProgrammePar(professeur);
-        entity.setRedacteur(redacteur);
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Professeur programmeur introuvable"));
+
+        // Créer l'entité ExerciseProgrammer en copiant les données de l'exercice source
+        ExerciseProgrammerEntity entity = new ExerciseProgrammerEntity();
+
+        // Copier les propriétés de base de l'exercice source
+        entity.setNom(exerciseExistante.getNom());
+        entity.setDescription(exerciseExistante.getDescription());
+        entity.setNiveau(exerciseExistante.getNiveau());
+        entity.setRestriction(exerciseExistante.getRestriction());
+        entity.setRedacteur(exerciseExistante.getRedacteur());
         entity.setDateCreation(new Date());
-        if (entity.getEtat() == null) {
-            entity.setEtat(EtatExercise.BROUILLON);  // Par défaut, BROUILLON
+
+        // Créer de NOUVELLES instances des collections pour éviter le partage
+        if (exerciseExistante.getMatieres() != null) {
+            entity.setMatieres(new ArrayList<>(exerciseExistante.getMatieres()));
+        } else {
+            entity.setMatieres(new ArrayList<>());
         }
-        if (entity.getRestriction() == null) {
-            entity.setRestriction("PRIVE");
+
+        if (exerciseExistante.getCoursLies() != null) {
+            entity.setCoursLies(new ArrayList<>(exerciseExistante.getCoursLies()));
+        } else {
+            entity.setCoursLies(new ArrayList<>());
         }
+
+        if (exerciseExistante.getQuestions() != null) {
+            entity.setQuestions(new ArrayList<>(exerciseExistante.getQuestions()));
+        } else {
+            entity.setQuestions(new ArrayList<>());
+        }
+
+        // Définir l'état - utiliser le champ hérité de ExerciseEntity
+        if (exerciseProgrammer.getEtat() != null) {
+            entity.setEtat(exerciseProgrammer.getEtat());
+        } else {
+            entity.setEtat(EtatExercise.BROUILLON);
+        }
+
+        // Définir les propriétés spécifiques à la programmation
+        entity.setProgrammePar(professeur);
+        entity.setDateExoPrevue(exerciseProgrammer.getDateExoPrevue());
+        entity.setDateDebutExoEffectif(exerciseProgrammer.getDateDebutExoEffectif());
+        entity.setDateFinExoEffectif(exerciseProgrammer.getDateFinExoEffectif());
+
+        // Lier à l'exercice source
+        entity.setExercise(exerciseExistante);
+
+        // Save the entity
         ExerciseProgrammerEntity savedEntity = daoAccessorService.getRepository(ExerciseProgrammerRepository.class).save(entity);
-        log.info("Exercice programmé avec ID: {}", savedEntity.getId());
+        log.info("Exercice programmé avec ID: {} à partir de l'exercice source: {}", savedEntity.getId(), exerciseProgrammer.getExerciseId());
+
         return dozerMapperBean.map(savedEntity, ExerciseProgrammer.class);
+    }
+
+    // Les autres méthodes restent inchangées...
+    public ExerciseProgrammer programmerEtDiffuserExercise(ExerciseProgrammer exerciseProgrammer) {
+        // Programmer l'exercice d'abord
+        ExerciseProgrammer exerciseProgramme = programmerExercise(exerciseProgrammer);
+
+        // Diffuser dans les classes spécifiées (si des IDs de classes sont fournis)
+        if (exerciseProgrammer.getClassesDiffusees() != null && !exerciseProgrammer.getClassesDiffusees().isEmpty()) {
+            for (Classes classe : exerciseProgrammer.getClassesDiffusees()) {
+                diffuserExerciseDansClasse(exerciseProgramme.getId(), classe.getId());
+            }
+        }
+
+        return exerciseProgramme;
     }
 
     public ExerciseProgrammerEntity diffuserExerciseDansClasse(String exerciseProgrammerId, String classeId) {

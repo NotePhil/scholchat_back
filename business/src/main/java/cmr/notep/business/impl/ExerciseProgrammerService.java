@@ -25,10 +25,21 @@ public class ExerciseProgrammerService implements ExerciseProgrammerApi {
 
     @Override
     public ExerciseProgrammerResponseDTO programmerExercise(ExerciseProgrammerRequestDTO requestDTO) {
-        log.info("Programmation d'un nouvel exercice: {}", requestDTO.getNom());
+        log.info("Programmation d'un nouvel exercice à partir de l'exercice ID: {}", requestDTO.getExerciseId());
 
         ExerciseProgrammer exerciseProgrammer = exerciseProgrammerMapper.toModel(requestDTO);
         ExerciseProgrammer createdExercise = exerciseProgrammerBusiness.programmerExercise(exerciseProgrammer);
+
+        ExerciseProgrammerEntity entity = exerciseProgrammerBusiness.obtenirExerciseProgrammeEntityParId(createdExercise.getId());
+        return exerciseProgrammerMapper.toResponseDTO(entity);
+    }
+
+    @Override
+    public ExerciseProgrammerResponseDTO programmerEtDiffuserExercise(ExerciseProgrammerRequestDTO requestDTO) {
+        log.info("Programmation et diffusion d'un exercice à partir de l'exercice ID: {}", requestDTO.getExerciseId());
+
+        ExerciseProgrammer exerciseProgrammer = exerciseProgrammerMapper.toModel(requestDTO);
+        ExerciseProgrammer createdExercise = exerciseProgrammerBusiness.programmerEtDiffuserExercise(exerciseProgrammer);
 
         ExerciseProgrammerEntity entity = exerciseProgrammerBusiness.obtenirExerciseProgrammeEntityParId(createdExercise.getId());
         return exerciseProgrammerMapper.toResponseDTO(entity);

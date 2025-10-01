@@ -15,16 +15,11 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ExerciseProgrammerRequestDTO {
-    private String nom;
-    private String description;
-    private ListeNiveau niveau;
-    private String restriction;
-    private String redacteurId;
+    private String exerciseId; // ID de l'exercice existant à programmer
     private String programmeParId;
     private Date dateExoPrevue;
     private Date dateDebutExoEffectif;
     private Date dateFinExoEffectif;
     private EtatExercise etat;
-    private List<String> matiereIds;
-    private List<String> coursIds;
+    private List<String> classeIds;
 }

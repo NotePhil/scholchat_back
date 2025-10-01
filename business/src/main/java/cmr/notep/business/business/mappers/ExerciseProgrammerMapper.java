@@ -2,26 +2,71 @@ package cmr.notep.business.business.mappers;
 
 import cmr.notep.interfaces.dto.*;
 import cmr.notep.interfaces.modeles.ExerciseProgrammer;
+import cmr.notep.modele.EtatExercise;
 import cmr.notep.ressourcesjpa.dao.ExerciseProgrammerEntity;
+import cmr.notep.ressourcesjpa.dao.ParticiperExoEntity;
 import org.springframework.stereotype.Component;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 
 @Component
 public class ExerciseProgrammerMapper {
+
     public ExerciseProgrammer toModel(ExerciseProgrammerRequestDTO requestDTO) {
-        ExerciseProgrammer exerciseProgrammer = dozerMapperBean.map(requestDTO, ExerciseProgrammer.class);
+        ExerciseProgrammer exerciseProgrammer = new ExerciseProgrammer();
+        exerciseProgrammer.setExerciseId(requestDTO.getExerciseId()); // Stocker l'ID de l'exercice source
         exerciseProgrammer.setProgrammeParId(requestDTO.getProgrammeParId());
         exerciseProgrammer.setDateExoPrevue(requestDTO.getDateExoPrevue());
         exerciseProgrammer.setDateDebutExoEffectif(requestDTO.getDateDebutExoEffectif());
         exerciseProgrammer.setDateFinExoEffectif(requestDTO.getDateFinExoEffectif());
-        exerciseProgrammer.setEtat(requestDTO.getEtat());
+
+        // Ensure etat is never null
+        if (requestDTO.getEtat() != null) {
+            exerciseProgrammer.setEtat(requestDTO.getEtat());
+        } else {
+            exerciseProgrammer.setEtat(EtatExercise.BROUILLON); // Default value
+        }
+
         return exerciseProgrammer;
     }
-
+    private ParticipationExerciseResponseDTO mapParticipationToDTO(ParticiperExoEntity participation) {
+        return ParticipationExerciseResponseDTO.builder()
+                .utilisateurId(participation.getUtilisateur().getId())
+                .utilisateurNom(participation.getUtilisateur().getNom())
+                .utilisateurPrenom(participation.getUtilisateur().getPrenom())
+                .exerciseProgrammerId(participation.getExerciseProgrammer().getId())
+                .exerciseProgrammerNom(participation.getExerciseProgrammer().getNom())
+                .note(participation.getNote())
+                .appreciation(participation.getAppreciation())
+                .dateDebut(participation.getDateDebut())
+                .dateFin(participation.getDateFin())
+                .dateSoumission(participation.getDateSoumission())
+                .build();
+    }
     public ExerciseProgrammerResponseDTO toResponseDTO(ExerciseProgrammerEntity entity) {
+        // Récupérer les données de l'exercice parent
+        ExerciseProgrammerResponseDTO responseDTO = ExerciseProgrammerResponseDTO.builder()
+                .id(entity.getId())
+                .nom(entity.getNom())
+                .description(entity.getDescription())
+                .dateCreation(entity.getDateCreation())
+                .etat(entity.getEtat())
+                .restriction(entity.getRestriction())
+                .niveau(entity.getNiveau())
+                .redacteurId(entity.getRedacteur().getId())
+                .programmeParId(entity.getProgrammePar().getId())
+                .programmeParNom(entity.getProgrammePar().getNom())
+                .programmeParPrenom(entity.getProgrammePar().getPrenom())
+                .dateExoPrevue(entity.getDateExoPrevue())
+                .dateDebutExoEffectif(entity.getDateDebutExoEffectif())
+                .dateFinExoEffectif(entity.getDateFinExoEffectif())
+                .build();
+
+        // Mapper les relations
         List<ClasseSummaryDTO> classesDiffusees = (entity.getClassesDiffusees() != null) ?
                 entity.getClassesDiffusees().stream()
                         .map(classe -> ClasseSummaryDTO.builder()
@@ -63,26 +108,19 @@ public class ExerciseProgrammerMapper {
                         .collect(Collectors.toList()) :
                 new ArrayList<>();
 
-        return ExerciseProgrammerResponseDTO.builder()
-                .id(entity.getId())
-                .nom(entity.getNom())
-                .description(entity.getDescription())
-                .dateCreation(entity.getDateCreation())
-                .etat(entity.getEtat())
-                .restriction(entity.getRestriction())
-                .niveau(entity.getNiveau())
-                .redacteurId(entity.getRedacteur().getId())
-                .programmeParId(entity.getProgrammePar().getId())
-                .programmeParNom(entity.getProgrammePar().getNom())
-                .programmeParPrenom(entity.getProgrammePar().getPrenom())
-                .dateExoPrevue(entity.getDateExoPrevue())
-                .dateDebutExoEffectif(entity.getDateDebutExoEffectif())
-                .dateFinExoEffectif(entity.getDateFinExoEffectif())
-                .coursLies(coursSummaryList)
-                .matieres(matiereSummaryList)
-                .questions(questionSummaryList)
-                .classesDiffusees(classesDiffusees)
-                .build();
+        List<ParticipationExerciseResponseDTO> participations = (entity.getParticipants() != null) ?
+                entity.getParticipants().stream()
+                        .map(this::mapParticipationToDTO)
+                        .collect(Collectors.toList()) :
+                new ArrayList<>();
+
+        responseDTO.setClassesDiffusees(classesDiffusees);
+        responseDTO.setMatieres(matiereSummaryList);
+        responseDTO.setQuestions(questionSummaryList);
+        responseDTO.setCoursLies(coursSummaryList);
+        responseDTO.setParticipations(participations);
+
+        return responseDTO;
     }
 
     public ExerciseProgrammerEntity toEntity(ExerciseProgrammer exerciseProgrammer) {

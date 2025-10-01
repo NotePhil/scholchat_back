@@ -396,7 +396,7 @@ CREATE TABLE IF NOT EXISTS ressources.exercises_programmer (
                                                                date_exo_prevue TIMESTAMP NOT NULL,
                                                                date_debut_exo_effectif TIMESTAMP NOT NULL,
                                                                date_fin_exo_effectif TIMESTAMP NOT NULL,
-                                                               etat_exercise_programmer VARCHAR(50) NOT NULL,
+                                                               etat_exercise_programmer VARCHAR(50),
     programme_par_id VARCHAR(255) NOT NULL,
     FOREIGN KEY (exercise_id) REFERENCES ressources.exercises(id) ON DELETE CASCADE,
     FOREIGN KEY (programme_par_id) REFERENCES ressources.professeurs(professeurs_id)
@@ -411,7 +411,18 @@ CREATE TABLE IF NOT EXISTS ressources.exercise_programmer_classes (
     FOREIGN KEY (classe_id) REFERENCES ressources.classes(id) ON DELETE CASCADE
     );
 
-
+CREATE TABLE IF NOT EXISTS ressources.participer_exo (
+                                                         utilisateur_id VARCHAR(255) NOT NULL,
+    exercise_programmer_id UUID NOT NULL,
+    note VARCHAR(50),
+    appreciation VARCHAR(255),
+    date_debut TIMESTAMP NOT NULL,
+    date_fin TIMESTAMP,
+    date_soumission TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (utilisateur_id, exercise_programmer_id),
+    FOREIGN KEY (utilisateur_id) REFERENCES ressources.utilisateurs(id) ON DELETE CASCADE,
+    FOREIGN KEY (exercise_programmer_id) REFERENCES ressources.exercises_programmer(exercise_id) ON DELETE CASCADE
+    );
 -- Re-enable foreign key checks
 SET REFERENTIAL_INTEGRITY TRUE;
 
@@ -609,3 +620,7 @@ CREATE INDEX IF NOT EXISTS idx_exercise_programmer_prof ON ressources.exercises_
 CREATE INDEX IF NOT EXISTS idx_exercise_programmer_date_prevue ON ressources.exercises_programmer(date_exo_prevue);
 CREATE INDEX IF NOT EXISTS idx_exercise_programmer_etat ON ressources.exercises_programmer(etat_exercise_programmer);
 CREATE INDEX IF NOT EXISTS idx_exercise_programmer_classes_classe ON ressources.exercise_programmer_classes(classe_id);
+
+CREATE INDEX IF NOT EXISTS idx_participer_exo_utilisateur ON ressources.participer_exo(utilisateur_id);
+CREATE INDEX IF NOT EXISTS idx_participer_exo_exercise ON ressources.participer_exo(exercise_programmer_id);
+CREATE INDEX IF NOT EXISTS idx_participer_exo_dates ON ressources.participer_exo(date_debut, date_fin);

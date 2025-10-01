@@ -79,4 +79,7 @@ public class UtilisateursEntity {
 
     @OneToMany(mappedBy = "utilisateur", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RepondreEntity> reponsesQuestions = new ArrayList<>();
+
+    @OneToMany(mappedBy = "utilisateur", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ParticiperExoEntity> participationsExercices = new ArrayList<>();
 }
