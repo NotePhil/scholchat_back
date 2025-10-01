@@ -11,10 +11,11 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ExerciseProgrammer extends Exercise {
+    private String exerciseId;
     private Date dateExoPrevue;
     private Date dateDebutExoEffectif;
     private Date dateFinExoEffectif;
-    private EtatExercise etat;
+
     private String programmeParId;
     private List<Classes> classesDiffusees;
 }

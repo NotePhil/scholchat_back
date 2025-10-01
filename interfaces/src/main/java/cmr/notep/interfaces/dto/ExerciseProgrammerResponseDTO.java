@@ -33,4 +33,5 @@ public class ExerciseProgrammerResponseDTO {
     private List<MatiereSummaryDTO> matieres;
     private List<QuestionReponseSummaryDTO> questions;
     private List<ClasseSummaryDTO> classesDiffusees;
+    private List<ParticipationExerciseResponseDTO> participations;
 }

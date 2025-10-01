@@ -18,7 +18,13 @@ public interface ExerciseProgrammerApi {
     )
     @ResponseStatus(HttpStatus.CREATED)
     ExerciseProgrammerResponseDTO programmerExercise(@RequestBody ExerciseProgrammerRequestDTO exerciseProgrammer);
-
+    @PostMapping(
+            path = "/programmer-et-diffuser",
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.CREATED)
+    ExerciseProgrammerResponseDTO programmerEtDiffuserExercise(@RequestBody ExerciseProgrammerRequestDTO exerciseProgrammer);
     @PostMapping(
             path = "/{exerciseProgrammerId}/diffuser-classe/{classeId}",
             produces = MediaType.APPLICATION_JSON_VALUE
