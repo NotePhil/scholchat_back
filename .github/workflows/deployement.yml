@@ -24,4 +24,4 @@ jobs:
         run: |
           pip install awsebcli
           eb init my-app --region $AWS_REGION
-          eb deploy
+          eb deploy 'java'
