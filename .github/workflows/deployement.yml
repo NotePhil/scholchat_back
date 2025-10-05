@@ -23,5 +23,5 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
           pip install awsebcli
-          eb init schoolchat --region $AWS_REGION
+          eb init schoolchat --region $AWS_REGION --source .
           eb deploy
