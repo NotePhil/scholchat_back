@@ -1,0 +1,8 @@
+branch-defaults:
+  main:
+    environment: schoolback-dev
+global:
+  application_name: schoolback
+  default_platform: Corretto 21 running on 64bit Amazon Linux 2023
+  default_region: eu-west-3
+  workspace_type: Application
