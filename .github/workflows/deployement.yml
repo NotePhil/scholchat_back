@@ -23,5 +23,5 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
           pip install awsebcli
-          eb init schoolchat --region $AWS_REGION
+          eb init schoolchat --region $AWS_REGION --interactive=false 
           eb deploy --source /home/runner/work/scholchat_back/scholchat_back/business/target/business-1.0-SNAPSHOT-spring-boot.jar
