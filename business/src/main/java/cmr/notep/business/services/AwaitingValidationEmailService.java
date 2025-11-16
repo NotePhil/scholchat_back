@@ -22,7 +22,7 @@ public class AwaitingValidationEmailService {
     @Async
     public void sendAwaitingValidationEmail(Utilisateurs utilisateur) {
         try {
-            log.info("Sending awaiting validation email to {}", utilisateur.getEmail());
+            log.info("Sending awaiting validation email asynchronously to {}", utilisateur.getEmail());
             String htmlContent = emailTemplateService.generateAwaitingValidationEmail(utilisateur);
 
             String subject = "Votre compte professeur est en attente de validation";
@@ -31,6 +31,9 @@ public class AwaitingValidationEmailService {
             log.info("Awaiting validation email sent successfully to {}", utilisateur.getEmail());
         } catch (MessagingException e) {
             log.error("Failed to send awaiting validation email to {}: {}", utilisateur.getEmail(), e.getMessage());
+            throw new RuntimeException("Failed to send awaiting validation email", e);
+        } catch (Exception e) {
+            log.error("Unexpected error sending awaiting validation email to {}: {}", utilisateur.getEmail(), e.getMessage());
             throw new RuntimeException("Failed to send awaiting validation email", e);
         }
     }
