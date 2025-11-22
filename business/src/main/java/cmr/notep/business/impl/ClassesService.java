@@ -119,4 +119,12 @@ public class ClassesService implements ClassesApi {
         log.info("Modérateur retiré avec succès de la classe: {}", idClasse);
         return classeMAJ;
     }
+
+    @Override
+    public List<Utilisateurs> obtenirModerateursDeLaClasse(@NonNull String idClasse) {
+        log.info("Récupération des modérateurs de la classe: {}", idClasse);
+        List<Utilisateurs> moderateurs = classesBusiness.obtenirModerateursDeLaClasse(idClasse);
+        log.info("Récupération de {} modérateurs pour la classe: {}", moderateurs.size(), idClasse);
+        return moderateurs;
+    }
 }

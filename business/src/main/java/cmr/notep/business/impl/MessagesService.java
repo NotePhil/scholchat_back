@@ -52,4 +52,16 @@ public class MessagesService implements MessagesApi {
         return messagesBusiness.obtenirMessagesParUtilisateur(utilisateurId);
     }
 
+    @Override
+    public List<Messages> obtenirMessagesEnvoyes(String utilisateurId) {
+        log.info("Obtenir les messages envoyés par l'utilisateur {}", utilisateurId);
+        return messagesBusiness.obtenirMessagesEnvoyes(utilisateurId);
+    }
+
+    @Override
+    public List<Messages> obtenirMessagesRecus(String utilisateurId) {
+        log.info("Obtenir les messages reçus par l'utilisateur {}", utilisateurId);
+        return messagesBusiness.obtenirMessagesRecus(utilisateurId);
+    }
+
 }

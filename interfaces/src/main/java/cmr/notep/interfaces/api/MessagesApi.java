@@ -32,6 +32,19 @@ public interface MessagesApi {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     List<Messages> obtenirMessagesParUtilisateur(@PathVariable String utilisateurId);
+    
+    @GetMapping(
+            path = "/utilisateur/{utilisateurId}/sent",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    List<Messages> obtenirMessagesEnvoyes(@PathVariable String utilisateurId);
+    
+    @GetMapping(
+            path = "/utilisateur/{utilisateurId}/received",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    List<Messages> obtenirMessagesRecus(@PathVariable String utilisateurId);
+    
     @PostMapping(
             path = "/group",
             produces = MediaType.APPLICATION_JSON_VALUE,

@@ -325,7 +325,7 @@ public class AccederBusiness {
         return daoAccessorService.getRepository(AccederRepository.class)
                 .findByClasseId(classeId)
                 .stream()
-                .map(acceder -> dozerMapperBean.map(acceder.getUtilisateur(), Utilisateurs.class))
+                .map(acceder -> mapUtilisateursEntityToModele(acceder.getUtilisateur()))
                 .collect(Collectors.toList());
     }
     public List<Classes> obtenirClassesAccessibles(String utilisateurId) throws SchoolException {

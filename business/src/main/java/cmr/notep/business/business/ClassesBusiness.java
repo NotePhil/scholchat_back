@@ -180,21 +180,19 @@ public class ClassesBusiness {
         ProfesseursEntity moderator = professeurRepository.findById(idModerator)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Modérateur introuvable"));
 
-        // Remove old moderator if exists
-        if (classe.getModerator() != null) {
-            ProfesseursEntity oldModerator = classe.getModerator();
-            oldModerator.getModeratedClasses().remove(classe);
-            professeurRepository.save(oldModerator);
+        // Add to many-to-many table (this allows multiple moderators)
+        professeurRepository.addModeratorToClass(idModerator, idClasse);
+        
+        // If no main moderator exists, set this as the main moderator
+        if (classe.getModerator() == null) {
+            classe.setModerator(moderator);
+            moderator.getModeratedClasses().add(classe);
+            professeurRepository.save(moderator);
+            classesRepository.save(classe);
         }
 
-        // Assign new moderator
-        classe.setModerator(moderator);
-        moderator.getModeratedClasses().add(classe);
-        professeurRepository.save(moderator);
-
-        ClassesEntity saved = classesRepository.save(classe);
         log.info("Modérateur {} assigné à la classe {}", idModerator, idClasse);
-        return dozerMapperBean.map(saved, Classes.class);
+        return dozerMapperBean.map(classe, Classes.class);
     }
 
     /**
@@ -208,6 +206,12 @@ public class ClassesBusiness {
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe non trouvée"));
 
         if (classe.getModerator() != null) {
+            String moderatorId = classe.getModerator().getId();
+            
+            // Remove from many-to-many table
+            professeurRepository.removeModeratorFromClass(moderatorId, idClasse);
+            
+            // Remove as main moderator
             ProfesseursEntity moderator = classe.getModerator();
             moderator.getModeratedClasses().remove(classe);
             professeurRepository.save(moderator);
@@ -326,7 +330,42 @@ public class ClassesBusiness {
         return String.format("%06d", new java.util.Random().nextInt(999999));
     }
 
+    /**
+     * Gets all moderators of a specific class
+     */
+    public List<Utilisateurs> obtenirModerateursDeLaClasse(String idClasse) throws SchoolException {
+        ClassesRepository classesRepository = daoAccessorService.getRepository(ClassesRepository.class);
+        ProfesseursRepository professeursRepository = daoAccessorService.getRepository(ProfesseursRepository.class);
+        
+        ClassesEntity classe = classesRepository.findById(idClasse)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe non trouvée avec l'ID: " + idClasse));
 
-
+        List<Utilisateurs> moderateurs = new java.util.ArrayList<>();
+        
+        // Add the main moderator if exists
+        if (classe.getModerator() != null) {
+            Professeurs moderateur = dozerMapperBean.map(classe.getModerator(), Professeurs.class);
+            moderateurs.add(moderateur);
+        }
+        
+        // Query additional moderators from the many-to-many table using native query
+        try {
+            List<String> moderatorIds = professeursRepository.findModeratorIdsForClass(idClasse);
+            for (String moderatorId : moderatorIds) {
+                // Avoid duplicates - don't add if already the main moderator
+                if (classe.getModerator() == null || !moderatorId.equals(classe.getModerator().getId())) {
+                    professeursRepository.findById(moderatorId).ifPresent(prof -> {
+                        Professeurs moderateur = dozerMapperBean.map(prof, Professeurs.class);
+                        moderateurs.add(moderateur);
+                    });
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Could not fetch additional moderators from many-to-many table: {}", e.getMessage());
+        }
+        
+        log.info("Récupération de {} modérateurs pour la classe: {}", moderateurs.size(), idClasse);
+        return moderateurs;
+    }
 
 }

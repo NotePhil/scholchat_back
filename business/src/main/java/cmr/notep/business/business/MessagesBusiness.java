@@ -3,7 +3,7 @@ package cmr.notep.business.business;
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.interfaces.dto.GroupMessageDto;
-import cmr.notep.interfaces.modeles.Messages;
+import cmr.notep.interfaces.modeles.*;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.*;
 import cmr.notep.ressourcesjpa.repository.*;
@@ -37,7 +37,7 @@ public class MessagesBusiness {
         // Force loading of recipients
         messageEntity.getDestinatairesEntities().size();
 
-        return dozerMapperBean.map(messageEntity, Messages.class);
+        return mapMessageEntityToDto(messageEntity);
     }
 
     public Messages posterMessage(Messages message) {
@@ -46,9 +46,18 @@ public class MessagesBusiness {
         }
 
         MessagesEntity messageEntity = dozerMapperBean.map(message, MessagesEntity.class);
+        
+        // Set required fields if not already set
+        if (messageEntity.getDateCreation() == null) {
+            messageEntity.setDateCreation(new Date().toString());
+        }
+        if (messageEntity.getEtat() == null) {
+            messageEntity.setEtat("envoyé");
+        }
+        
         MessagesEntity savedEntity = daoAccessorService.getRepository(MessagesRepository.class).save(messageEntity);
         savedEntity.getDestinatairesEntities().size();
-        return dozerMapperBean.map(savedEntity, Messages.class);
+        return mapMessageEntityToDto(savedEntity);
     }
     public Messages posterMessageGroupe(GroupMessageDto groupMessageDto) {
         if (groupMessageDto.getObjet() == null || groupMessageDto.getObjet().isBlank()) {
@@ -116,7 +125,7 @@ public class MessagesBusiness {
         // Force loading of recipients
         savedEntity.getDestinatairesEntities().size();
 
-        return dozerMapperBean.map(savedEntity, Messages.class);
+        return mapMessageEntityToDto(savedEntity);
     }
 
 
@@ -149,7 +158,7 @@ public class MessagesBusiness {
         });
 
         return allMessages.stream()
-                .map(msg -> dozerMapperBean.map(msg, Messages.class))
+                .map(this::mapMessageEntityToDto)
                 .collect(Collectors.toList());
     }
 
@@ -160,7 +169,108 @@ public class MessagesBusiness {
         messageEntities.forEach(msg -> msg.getDestinatairesEntities().size());
 
         return messageEntities.stream()
-                .map(msg -> dozerMapperBean.map(msg, Messages.class))
+                .map(this::mapMessageEntityToDto)
                 .collect(Collectors.toList());
+    }
+
+    public List<Messages> obtenirMessagesEnvoyes(String utilisateurId) {
+        log.info("Obtenir les messages envoyés par l'utilisateur {}", utilisateurId);
+
+        if (!daoAccessorService.getRepository(UtilisateursRepository.class).existsById(utilisateurId)) {
+            throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable");
+        }
+
+        List<MessagesEntity> sentMessages = daoAccessorService.getRepository(MessagesRepository.class)
+                .findByExpediteurEntityId(utilisateurId);
+
+        sentMessages.forEach(msg -> msg.getDestinatairesEntities().size());
+
+        return sentMessages.stream()
+                .map(entity -> mapMessageEntityForSent(entity))
+                .collect(Collectors.toList());
+    }
+
+    public List<Messages> obtenirMessagesRecus(String utilisateurId) {
+        log.info("Obtenir les messages reçus par l'utilisateur {}", utilisateurId);
+
+        if (!daoAccessorService.getRepository(UtilisateursRepository.class).existsById(utilisateurId)) {
+            throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable");
+        }
+
+        List<MessagesEntity> receivedMessages = daoAccessorService.getRepository(MessagesRepository.class)
+                .findByDestinatairesEntitiesId(utilisateurId);
+
+        receivedMessages.forEach(msg -> msg.getDestinatairesEntities().size());
+
+        return receivedMessages.stream()
+                .map(entity -> mapMessageEntityForReceived(entity))
+                .collect(Collectors.toList());
+    }
+
+    private Messages mapMessageEntityToDto(MessagesEntity entity) {
+        Messages message = dozerMapperBean.map(entity, Messages.class);
+        
+        // Manually map destinataires to ensure proper serialization
+        if (entity.getDestinatairesEntities() != null) {
+            List<Utilisateurs> destinataires = entity.getDestinatairesEntities().stream()
+                    .map(this::mapUtilisateursEntityToModele)
+                    .collect(Collectors.toList());
+            message.setDestinataires(destinataires);
+        }
+        
+        // Manually map expediteur to ensure proper type
+        if (entity.getExpediteurEntity() != null) {
+            message.setExpediteur(mapUtilisateursEntityToModele(entity.getExpediteurEntity()));
+        }
+        
+        return message;
+    }
+    
+    private Messages mapMessageEntityForSent(MessagesEntity entity) {
+        Messages message = dozerMapperBean.map(entity, Messages.class);
+        message.setEtat("envoyé");
+        
+        // For sent messages, include destinataires but exclude expediteur details
+        if (entity.getDestinatairesEntities() != null) {
+            List<Utilisateurs> destinataires = entity.getDestinatairesEntities().stream()
+                    .map(this::mapUtilisateursEntityToModele)
+                    .collect(Collectors.toList());
+            message.setDestinataires(destinataires);
+        }
+        
+        // Set expediteur but don't include full details to avoid circular references
+        if (entity.getExpediteurEntity() != null) {
+            message.setExpediteur(mapUtilisateursEntityToModele(entity.getExpediteurEntity()));
+        }
+        
+        return message;
+    }
+    
+    private Messages mapMessageEntityForReceived(MessagesEntity entity) {
+        Messages message = dozerMapperBean.map(entity, Messages.class);
+        message.setEtat("reçu");
+        
+        // For received messages, include expediteur but exclude destinataires
+        message.setDestinataires(null);
+        
+        if (entity.getExpediteurEntity() != null) {
+            message.setExpediteur(mapUtilisateursEntityToModele(entity.getExpediteurEntity()));
+        }
+        
+        return message;
+    }
+    
+    private Utilisateurs mapUtilisateursEntityToModele(UtilisateursEntity entity) {
+        if (entity instanceof ProfesseursEntity) {
+            return dozerMapperBean.map(entity, Professeurs.class);
+        } else if (entity instanceof ElevesEntity) {
+            return dozerMapperBean.map(entity, Eleves.class);
+        } else if (entity instanceof RepetiteursEntity) {
+            return dozerMapperBean.map(entity, Repetiteurs.class);
+        } else if (entity instanceof ParentsEntity) {
+            return dozerMapperBean.map(entity, Parents.class);
+        } else {
+            return dozerMapperBean.map(entity, Utilisateurs.class);
+        }
     }
 }

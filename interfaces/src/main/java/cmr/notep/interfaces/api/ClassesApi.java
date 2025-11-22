@@ -97,6 +97,13 @@ public interface ClassesApi {
     @ResponseStatus(HttpStatus.OK)
     Classes retirerModerator(@PathVariable("idClasse") String idClasse);
 
+    @GetMapping(
+            path = "/{idClasse}/moderators",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    List<Utilisateurs> obtenirModerateursDeLaClasse(@PathVariable("idClasse") String idClasse);
+
 
 //    @GetMapping(
 //            path = "/{idClasse}/users",
