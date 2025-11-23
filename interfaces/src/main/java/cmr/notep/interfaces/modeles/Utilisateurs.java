@@ -36,4 +36,5 @@ public class Utilisateurs implements Serializable, IUtilisateurs {
     private boolean admin;
     private List<Messages> messagesEnvoyer;
     private List<Messages> messagesRecus;
+    private List<Etablissement> etablissementsGeres;
 }

@@ -21,4 +21,5 @@ public class Etablissement implements Serializable {
     private boolean optionEnvoiMailVersClasse;
     private boolean optionTokenGeneral;
     private boolean codeUnique;
+    private Utilisateurs gestionnaire;
 }

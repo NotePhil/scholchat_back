@@ -43,7 +43,10 @@ public class EtablissementEntity {
     @Column(name = "code_unique")
     private boolean codeUnique;
 
-    @OneToMany(mappedBy = "etablissement", cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "gestionnaire_id")
+    private UtilisateursEntity gestionnaire;
 
+    @OneToMany(mappedBy = "etablissement", cascade = CascadeType.ALL)
     private List<ClassesEntity> classes = new ArrayList<>();
 }

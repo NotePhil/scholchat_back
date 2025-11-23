@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS ressources.etablissements (
     telephone VARCHAR(255),
     option_envoi_mail_classe BOOLEAN DEFAULT FALSE,
     option_token_general BOOLEAN DEFAULT FALSE,
-    code_unique BOOLEAN DEFAULT FALSE
+    code_unique BOOLEAN DEFAULT FALSE,
+    gestionnaire_id VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS ressources.professeurs (
@@ -480,6 +481,10 @@ ALTER TABLE ressources.repetiteurs
 ALTER TABLE ressources.classes
     ADD CONSTRAINT fk_etablissement
     FOREIGN KEY (etablissement_id) REFERENCES ressources.etablissements(id);
+
+ALTER TABLE ressources.etablissements
+    ADD CONSTRAINT fk_etablissement_gestionnaire
+    FOREIGN KEY (gestionnaire_id) REFERENCES ressources.utilisateurs(id);
 
 ALTER TABLE ressources.classes
     ADD CONSTRAINT fk_classes_moderator

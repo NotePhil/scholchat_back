@@ -44,4 +44,11 @@ public interface EtablissementApi {
     )
     @ResponseStatus(HttpStatus.OK)
     List<Etablissement> obtenirTousLesEtablissements();
+    
+    @GetMapping(
+            path = "/gestionnaire/{gestionnaireId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    List<Etablissement> obtenirEtablissementsParGestionnaire(@NonNull @PathVariable("gestionnaireId") String gestionnaireId);
 }

@@ -25,9 +25,9 @@
         ('660e8400-e29b-41d4-a716-446655440999', 'Test', 'Professor', 'ulrichkamsu48@gmail.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456789', 'Test Address', 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJST0xFX0FETUlOIl0sInN1YiI6ImFkbWluQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQ0OTY3MzM1LCJleHAiOjE3NDQ5NjgyMzV9.NVeY4KP8KAM2Nh80NaFXYEJ4__ceTFOPQPe_pGryMQw', 'AWAITING_VALIDATION', FALSE);
 
     -- Insert schools
-    INSERT INTO ressources.etablissements (id, nom, localisation, pays, email, telephone, option_envoi_mail_classe, option_token_general, code_unique) VALUES
-    ('550e8400-e29b-41d4-a716-446655440100', 'Etablissement A', 'Yaoundé', 'Cameroun', 'contact@etab-a.cm', '23712345678', TRUE, FALSE, TRUE),
-    ('550e8400-e29b-41d4-a716-446655440101', 'Etablissement B', 'Douala', 'Cameroun', 'info@etab-b.cm', '23787654321', FALSE, TRUE, FALSE);
+    INSERT INTO ressources.etablissements (id, nom, localisation, pays, email, telephone, option_envoi_mail_classe, option_token_general, code_unique, gestionnaire_id) VALUES
+    ('550e8400-e29b-41d4-a716-446655440100', 'Etablissement A', 'Yaoundé', 'Cameroun', 'contact@etab-a.cm', '23712345678', TRUE, FALSE, TRUE, '550e8400-e29b-41d4-a716-446655440999'),
+    ('550e8400-e29b-41d4-a716-446655440101', 'Etablissement B', 'Douala', 'Cameroun', 'info@etab-b.cm', '23787654321', FALSE, TRUE, FALSE, '550e8400-e29b-41d4-a716-446655440000');
 
     -- Insert professors (must come after users)
     INSERT INTO ressources.professeurs (professeurs_id, cni_url_front, cni_url_back, selfie_url, matricule_professeur,has_uploaded) VALUES

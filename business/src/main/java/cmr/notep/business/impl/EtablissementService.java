@@ -55,4 +55,10 @@ public class EtablissementService implements EtablissementApi {
         log.info("Récupération de tous les établissements");
         return etablissementBusiness.obtenirTousLesEtablissements();
     }
+    
+    @Override
+    public List<Etablissement> obtenirEtablissementsParGestionnaire(String gestionnaireId) {
+        log.info("Récupération des établissements gérés par: {}", gestionnaireId);
+        return etablissementBusiness.obtenirEtablissementsParGestionnaire(gestionnaireId);
+    }
 }
