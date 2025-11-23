@@ -4,6 +4,7 @@ import cmr.notep.business.config.JwtConfig;
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.ActivationEmailService;
+import cmr.notep.business.services.PasswordDecryptionService;
 import cmr.notep.business.services.PasswordResetEmailService;
 import cmr.notep.business.services.RoleService;
 import cmr.notep.business.services.UserValidationService;
@@ -36,9 +37,10 @@ public class AuthBusiness {
     private final PasswordResetEmailService passwordResetEmailService;
     private final UserValidationService userValidationService;
     private final RoleService roleService;
+    private final PasswordDecryptionService passwordDecryptionService;
 
 
-    public AuthBusiness(PasswordEncoder passwordEncoder, UtilisateursBusiness utilisateursBusiness, JwtUtil jwtUtil, JwtConfig jwtConfig, ActivationEmailService activationEmailService, RefreshTokenBusiness refreshTokenBusiness, PasswordResetEmailService passwordResetEmailService,RoleService roleService, UserValidationService userValidationService) {
+    public AuthBusiness(PasswordEncoder passwordEncoder, UtilisateursBusiness utilisateursBusiness, JwtUtil jwtUtil, JwtConfig jwtConfig, ActivationEmailService activationEmailService, RefreshTokenBusiness refreshTokenBusiness, PasswordResetEmailService passwordResetEmailService,RoleService roleService, UserValidationService userValidationService, PasswordDecryptionService passwordDecryptionService) {
         this.passwordEncoder = passwordEncoder;
         this.utilisateursBusiness = utilisateursBusiness;
         this.jwtUtil = jwtUtil;
@@ -48,6 +50,7 @@ public class AuthBusiness {
         this.roleService = roleService;
         this.userValidationService = userValidationService;
         this.passwordResetEmailService = passwordResetEmailService;
+        this.passwordDecryptionService = passwordDecryptionService;
     }
 
     /**
@@ -111,6 +114,16 @@ public class AuthBusiness {
     public AuthResponse loginUser(LoginDto loginRequest) {
         log.info("Processing login request for user: {}", loginRequest.getEmail());
 
+        // Decrypt the password from client
+        String decryptedPassword;
+        try {
+            decryptedPassword = passwordDecryptionService.decryptPassword(loginRequest.getPassword());
+            log.debug("Password decrypted successfully for user: {}", loginRequest.getEmail());
+        } catch (Exception e) {
+            log.error("Password decryption failed for user: {}", loginRequest.getEmail());
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Invalid password format");
+        }
+
         // Retrieve user by email
         Utilisateurs existingUser = utilisateursBusiness.avoirUtilisateurParEmail(loginRequest.getEmail());
 
@@ -125,8 +138,8 @@ public class AuthBusiness {
             );
         }
 
-        // Vérification du mot de passe ensuite
-        if (!passwordEncoder.matches(loginRequest.getPassword(), existingUser.getPasseAccess())) {
+        // Vérification du mot de passe ensuite (using decrypted password)
+        if (!passwordEncoder.matches(decryptedPassword, existingUser.getPasseAccess())) {
             log.warn("Invalid login attempt for user: {}", loginRequest.getEmail());
             throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Invalid email or password");
         }
