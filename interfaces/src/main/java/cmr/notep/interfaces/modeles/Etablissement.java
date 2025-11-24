@@ -1,13 +1,12 @@
 package cmr.notep.interfaces.modeles;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import lombok.*;
 
 import java.io.Serializable;
 
 @Data
+@EqualsAndHashCode(exclude = {"gestionnaire"})
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,5 +20,6 @@ public class Etablissement implements Serializable {
     private boolean optionEnvoiMailVersClasse;
     private boolean optionTokenGeneral;
     private boolean codeUnique;
+    @JsonBackReference
     private Utilisateurs gestionnaire;
 }

@@ -71,12 +71,18 @@ public class EtablissementBusiness {
             existing.setCodeUnique(etablissementModifie.isCodeUnique());
             
             // Handle gestionnaire update
-            if (etablissementModifie.getGestionnaire() != null && etablissementModifie.getGestionnaire().getId() != null) {
-                UtilisateursEntity gestionnaire = daoAccessorService
-                        .getRepository(UtilisateursRepository.class)
-                        .findById(etablissementModifie.getGestionnaire().getId())
-                        .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Gestionnaire introuvable"));
-                existing.setGestionnaire(gestionnaire);
+            if (etablissementModifie.getGestionnaire() != null) {
+                if (etablissementModifie.getGestionnaire().getId() != null) {
+                    // Update with new gestionnaire
+                    UtilisateursEntity gestionnaire = daoAccessorService
+                            .getRepository(UtilisateursRepository.class)
+                            .findById(etablissementModifie.getGestionnaire().getId())
+                            .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Gestionnaire introuvable"));
+                    existing.setGestionnaire(gestionnaire);
+                } else {
+                    // Remove gestionnaire if id is null
+                    existing.setGestionnaire(null);
+                }
             }
 
             EtablissementEntity updated = repo.save(existing);
@@ -129,6 +135,18 @@ public class EtablissementBusiness {
                 .stream()
                 .map(this::mapToEtablissement)
                 .collect(Collectors.toList());
+    }
+    
+    public Utilisateurs obtenirGestionnaireEtablissement(String idEtablissement) {
+        EtablissementRepository repo = daoAccessorService.getRepository(EtablissementRepository.class);
+        EtablissementEntity entity = repo.findById(idEtablissement)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Établissement non trouvé avec l'ID: " + idEtablissement));
+        
+        if (entity.getGestionnaire() == null) {
+            throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Aucun gestionnaire assigné à cet établissement");
+        }
+        
+        return dozerMapperBean.map(entity.getGestionnaire(), Utilisateurs.class);
     }
 
 }

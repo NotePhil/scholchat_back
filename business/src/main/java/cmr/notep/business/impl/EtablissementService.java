@@ -3,6 +3,7 @@ package cmr.notep.business.impl;
 import cmr.notep.business.business.EtablissementBusiness;
 import cmr.notep.interfaces.api.EtablissementApi;
 import cmr.notep.interfaces.modeles.Etablissement;
+import cmr.notep.interfaces.modeles.Utilisateurs;
 import cmr.notep.interfaces.modeles.Evenement;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -60,5 +61,11 @@ public class EtablissementService implements EtablissementApi {
     public List<Etablissement> obtenirEtablissementsParGestionnaire(String gestionnaireId) {
         log.info("Récupération des établissements gérés par: {}", gestionnaireId);
         return etablissementBusiness.obtenirEtablissementsParGestionnaire(gestionnaireId);
+    }
+    
+    @Override
+    public Utilisateurs obtenirGestionnaireEtablissement(String idEtablissement) {
+        log.info("Récupération du gestionnaire de l'établissement: {}", idEtablissement);
+        return etablissementBusiness.obtenirGestionnaireEtablissement(idEtablissement);
     }
 }

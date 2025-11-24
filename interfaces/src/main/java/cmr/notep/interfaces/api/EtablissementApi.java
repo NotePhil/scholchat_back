@@ -1,6 +1,7 @@
 package cmr.notep.interfaces.api;
 
 import cmr.notep.interfaces.modeles.Etablissement;
+import cmr.notep.interfaces.modeles.Utilisateurs;
 import lombok.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -51,4 +52,11 @@ public interface EtablissementApi {
     )
     @ResponseStatus(HttpStatus.OK)
     List<Etablissement> obtenirEtablissementsParGestionnaire(@NonNull @PathVariable("gestionnaireId") String gestionnaireId);
+
+    @GetMapping(
+            path = "/{idEtablissement}/gestionnaire",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    Utilisateurs obtenirGestionnaireEtablissement(@NonNull @PathVariable("idEtablissement") String idEtablissement);
 }

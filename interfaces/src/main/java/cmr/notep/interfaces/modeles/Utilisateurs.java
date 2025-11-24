@@ -3,6 +3,7 @@ package cmr.notep.interfaces.modeles;
 import cmr.notep.modele.EtatUtilisateur;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -16,7 +17,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString(exclude = {"messagesEnvoyer", "messagesRecus"})
-@EqualsAndHashCode(exclude = {"messagesEnvoyer", "messagesRecus"})
+@EqualsAndHashCode(exclude = {"messagesEnvoyer", "messagesRecus", "etablissementsGeres"})
 @JsonIgnoreProperties(value={"messagesEnvoyer", "messagesRecus"}, ignoreUnknown = true)
 public class Utilisateurs implements Serializable, IUtilisateurs {
     private String id;
@@ -36,5 +37,6 @@ public class Utilisateurs implements Serializable, IUtilisateurs {
     private boolean admin;
     private List<Messages> messagesEnvoyer;
     private List<Messages> messagesRecus;
+    @JsonManagedReference
     private List<Etablissement> etablissementsGeres;
 }
