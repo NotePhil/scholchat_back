@@ -86,21 +86,26 @@ public class UtilisateursBusiness {
         updateCommonFields(existingUser, partialUpdate);
         // 5. Handle type-specific updates
         if (existingUser instanceof Professeurs && partialUpdate instanceof Professeurs) {
-            handleProfessorUpdates((Professeurs) existingUser, (Professeurs) partialUpdate);
-            // Check if we need to send activation email after upload
+            log.info("Processing professor update for: {}", existingUser.getEmail());
             Professeurs existingProf = (Professeurs) existingUser;
-            Professeurs updateProf = (Professeurs) partialUpdate;
-            boolean wasNotUploaded = !existingProf.isHasUploaded();
-            boolean nowHasUploaded = updateProf.getCniUrlRecto() != null &&
-                    updateProf.getCniUrlVerso() != null &&
-                    updateProf.getSelfieUrl() != null;
-            if (wasNotUploaded && nowHasUploaded) {
+            EtatUtilisateur originalState = existingProf.getEtat();
+            log.info("Original state: {}", originalState);
+            
+            handleProfessorUpdates(existingProf, (Professeurs) partialUpdate);
+            
+            // Check if professor has all documents and should transition to awaiting validation
+            boolean hasAllDocuments = existingProf.getCniUrlRecto() != null &&
+                    existingProf.getCniUrlVerso() != null &&
+                    existingProf.getSelfieUrl() != null;
+            boolean wasNotAwaitingValidation = originalState != EtatUtilisateur.AWAITING_VALIDATION;
+            
+            log.info("Email conditions - hasAllDocuments: {}, wasNotAwaitingValidation: {}", hasAllDocuments, wasNotAwaitingValidation);
+            
+            if (hasAllDocuments) {
+                log.info("Sending awaiting validation email for professor: {}", existingProf.getEmail());
                 existingProf.setHasUploaded(true);
-                // Send activation email for professor who just completed uploads
-                List<String> roles = roleService.determineUserRoles(existingProf);
-                String activationToken = jwtUtil.generateAccessToken(existingProf.getEmail(), roles);
-                existingProf.setActivationToken(activationToken);
-                activationEmailService.sendActivationEmail(existingProf, activationToken);
+                existingProf.setEtat(EtatUtilisateur.AWAITING_VALIDATION);
+                awaitingValidationEmailService.sendAwaitingValidationEmail(existingProf);
             }
         } else if (existingUser instanceof Eleves && partialUpdate instanceof Eleves) {
             handleStudentUpdates((Eleves) existingUser, (Eleves) partialUpdate);
