@@ -4,6 +4,7 @@ import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.interfaces.modeles.Professeurs;
 import cmr.notep.interfaces.modeles.Utilisateurs;
+import cmr.notep.ressourcesjpa.repository.UtilisateursRepository;
 
 import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
@@ -13,11 +14,17 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class UserValidationService {
+    
+    private final UtilisateursRepository utilisateursRepository;
+    
+    public UserValidationService(UtilisateursRepository utilisateursRepository) {
+        this.utilisateursRepository = utilisateursRepository;
+    }
 
     public void validateUserData(Utilisateurs utilisateur) {
         validateRequiredFields(utilisateur);
         validateEmailFormat(utilisateur.getEmail());
-
+ 
 
         if (utilisateur.getTelephone() != null && !utilisateur.getTelephone().isEmpty()) {
             validatePhoneNumber(utilisateur.getTelephone());
