@@ -9,6 +9,7 @@ import cmr.notep.modele.EtatCours;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.*;
 import cmr.notep.ressourcesjpa.repository.*;
+import cmr.notep.ressourcesjpa.dao.CoursProgrammerEntity;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -191,11 +192,19 @@ public class CoursBusiness {
 
 
     public void supprimerCours(String coursId) {
-
+        // Check if course exists
         CoursEntity coursEntity = daoAccessorService.getRepository(CoursRepository.class)
                 .findById(coursId)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Cours introuvable"));
 
+        // Check if course is programmed
+        List<CoursProgrammerEntity> programmations = daoAccessorService.getRepository(CoursProgrammerRepository.class)
+                .findByCoursId(coursId);
+        
+        if (!programmations.isEmpty()) {
+            throw new SchoolException(SchoolErrorCode.OPERATION_INTERDITE, 
+                "Impossible de supprimer ce cours car il est déjà programmé. Veuillez d'abord annuler toutes les programmations associées.");
+        }
 
         daoAccessorService.getRepository(CoursRepository.class).delete(coursEntity);
         log.info("Deleted course ID: {}", coursId);

@@ -43,6 +43,7 @@ public class MediaExceptionHandler {
 
     private HttpStatus mapErrorCodeToHttpStatus(SchoolErrorCode code) {
         switch (code) {
+            case NOT_FOUND:
             case RESOURCE_NOT_FOUND:
                 return HttpStatus.NOT_FOUND;
             case INVALID_INPUT:
@@ -53,7 +54,11 @@ public class MediaExceptionHandler {
             case FORBIDDEN:
                 return HttpStatus.FORBIDDEN;
             case DUPLICATE_RESOURCE:
+            case ALREADY_EXISTS:
+            case CONFLICT:
                 return HttpStatus.CONFLICT;
+            case OPERATION_INTERDITE:
+                return HttpStatus.FORBIDDEN;
             case OPERATION_FAILURE:
             case INIT_ERROR:
             default:

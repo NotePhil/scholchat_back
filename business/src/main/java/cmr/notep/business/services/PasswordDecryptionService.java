@@ -23,10 +23,16 @@ public class PasswordDecryptionService {
     private static final String TRANSFORMATION = "AES/CBC/PKCS5Padding";
     private static final String SALTED_PREFIX = "Salted__";
     
-    public String decryptPassword(String encryptedPassword) {
+    public String decryptPassword(String password) {
+        // If password doesn't look like base64, assume it's plain text
+        if (!isBase64(password)) {
+            log.warn("Received plain text password, returning as-is");
+            return password;
+        }
+        
         try {
             // Decode base64
-            byte[] encrypted = Base64.getDecoder().decode(encryptedPassword);
+            byte[] encrypted = Base64.getDecoder().decode(password);
             
             // Check if it's CryptoJS format (starts with "Salted__")
             if (encrypted.length >= 16 && 
@@ -60,8 +66,17 @@ public class PasswordDecryptionService {
                 return new String(decryptedBytes, StandardCharsets.UTF_8);
             }
         } catch (Exception e) {
-            log.error("Password decryption failed", e);
-            throw new RuntimeException("Password decryption failed", e);
+            log.warn("Password decryption failed, treating as plain text: {}", e.getMessage());
+            return password;
+        }
+    }
+    
+    private boolean isBase64(String str) {
+        try {
+            Base64.getDecoder().decode(str);
+            return str.matches("^[A-Za-z0-9+/]*={0,2}$") && str.length() % 4 == 0;
+        } catch (Exception e) {
+            return false;
         }
     }
     
