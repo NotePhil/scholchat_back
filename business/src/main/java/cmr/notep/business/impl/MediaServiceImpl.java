@@ -36,12 +36,25 @@ public class MediaServiceImpl {
     @PostMapping("/presigned-url")
     public ResponseEntity<Map<String, String>> generateUploadUrl(
             @RequestBody PresignedUrlRequest request) {
-        log.debug("Generating upload URL for file: {}", request.getFileName());
+        log.info("=== GENERATING UPLOAD URL ====");
+        log.info("Request: fileName={}, contentType={}, mediaType={}, ownerId={}, documentType={}", 
+                request.getFileName(), request.getContentType(), request.getMediaType(), 
+                request.getOwnerId(), request.getDocumentType());
 
         try {
+            // Validate required fields
+            if (request.getFileName() == null || request.getFileName().trim().isEmpty()) {
+                throw new IllegalArgumentException("File name is required");
+            }
+            if (request.getOwnerId() == null || request.getOwnerId().trim().isEmpty()) {
+                throw new IllegalArgumentException("Owner ID is required");
+            }
+            
             String sanitizedFileName = request.getFileName()
                     .replaceAll("\\s+", "_")
                     .replaceAll("[^a-zA-Z0-9._-]", "");
+
+            log.info("Sanitized filename: {}", sanitizedFileName);
 
             // Clean up any existing duplicates before creating new upload
             mediaBusiness.cleanupDuplicateMedia(sanitizedFileName);
@@ -53,6 +66,8 @@ public class MediaServiceImpl {
                     request.getOwnerId(),
                     request.getDocumentType());
 
+            log.info("Generated presigned URL: {}", presignedUrl);
+
             Map<String, String> response = new HashMap<>();
             response.put("url", presignedUrl);
             response.put("fileName", sanitizedFileName);
@@ -60,9 +75,15 @@ public class MediaServiceImpl {
             response.put("documentType", request.getDocumentType());
             response.put("ownerId", request.getOwnerId());
 
+            log.info("Response: {}", response);
+            log.info("=== UPLOAD URL GENERATION SUCCESS ====");
+            
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Failed to generate upload URL", e);
+            log.error("=== UPLOAD URL GENERATION FAILED ====");
+            log.error("Error generating upload URL for file: {}", request.getFileName(), e);
+            log.error("Error details: {}", e.getMessage());
+            log.error("========================================");
             throw e;
         }
     }
@@ -81,13 +102,21 @@ public class MediaServiceImpl {
         ));
     }
 
+    @GetMapping("/{mediaId}/download")
+    public ResponseEntity<Map<String, String>> generateDirectDownloadUrl(
+            @PathVariable String mediaId) {
+        return generateDownloadUrl(mediaId);
+    }
+
     @GetMapping("/download-by-path")
     public ResponseEntity<Map<String, String>> generateDownloadUrlByPath(
             @RequestParam String filePath) {
-        log.debug("Generating download URL by path: {}", filePath);
+        log.info("=== GENERATING DOWNLOAD URL BY PATH ====");
+        log.info("File path: {}", filePath);
 
         try {
             String presignedUrl = mediaBusiness.generateDownloadUrl(filePath);
+            log.info("Generated download URL: {}", presignedUrl);
 
             // Try to get media metadata for additional info using the new method
             Optional<MediaEntity> mediaOpt = mediaRepository.findByFilePathWithOwner(filePath);
@@ -98,24 +127,31 @@ public class MediaServiceImpl {
 
             if (mediaOpt.isPresent()) {
                 MediaEntity media = mediaOpt.get();
-                return ResponseEntity.ok(Map.of(
+                Map<String, String> response = Map.of(
                         "url", presignedUrl,
                         "fileName", media.getFileName(),
                         "contentType", media.getContentType(),
                         "ownerId", media.getOwnerId()
-                ));
+                );
+                log.info("Response with metadata: {}", response);
+                return ResponseEntity.ok(response);
             } else {
                 // If no metadata found, extract filename from path
                 String fileName = extractFileNameFromPath(filePath);
-                return ResponseEntity.ok(Map.of(
+                Map<String, String> response = Map.of(
                         "url", presignedUrl,
                         "fileName", fileName,
                         "contentType", "application/octet-stream",
                         "ownerId", ""
-                ));
+                );
+                log.info("Response without metadata: {}", response);
+                return ResponseEntity.ok(response);
             }
         } catch (Exception e) {
+            log.error("=== DOWNLOAD URL GENERATION FAILED ====");
             log.error("Failed to generate download URL by path: {}", filePath, e);
+            log.error("Error details: {}", e.getMessage());
+            log.error("===========================================");
             throw e;
         }
     }

@@ -53,45 +53,64 @@ public class EvenementBusiness {
 
             // Handle media properly with all required fields
             if (evenement.getMedias() != null && !evenement.getMedias().isEmpty()) {
+                log.info("Processing {} media files for event", evenement.getMedias().size());
+                
                 List<MediaEntity> mediaEntities = evenement.getMedias().stream()
                         .map(media -> {
+                            log.debug("Processing media: fileName={}, filePath={}, contentType={}", 
+                                    media.getFileName(), media.getFilePath(), media.getContentType());
+                            
                             MediaEntity mediaEntity = dozerMapperBean.map(media, MediaEntity.class);
                             mediaEntity.setEvenement(entity); // Set the relationship
 
-                            // Set all required fields to avoid null constraint violations
-                            if (mediaEntity.getBucketName() == null) {
-                                mediaEntity.setBucketName("default-bucket"); // Set a default bucket name
+                            // Set all required fields with proper validation
+                            mediaEntity.setBucketName(media.getBucketName() != null ? media.getBucketName() : "scholchat");
+                            mediaEntity.setContentType(media.getContentType() != null ? media.getContentType() : "application/octet-stream");
+                            
+                            // Set mediaType based on fileType or contentType
+                            String mediaType = media.getMediaType();
+                            if (mediaType == null) {
+                                mediaType = media.getFileType();
                             }
-                            if (mediaEntity.getContentType() == null) {
-                                mediaEntity.setContentType("application/octet-stream"); // Set a default content type
-                            }
-                            // FIX: Set mediaType field that was missing
-                            if (mediaEntity.getMediaType() == null) {
-                                // Determine mediaType based on contentType
+                            if (mediaType == null) {
                                 String contentType = mediaEntity.getContentType();
                                 if (contentType != null && contentType.startsWith("image/")) {
-                                    mediaEntity.setMediaType("IMAGE");
+                                    mediaType = "IMAGE";
                                 } else {
-                                    mediaEntity.setMediaType("DOCUMENT");
+                                    mediaType = "DOCUMENT";
                                 }
                             }
-                            // Set fileName if null
-                            if (mediaEntity.getFileName() == null) {
-                                mediaEntity.setFileName("event-file");
+                            mediaEntity.setMediaType(mediaType);
+                            
+                            // Set fileName with validation
+                            String fileName = media.getFileName();
+                            if (fileName == null || fileName.trim().isEmpty()) {
+                                fileName = "event-file-" + System.currentTimeMillis();
                             }
-                            // Set fileSize if null
-                            if (mediaEntity.getFileSize() == null) {
-                                mediaEntity.setFileSize(0L);
+                            mediaEntity.setFileName(fileName);
+                            
+                            // Set fileSize
+                            mediaEntity.setFileSize(media.getFileSize() != null ? media.getFileSize() : 0L);
+                            
+                            // Set filePath with validation
+                            String filePath = media.getFilePath();
+                            if (filePath == null || filePath.trim().isEmpty()) {
+                                filePath = "events/" + fileName;
                             }
-                            // Set filePath if null
-                            if (mediaEntity.getFilePath() == null) {
-                                mediaEntity.setFilePath("/default/path");
-                            }
+                            mediaEntity.setFilePath(filePath);
+                            
+                            // Set ownerId from event creator
+                            mediaEntity.setOwnerId(evenement.getCreateurId());
+                            
+                            log.debug("Processed media entity: fileName={}, filePath={}, mediaType={}, bucketName={}", 
+                                    mediaEntity.getFileName(), mediaEntity.getFilePath(), 
+                                    mediaEntity.getMediaType(), mediaEntity.getBucketName());
 
                             return mediaEntity;
                         })
                         .collect(Collectors.toList());
                 entity.setMedias(mediaEntities);
+                log.info("Successfully processed {} media entities", mediaEntities.size());
             }
 
             // Save the event
