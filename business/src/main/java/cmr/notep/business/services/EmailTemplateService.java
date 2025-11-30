@@ -24,6 +24,9 @@ public class EmailTemplateService {
     @Value("${app.activation-url}")
     private String activationUrl;
 
+    @Value("${app.class-approval-url}")
+    private String classApprovalUrl;
+
 
     public String generateActivationEmail(Utilisateurs utilisateur, String activationToken) {
         Context context = new Context();
@@ -112,5 +115,23 @@ public class EmailTemplateService {
                 professeur.getEmail() + "&token=" + professeur.getActivationToken();
         context.setVariable("updateUrl", updateUrl);
         return templateEngine.process("email/professor-rejection", context);
+    }
+
+    public String generateClassApprovalRequestEmail(Classes classe, Etablissement etablissement, String classeId, String etablissementId) {
+        Context context = new Context();
+        context.setVariable("classe", classe);
+        context.setVariable("etablissement", etablissement);
+        
+        String approvalUrl = classApprovalUrl + "?classeId=" + classeId + "&etablissementId=" + etablissementId;
+        context.setVariable("approvalUrl", approvalUrl);
+        
+        return templateEngine.process("email/class-approval-request", context);
+    }
+
+    public String generateClassApprovalNotificationEmail(Classes classe, Etablissement etablissement) {
+        Context context = new Context();
+        context.setVariable("classe", classe);
+        context.setVariable("etablissement", etablissement);
+        return templateEngine.process("email/class-approval-notification", context);
     }
 }

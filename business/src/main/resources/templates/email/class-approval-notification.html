@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Classe approuvée</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; }
+        .header { text-align: center; color: #27ae60; margin-bottom: 30px; }
+        .content { line-height: 1.6; color: #333; }
+        .class-details { background-color: #e8f5e8; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #27ae60; }
+        .status-badge { background-color: #27ae60; color: white; padding: 5px 10px; border-radius: 3px; font-size: 12px; }
+        .footer { margin-top: 30px; color: #666; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>✅ Classe approuvée</h2>
+        </div>
+        
+        <div class="content">
+            <p>Bonjour,</p>
+            
+            <p>La classe "<strong th:text="${classe.nom}"></strong>" a été approuvée avec succès.</p>
+            
+            <div class="class-details">
+                <h3>Détails de la classe:</h3>
+                <ul>
+                    <li><strong>Nom:</strong> <span th:text="${classe.nom}"></span></li>
+                    <li><strong>Niveau:</strong> <span th:text="${classe.niveau}"></span></li>
+                    <li><strong>Code d'activation:</strong> <span th:text="${classe.codeActivation}"></span></li>
+                    <li><strong>Établissement:</strong> <span th:text="${etablissement.nom}"></span></li>
+                    <li><strong>Statut:</strong> <span class="status-badge">Actif</span></li>
+                </ul>
+            </div>
+            
+            <p>La classe est maintenant disponible et les étudiants peuvent s'y inscrire en utilisant le code d'activation.</p>
+            
+            <p><strong>Prochaines étapes:</strong></p>
+            <ul>
+                <li>Partagez le code d'activation avec vos étudiants</li>
+                <li>La classe apparaîtra dans votre tableau de bord</li>
+                <li>Vous pouvez commencer à publier du contenu</li>
+            </ul>
+        </div>
+        
+        <div class="footer">
+            <p>Cordialement,<br>L'équipe ScholChat</p>
+        </div>
+    </div>
+</body>
+</html>

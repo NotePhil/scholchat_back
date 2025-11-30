@@ -59,4 +59,12 @@ public interface EtablissementApi {
     )
     @ResponseStatus(HttpStatus.OK)
     Utilisateurs obtenirGestionnaireEtablissement(@NonNull @PathVariable("idEtablissement") String idEtablissement);
+
+    @PostMapping(
+            path = "/approve-class/{classeId}/{etablissementId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    void approuverClasseParEtablissement(@NonNull @PathVariable("classeId") String classeId, 
+                                        @NonNull @PathVariable("etablissementId") String etablissementId);
 }

@@ -43,6 +43,12 @@ public class EtablissementEntity {
     @Column(name = "code_unique")
     private boolean codeUnique;
 
+    @Column(name = "token_general")
+    private String tokenGeneral;
+
+    @Column(name = "code_unique_value")
+    private String codeUniqueValue;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "gestionnaire_id")
     private UtilisateursEntity gestionnaire;

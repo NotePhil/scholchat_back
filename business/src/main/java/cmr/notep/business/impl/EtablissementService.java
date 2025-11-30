@@ -1,5 +1,6 @@
 package cmr.notep.business.impl;
 
+import cmr.notep.business.business.ClassesBusiness;
 import cmr.notep.business.business.EtablissementBusiness;
 import cmr.notep.interfaces.api.EtablissementApi;
 import cmr.notep.interfaces.modeles.Etablissement;
@@ -16,9 +17,11 @@ import java.util.List;
 
 public class EtablissementService implements EtablissementApi {
     private final EtablissementBusiness etablissementBusiness;
+    private final ClassesBusiness classesBusiness;
 
-    public EtablissementService(EtablissementBusiness etablissementBusiness) {
+    public EtablissementService(EtablissementBusiness etablissementBusiness, ClassesBusiness classesBusiness) {
         this.etablissementBusiness = etablissementBusiness;
+        this.classesBusiness = classesBusiness;
     }
 
 
@@ -67,5 +70,11 @@ public class EtablissementService implements EtablissementApi {
     public Utilisateurs obtenirGestionnaireEtablissement(String idEtablissement) {
         log.info("Récupération du gestionnaire de l'établissement: {}", idEtablissement);
         return etablissementBusiness.obtenirGestionnaireEtablissement(idEtablissement);
+    }
+
+    @Override
+    public void approuverClasseParEtablissement(String classeId, String etablissementId) {
+        log.info("Approbation de la classe {} par l'établissement {}", classeId, etablissementId);
+        classesBusiness.approuverClasseParEtablissement(classeId, etablissementId);
     }
 }

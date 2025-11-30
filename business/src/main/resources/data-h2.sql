@@ -25,9 +25,11 @@
         ('660e8400-e29b-41d4-a716-446655440999', 'Test', 'Professor', 'ulrich@gmail.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456789', 'Test Address', 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJST0xFX0FETUlOIl0sInN1YiI6ImFkbWluQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQ0OTY3MzM1LCJleHAiOjE3NDQ5NjgyMzV9.NVeY4KP8KAM2Nh80NaFXYEJ4__ceTFOPQPe_pGryMQw', 'AWAITING_VALIDATION', FALSE);
 
     -- Insert schools
-    INSERT INTO ressources.etablissements (id, nom, localisation, pays, email, telephone, option_envoi_mail_classe, option_token_general, code_unique, gestionnaire_id) VALUES
-    ('550e8400-e29b-41d4-a716-446655440100', 'Etablissement A', 'Yaoundé', 'Cameroun', 'contact@etab-a.cm', '23712345678', TRUE, FALSE, TRUE, '550e8400-e29b-41d4-a716-446655440999'),
-    ('550e8400-e29b-41d4-a716-446655440101', 'Etablissement B', 'Douala', 'Cameroun', 'info@etab-b.cm', '23787654321', FALSE, TRUE, FALSE, '550e8400-e29b-41d4-a716-446655440000');
+    INSERT INTO ressources.etablissements (id, nom, localisation, pays, email, telephone, option_envoi_mail_classe, option_token_general, code_unique, token_general, code_unique_value, gestionnaire_id) VALUES
+    ('550e8400-e29b-41d4-a716-446655440100', 'École Email Approval', 'Yaoundé', 'Cameroun', 'contact@etab-a.cm', '23712345678', TRUE, FALSE, FALSE, NULL, NULL, '550e8400-e29b-41d4-a716-446655440999'),
+    ('550e8400-e29b-41d4-a716-446655440101', 'Lycée Token General', 'Douala', 'Cameroun', 'info@etab-b.cm', '23787654321', FALSE, TRUE, FALSE, 'A1B2C3D4', NULL, '550e8400-e29b-41d4-a716-446655440000'),
+    ('550e8400-e29b-41d4-a716-446655440102', 'Collège Code Unique', 'Bafoussam', 'Cameroun', 'admin@college-c.cm', '23798765432', FALSE, FALSE, TRUE, NULL, 'X9Y8Z7', '550e8400-e29b-41d4-a716-446655440007'),
+    ('13fcbbfb-adff-4418-9dc1-5cd47725e611', 'Test Approval School', 'Test City', 'Cameroun', 'test@approval-school.cm', '23799887766', TRUE, FALSE, FALSE, NULL, NULL, '550e8400-e29b-41d4-a716-446655440999');
 
     -- Insert professors (must come after users)
     INSERT INTO ressources.professeurs (professeurs_id, cni_url_front, cni_url_back, selfie_url, matricule_professeur,has_uploaded) VALUES
@@ -58,7 +60,8 @@
     ('550e8400-e29b-41d4-a716-446655440402', 'Classe C - Pending', '4ème', '2024-11-29 09:00:00', '789012', 'EN_ATTENTE_APPROBATION', '550e8400-e29b-41d4-a716-446655440100', '550e8400-e29b-41d4-a716-446655440009',FALSE),
     ('550e8400-e29b-41d4-a716-446655440403', 'Classe D - Pending', '1ère', '2024-11-29 10:00:00', '890123', 'EN_ATTENTE_APPROBATION', '550e8400-e29b-41d4-a716-446655440101', '550e8400-e29b-41d4-a716-446655440008',TRUE),
     ('550e8400-e29b-41d4-a716-446655440404', 'Classe E - Inactive', '4ème', '2024-11-30 08:00:00', '901234', 'INACTIF', '550e8400-e29b-41d4-a716-446655440100', '550e8400-e29b-41d4-a716-446655440007',FALSE),
-    ('550e8400-e29b-41d4-a716-446655440405', 'Classe F - Inactive', 'Terminale', '2024-11-30 09:00:00', '012345', 'INACTIF', '550e8400-e29b-41d4-a716-446655440101', '550e8400-e29b-41d4-a716-446655440008',FALSE);
+    ('550e8400-e29b-41d4-a716-446655440405', 'Classe F - Inactive', 'Terminale', '2024-11-30 09:00:00', '012345', 'INACTIF', '550e8400-e29b-41d4-a716-446655440101', '550e8400-e29b-41d4-a716-446655440008',FALSE),
+    ('b02aa7e9-64a5-46ba-90c0-c36832d0d719', 'Test Approval Class', '6ème', '2024-11-30 22:00:00', '555666', 'EN_ATTENTE_APPROBATION', '13fcbbfb-adff-4418-9dc1-5cd47725e611', '550e8400-e29b-41d4-a716-446655440007',FALSE);
 
     -- Now we can insert class relationships
     INSERT INTO ressources.classe_parents (classe_id, parent_id) VALUES

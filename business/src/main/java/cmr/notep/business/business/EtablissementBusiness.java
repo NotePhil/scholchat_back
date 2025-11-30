@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,6 +30,9 @@ public class EtablissementBusiness {
     }
 
     public Etablissement creerEtablissement(Etablissement etablissement) {
+            // Validate that only one approval option is enabled
+            validateApprovalOptions(etablissement);
+            
             EtablissementEntity entity = dozerMapperBean.map(etablissement, EtablissementEntity.class);
             
             // Handle gestionnaire if provided
@@ -38,6 +42,14 @@ public class EtablissementBusiness {
                         .findById(etablissement.getGestionnaire().getId())
                         .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Gestionnaire introuvable"));
                 entity.setGestionnaire(gestionnaire);
+            }
+            
+            // Generate tokens if options are enabled
+            if (etablissement.isOptionTokenGeneral()) {
+                entity.setTokenGeneral(generateToken(8));
+            }
+            if (etablissement.isCodeUnique()) {
+                entity.setCodeUniqueValue(generateToken(6));
             }
             
             EtablissementEntity saved = daoAccessorService.getRepository(EtablissementRepository.class).save(entity);
@@ -66,9 +78,25 @@ public class EtablissementBusiness {
                 existing.setTelephone(etablissementModifie.getTelephone());
             }
             
+            // Validate approval options before updating
+            validateApprovalOptions(etablissementModifie);
+            
             existing.setOptionEnvoiMailVersClasse(etablissementModifie.isOptionEnvoiMailVersClasse());
             existing.setOptionTokenGeneral(etablissementModifie.isOptionTokenGeneral());
             existing.setCodeUnique(etablissementModifie.isCodeUnique());
+            
+            // Generate new tokens if options changed
+            if (etablissementModifie.isOptionTokenGeneral() && existing.getTokenGeneral() == null) {
+                existing.setTokenGeneral(generateToken(8));
+            } else if (!etablissementModifie.isOptionTokenGeneral()) {
+                existing.setTokenGeneral(null);
+            }
+            
+            if (etablissementModifie.isCodeUnique() && existing.getCodeUniqueValue() == null) {
+                existing.setCodeUniqueValue(generateToken(6));
+            } else if (!etablissementModifie.isCodeUnique()) {
+                existing.setCodeUniqueValue(null);
+            }
             
             // Handle gestionnaire update
             if (etablissementModifie.getGestionnaire() != null) {
@@ -147,6 +175,33 @@ public class EtablissementBusiness {
         }
         
         return dozerMapperBean.map(entity.getGestionnaire(), Utilisateurs.class);
+    }
+
+    private String generateToken(int length) {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        SecureRandom random = new SecureRandom();
+        StringBuilder token = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            token.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return token.toString();
+    }
+
+    private void validateApprovalOptions(Etablissement etablissement) {
+        int enabledOptions = 0;
+        if (etablissement.isOptionEnvoiMailVersClasse()) enabledOptions++;
+        if (etablissement.isOptionTokenGeneral()) enabledOptions++;
+        if (etablissement.isCodeUnique()) enabledOptions++;
+        
+        if (enabledOptions > 1) {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, 
+                "Une seule option d'approbation peut être activée à la fois");
+        }
+    }
+
+    public void approuverClasseParEtablissement(String classeId, String etablissementId) {
+        // This will be implemented in ClassesBusiness but called from here
+        log.info("Approbation de la classe {} par l'établissement {}", classeId, etablissementId);
     }
 
 }

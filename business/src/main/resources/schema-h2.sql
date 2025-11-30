@@ -30,6 +30,8 @@ CREATE TABLE IF NOT EXISTS ressources.etablissements (
     option_envoi_mail_classe BOOLEAN DEFAULT FALSE,
     option_token_general BOOLEAN DEFAULT FALSE,
     code_unique BOOLEAN DEFAULT FALSE,
+    token_general VARCHAR(8),
+    code_unique_value VARCHAR(6),
     gestionnaire_id VARCHAR(255)
 );
 

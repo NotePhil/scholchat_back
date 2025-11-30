@@ -26,6 +26,7 @@ public class Classes implements Serializable {
     private String codeActivation;
     private EtatClasse etat;
     private Etablissement etablissement;
+    private String etablissementToken; // For token validation during creation
 
 
     private Professeurs moderator;
