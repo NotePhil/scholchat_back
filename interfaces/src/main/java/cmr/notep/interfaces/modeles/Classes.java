@@ -27,10 +27,7 @@ public class Classes implements Serializable {
     private EtatClasse etat;
     private Etablissement etablissement;
     private String etablissementToken; // For token validation during creation
-
-
+    private boolean paymentRequired; // True when no establishment is provided
     private Professeurs moderator;
-
-
     private DroitPublication droitPublication;
 }

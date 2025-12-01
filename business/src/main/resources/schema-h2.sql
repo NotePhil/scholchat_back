@@ -56,7 +56,8 @@ CREATE TABLE IF NOT EXISTS ressources.classes (
     etablissement_id UUID,
     moderator_id VARCHAR(255),
     droit_publication VARCHAR(50),
-    acces_majeur BOOLEAN DEFAULT FALSE
+    acces_majeur BOOLEAN DEFAULT FALSE,
+    payment_required BOOLEAN DEFAULT FALSE
 );
 
 
@@ -480,6 +481,7 @@ ALTER TABLE ressources.repetiteurs
     ADD CONSTRAINT fk_repetiteurs_utilisateurs
     FOREIGN KEY (repetiteurs_id) REFERENCES ressources.utilisateurs(id);
 
+-- Make establishment optional by allowing NULL values
 ALTER TABLE ressources.classes
     ADD CONSTRAINT fk_etablissement
     FOREIGN KEY (etablissement_id) REFERENCES ressources.etablissements(id);

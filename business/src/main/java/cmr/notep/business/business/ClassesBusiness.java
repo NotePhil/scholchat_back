@@ -41,7 +41,9 @@ public class ClassesBusiness {
 
         // Handle establishment and token validation
         EtablissementEntity etablissement = null;
-        if (classes.getEtablissement() != null && classes.getEtablissement().getId() != null) {
+        if (classes.getEtablissement() != null && 
+            classes.getEtablissement().getId() != null && 
+            !classes.getEtablissement().getId().trim().isEmpty()) {
             etablissement = daoAccessorService.getRepository(EtablissementRepository.class)
                     .findById(classes.getEtablissement().getId())
                     .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Établissement introuvable"));
@@ -52,6 +54,10 @@ public class ClassesBusiness {
             }
             
             classesEntity.setEtablissement(etablissement);
+            classesEntity.setPaymentRequired(false);
+        } else {
+            // No establishment provided - payment required
+            classesEntity.setPaymentRequired(true);
         }
 
         // Set default status based on establishment options
@@ -59,6 +65,9 @@ public class ClassesBusiness {
             if (etablissement != null && (etablissement.isOptionTokenGeneral() || etablissement.isCodeUnique())) {
                 // Auto-approve if valid token provided
                 classesEntity.setEtat(EtatClasse.ACTIF);
+            } else if (etablissement == null) {
+                // No establishment - requires payment but set as pending for now
+                classesEntity.setEtat(EtatClasse.EN_ATTENTE_APPROBATION);
             } else {
                 classesEntity.setEtat(EtatClasse.EN_ATTENTE_APPROBATION);
             }
@@ -89,9 +98,11 @@ public class ClassesBusiness {
         ClassesEntity savedEntity = daoAccessorService.getRepository(ClassesRepository.class)
                 .save(classesEntity);
 
-        // Send approval email if needed
+        // Send approval email if needed (only when establishment exists)
         if (etablissement != null) {
             handleClassCreationEmail(savedEntity, etablissement);
+        } else {
+            log.info("No establishment provided - class created with payment requirement");
         }
 
         // Map back to return proper response with moderator ID if exists

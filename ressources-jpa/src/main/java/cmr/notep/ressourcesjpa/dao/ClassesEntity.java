@@ -70,6 +70,9 @@ public class ClassesEntity {
     @Column(name = "acces_majeur")
     private boolean accesMajeur;
 
+    @Column(name = "payment_required")
+    private boolean paymentRequired;
+
     @ManyToMany(mappedBy = "classesDiffusees")
     private List<ExerciseProgrammerEntity> exercisesProgrammes = new ArrayList<>();
 }
