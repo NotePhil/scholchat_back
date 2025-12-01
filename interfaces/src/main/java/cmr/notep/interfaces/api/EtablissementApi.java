@@ -67,4 +67,12 @@ public interface EtablissementApi {
     @ResponseStatus(HttpStatus.OK)
     void approuverClasseParEtablissement(@NonNull @PathVariable("classeId") String classeId, 
                                         @NonNull @PathVariable("etablissementId") String etablissementId);
+
+    @PostMapping(
+            path = "/reject-class/{classeId}/{etablissementId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    void rejeterClasseParEtablissement(@NonNull @PathVariable("classeId") String classeId, 
+                                      @NonNull @PathVariable("etablissementId") String etablissementId);
 }

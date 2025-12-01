@@ -77,4 +77,10 @@ public class EtablissementService implements EtablissementApi {
         log.info("Approbation de la classe {} par l'établissement {}", classeId, etablissementId);
         classesBusiness.approuverClasseParEtablissement(classeId, etablissementId);
     }
+
+    @Override
+    public void rejeterClasseParEtablissement(String classeId, String etablissementId) {
+        log.info("Rejet de la classe {} par l'établissement {}", classeId, etablissementId);
+        classesBusiness.rejeterClasseParEtablissement(classeId, etablissementId);
+    }
 }

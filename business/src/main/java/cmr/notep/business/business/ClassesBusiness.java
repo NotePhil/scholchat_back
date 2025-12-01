@@ -462,6 +462,31 @@ public class ClassesBusiness {
         }
     }
 
+    public void rejeterClasseParEtablissement(String classeId, String etablissementId) {
+        try {
+            ClassesEntity classe = daoAccessorService.getRepository(ClassesRepository.class)
+                    .findById(classeId)
+                    .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe introuvable"));
+            
+            EtablissementEntity etablissement = daoAccessorService.getRepository(EtablissementRepository.class)
+                    .findById(etablissementId)
+                    .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Établissement introuvable"));
+            
+            if (classe.getEtat() != EtatClasse.EN_ATTENTE_APPROBATION) {
+                throw new SchoolException(SchoolErrorCode.INVALID_STATE, 
+                    "Cette classe n'est pas en attente d'approbation");
+            }
+            
+            classe.setEtat(EtatClasse.INACTIF);
+            daoAccessorService.getRepository(ClassesRepository.class).save(classe);
+            
+            log.info("Classe {} rejetée par l'établissement {}", classeId, etablissementId);
+        } catch (Exception e) {
+            log.error("Erreur lors du rejet de la classe: {}", e.getMessage());
+            throw e;
+        }
+    }
+
     /**
      * Gets all moderators of a specific class
      */
