@@ -29,7 +29,7 @@
     ('550e8400-e29b-41d4-a716-446655440100', 'École Email Approval', 'Yaoundé', 'Cameroun', 'contact@etab-a.cm', '23712345678', TRUE, FALSE, FALSE, NULL, NULL, '550e8400-e29b-41d4-a716-446655440999'),
     ('550e8400-e29b-41d4-a716-446655440101', 'Lycée Token General', 'Douala', 'Cameroun', 'info@etab-b.cm', '23787654321', FALSE, TRUE, FALSE, 'A1B2C3D4', NULL, '550e8400-e29b-41d4-a716-446655440000'),
     ('550e8400-e29b-41d4-a716-446655440102', 'Collège Code Unique', 'Bafoussam', 'Cameroun', 'admin@college-c.cm', '23798765432', FALSE, FALSE, TRUE, NULL, 'X9Y8Z7', '550e8400-e29b-41d4-a716-446655440007'),
-    ('13fcbbfb-adff-4418-9dc1-5cd47725e611', 'Test Approval School', 'Test City', 'Cameroun', 'test@approval-school.cm', '23799887766', TRUE, FALSE, FALSE, NULL, NULL, '550e8400-e29b-41d4-a716-446655440999');
+
 
     -- Insert professors (must come after users)
     INSERT INTO ressources.professeurs (professeurs_id, cni_url_front, cni_url_back, selfie_url, matricule_professeur,has_uploaded) VALUES
