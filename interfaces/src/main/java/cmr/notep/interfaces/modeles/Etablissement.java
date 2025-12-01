@@ -7,6 +7,7 @@ import java.io.Serializable;
 
 @Data
 @EqualsAndHashCode(exclude = {"gestionnaire"})
+@ToString(exclude = {"gestionnaire"})
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
