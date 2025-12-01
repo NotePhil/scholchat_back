@@ -3,12 +3,14 @@ package cmr.notep.business.business;
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.interfaces.modeles.Matiere;
+import cmr.notep.modele.EtatMatieres;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.MatiereEntity;
 import cmr.notep.ressourcesjpa.repository.MatiereRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -32,6 +34,8 @@ public class MatiereBusiness {
         }
 
         MatiereEntity entity = dozerMapperBean.map(matiere, MatiereEntity.class);
+        entity.setDateCreation(LocalDateTime.now());
+        entity.setEtat(EtatMatieres.ACTIF);
         MatiereEntity savedEntity = daoAccessorService.getRepository(MatiereRepository.class).save(entity);
         return dozerMapperBean.map(savedEntity, Matiere.class);
     }
@@ -48,5 +52,31 @@ public class MatiereBusiness {
                 .findByNom(nomMatiere)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Matière non trouvée: " + nomMatiere));
         return dozerMapperBean.map(entity, Matiere.class);
+    }
+
+    public Matiere modifierMatiere(String id, Matiere matiere) {
+        MatiereEntity entity = daoAccessorService.getRepository(MatiereRepository.class)
+                .findById(id)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Matière non trouvée avec l'ID: " + id));
+
+        // Check if another matiere with same name exists (excluding current one)
+        if (!entity.getNom().equals(matiere.getNom()) && 
+            daoAccessorService.getRepository(MatiereRepository.class).existsByNom(matiere.getNom())) {
+            throw new SchoolException(SchoolErrorCode.DUPLICATE_RESOURCE,
+                    "Une matière avec ce nom existe déjà: " + matiere.getNom());
+        }
+
+        entity.setNom(matiere.getNom());
+        entity.setDescription(matiere.getDescription());
+        MatiereEntity savedEntity = daoAccessorService.getRepository(MatiereRepository.class).save(entity);
+        return dozerMapperBean.map(savedEntity, Matiere.class);
+    }
+
+    public void supprimerMatiere(String id) {
+        MatiereEntity entity = daoAccessorService.getRepository(MatiereRepository.class)
+                .findById(id)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Matière non trouvée avec l'ID: " + id));
+        
+        daoAccessorService.getRepository(MatiereRepository.class).delete(entity);
     }
 }

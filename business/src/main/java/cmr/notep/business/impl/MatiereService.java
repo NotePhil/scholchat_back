@@ -36,4 +36,16 @@ public class MatiereService implements MatiereApi {
         log.info("Récupération de la matière: {}", nomMatiere);
         return matiereBusiness.obtenirMatiereParNom(nomMatiere);
     }
+
+    @Override
+    public Matiere modifierMatiere(@NonNull String id, @NonNull Matiere matiere) {
+        log.info("Modification de la matière avec l'ID: {}", id);
+        return matiereBusiness.modifierMatiere(id, matiere);
+    }
+
+    @Override
+    public void supprimerMatiere(@NonNull String id) {
+        log.info("Suppression de la matière avec l'ID: {}", id);
+        matiereBusiness.supprimerMatiere(id);
+    }
 }

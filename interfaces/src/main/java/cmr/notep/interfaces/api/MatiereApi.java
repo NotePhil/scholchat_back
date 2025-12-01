@@ -30,4 +30,18 @@ public interface MatiereApi {
     )
     @ResponseStatus(HttpStatus.OK)
     Matiere obtenirMatiereParNom(@NonNull @PathVariable("nom") String nomMatiere);
+
+    @PutMapping(
+            path = "/{id}",
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    Matiere modifierMatiere(@NonNull @PathVariable("id") String id, @NonNull @RequestBody Matiere matiere);
+
+    @DeleteMapping(
+            path = "/{id}"
+    )
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void supprimerMatiere(@NonNull @PathVariable("id") String id);
 }
