@@ -30,6 +30,7 @@ public class CoursProgrammerEntity {
     @Column(name = "date_fin_effectif")
     private LocalDateTime dateFinEffectif;
 
+
     @Enumerated(EnumType.STRING)
     @Column(name = "etat_cours_programme", nullable = false)
     private EtatCoursProgramme etatCoursProgramme;
