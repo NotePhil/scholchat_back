@@ -19,11 +19,11 @@ INSERT INTO ressources.utilisateurs (id, nom, prenom, email, passeaccess, teleph
 ('550e8400-e29b-41d4-a716-446655440302', 'Eleve C', 'Paul', 'paul.elevec@example.com', 'password123', '0123456702', '30 Boulevard Université', 'abc123activationcode14', 'ACTIVE', FALSE),
 ('660e8400-e29b-41d4-a716-446655440999', 'Test', 'Professor', 'ulrich@gmail.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456789', 'Test Address', 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJST0xFX0FETUlOIl0sInN1YiI6ImFkbWluQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQ0OTY3MzM1LCJleHAiOjE3NDQ5NjgyMzV9.NVeY4KP8KAM2Nh80NaFXYEJ4__ceTFOPQPe_pGryMQw', 'AWAITING_VALIDATION', FALSE);
 
--- Insert schools (only the three requested)
-INSERT INTO ressources.etablissements (id, nom, localisation, pays, email, telephone, option_envoi_mail_classe, option_token_general, code_unique, token_general, code_unique_value, gestionnaire_id) VALUES
-('550e8400-e29b-41d4-a716-446655440100', 'École Email Approval', 'Yaoundé', 'Cameroun', 'contact@etab-a.cm', '23712345678', TRUE, FALSE, FALSE, NULL, NULL, '550e8400-e29b-41d4-a716-446655440999'),
-('550e8400-e29b-41d4-a716-446655440101', 'Lycée Token General', 'Douala', 'Cameroun', 'info@etab-b.cm', '23787654321', FALSE, TRUE, FALSE, 'A1B2C3D4', NULL, '550e8400-e29b-41d4-a716-446655440000'),
-('550e8400-e29b-41d4-a716-446655440102', 'Collège Code Unique', 'Bafoussam', 'Cameroun', 'admin@college-c.cm', '23798765432', FALSE, FALSE, TRUE, NULL, 'X9Y8Z7', '550e8400-e29b-41d4-a716-446655440007');
+-- Insert schools (updated schema)
+INSERT INTO ressources.etablissements (id, nom, localisation, pays, email, telephone, option_envoi_mail_new_classe, option_token_general, code_unique, gestionnaire_id) VALUES
+('550e8400-e29b-41d4-a716-446655440100', 'École Email Approval', 'Yaoundé', 'Cameroun', 'contact@etab-a.cm', '23712345678', TRUE, FALSE, 'ETB-12345678', '550e8400-e29b-41d4-a716-446655440999'),
+('550e8400-e29b-41d4-a716-446655440101', 'Lycée Token General', 'Douala', 'Cameroun', 'info@etab-b.cm', '23787654321', TRUE, TRUE, 'ETB-87654321', '550e8400-e29b-41d4-a716-446655440000'),
+('550e8400-e29b-41d4-a716-446655440102', 'Collège Code Unique', 'Bafoussam', 'Cameroun', 'admin@college-c.cm', '23798765432', FALSE, TRUE, 'ETB-11223344', '550e8400-e29b-41d4-a716-446655440007');
 
 -- Insert professors (must come after users)
 INSERT INTO ressources.professeurs (professeurs_id, cni_url_front, cni_url_back, selfie_url, matricule_professeur, has_uploaded) VALUES

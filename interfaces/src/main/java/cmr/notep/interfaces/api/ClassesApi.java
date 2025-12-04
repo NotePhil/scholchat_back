@@ -3,6 +3,8 @@ package cmr.notep.interfaces.api;
 import cmr.notep.interfaces.modeles.Classes;
 import cmr.notep.interfaces.modeles.HistoActivation;
 import cmr.notep.interfaces.modeles.Utilisateurs;
+import cmr.notep.interfaces.dto.ClasseCreationDto;
+import cmr.notep.interfaces.dto.ClasseCreationResponseDto;
 import cmr.notep.modele.DroitPublication;
 import cmr.notep.modele.EtatClasse;
 import org.springframework.http.HttpStatus;
@@ -20,6 +22,14 @@ public interface ClassesApi {
     )
     @ResponseStatus(HttpStatus.CREATED)
     Classes creerClasse(@RequestBody Classes classes);
+
+    @PostMapping(
+            path = "/nouvelle",
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.CREATED)
+    ClasseCreationResponseDto creerNouvelleClasse(@RequestBody ClasseCreationDto classeDto);
 
     @PutMapping(
             path = "/{idClasse}",
@@ -103,6 +113,18 @@ public interface ClassesApi {
     )
     @ResponseStatus(HttpStatus.OK)
     List<Utilisateurs> obtenirModerateursDeLaClasse(@PathVariable("idClasse") String idClasse);
+
+    @PatchMapping("/approve-by-establishment")
+    @ResponseStatus(HttpStatus.OK)
+    void approuverClasseParEtablissement(
+            @RequestParam String classeId,
+            @RequestParam String etablissementId);
+
+    @PatchMapping("/reject-by-establishment")
+    @ResponseStatus(HttpStatus.OK)
+    void rejeterClasseParEtablissement(
+            @RequestParam String classeId,
+            @RequestParam String etablissementId);
 
 
 //    @GetMapping(

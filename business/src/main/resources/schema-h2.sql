@@ -27,11 +27,9 @@ CREATE TABLE IF NOT EXISTS ressources.etablissements (
     pays VARCHAR(255),
     email VARCHAR(255),
     telephone VARCHAR(255),
-    option_envoi_mail_classe BOOLEAN DEFAULT FALSE,
+    option_envoi_mail_new_classe BOOLEAN DEFAULT FALSE,
     option_token_general BOOLEAN DEFAULT FALSE,
-    code_unique BOOLEAN DEFAULT FALSE,
-    token_general VARCHAR(8),
-    code_unique_value VARCHAR(6),
+    code_unique VARCHAR(255) UNIQUE,
     gestionnaire_id VARCHAR(255)
 );
 

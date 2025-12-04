@@ -4,6 +4,10 @@ import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.EmailTemplateService;
 import cmr.notep.business.services.MailService;
+import cmr.notep.business.services.TokenService;
+import cmr.notep.business.services.PaymentService;
+import cmr.notep.interfaces.dto.ClasseCreationDto;
+import cmr.notep.interfaces.dto.ClasseCreationResponseDto;
 import cmr.notep.interfaces.modeles.*;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.*;
@@ -28,18 +32,94 @@ public class ClassesBusiness {
     private final DaoAccessorService daoAccessorService;
     private final MailService mailService;
     private final EmailTemplateService emailTemplateService;
+    private final TokenService tokenService;
+    private final PaymentService paymentService;
 
-    public ClassesBusiness(DaoAccessorService daoAccessorService, MailService mailService, EmailTemplateService emailTemplateService) {
+    public ClassesBusiness(DaoAccessorService daoAccessorService, MailService mailService, 
+                          EmailTemplateService emailTemplateService, TokenService tokenService,
+                          PaymentService paymentService) {
         this.daoAccessorService = daoAccessorService;
         this.mailService = mailService;
         this.emailTemplateService = emailTemplateService;
+        this.tokenService = tokenService;
+        this.paymentService = paymentService;
+    }
+
+    public ClasseCreationResponseDto creerNouvelleClasse(ClasseCreationDto classeDto) throws SchoolException {
+        log.info("Creating new class with data: {}", classeDto);
+        
+        ClassesEntity classesEntity = new ClassesEntity();
+        classesEntity.setNom(classeDto.getNom());
+        classesEntity.setNiveau(classeDto.getNiveau());
+        classesEntity.setDateCreation(new java.util.Date());
+        classesEntity.setCodeActivation(generateActivationCode());
+        
+        String token = null;
+        EtablissementEntity etablissement = null;
+        
+        if (classeDto.getEtablissementId() != null && !classeDto.getEtablissementId().trim().isEmpty()) {
+            etablissement = daoAccessorService.getRepository(EtablissementRepository.class)
+                    .findById(classeDto.getEtablissementId())
+                    .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Établissement introuvable"));
+            
+            if (etablissement.isOptionTokenGeneral()) {
+                if (classeDto.getCodeUnique() == null || classeDto.getCodeUnique().trim().isEmpty()) {
+                    throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Code unique requis pour cet établissement");
+                }
+                if (!etablissement.getCodeUnique().equals(classeDto.getCodeUnique())) {
+                    throw new SchoolException(SchoolErrorCode.UNAUTHORIZED, "Code unique invalide");
+                }
+            }
+            
+            classesEntity.setEtablissement(etablissement);
+            classesEntity.setEtat(EtatClasse.EN_ATTENTE_APPROBATION);
+            classesEntity.setPaymentRequired(false);
+            token = tokenService.generateClassToken();
+            
+        } else {
+            if (classeDto.getPaymentInfo() == null) {
+                throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Informations de paiement requises");
+            }
+            
+            boolean paymentSuccess = paymentService.processPayment(classeDto.getPaymentInfo());
+            if (!paymentSuccess) {
+                throw new SchoolException(SchoolErrorCode.PAYMENT_FAILED, "Échec du paiement");
+            }
+            
+            classesEntity.setEtat(EtatClasse.ACTIF);
+            classesEntity.setPaymentRequired(true);
+            token = tokenService.generateClassToken();
+        }
+        
+        if (classeDto.getModeratorId() != null && !classeDto.getModeratorId().trim().isEmpty()) {
+            ProfesseursEntity moderator = daoAccessorService.getRepository(ProfesseursRepository.class)
+                    .findById(classeDto.getModeratorId())
+                    .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Modérateur introuvable"));
+            classesEntity.setModerator(moderator);
+        }
+        
+        ClassesEntity savedEntity = daoAccessorService.getRepository(ClassesRepository.class).save(classesEntity);
+        
+        if (etablissement != null && etablissement.isOptionEnvoiMailNewClasse() && etablissement.getEmail() != null) {
+            sendApprovalRequestEmail(savedEntity, etablissement);
+        }
+        
+        Classes classeResponse = dozerMapperBean.map(savedEntity, Classes.class);
+        classeResponse.setDateCreation(savedEntity.getDateCreation());
+        
+        return ClasseCreationResponseDto.builder()
+                .classe(classeResponse)
+                .token(token)
+                .etat(savedEntity.getEtat())
+                .paymentRequired(savedEntity.isPaymentRequired())
+                .message(etablissement != null ? "Classe créée en attente de validation" : "Classe créée et activée")
+                .build();
     }
 
     public Classes creerClasse(Classes classes) throws SchoolException {
         log.info("Creating class with data: {}", classes);
         ClassesEntity classesEntity = dozerMapperBean.map(classes, ClassesEntity.class);
 
-        // Handle establishment and token validation
         EtablissementEntity etablissement = null;
         if (classes.getEtablissement() != null && 
             classes.getEtablissement().getId() != null && 
@@ -48,25 +128,18 @@ public class ClassesBusiness {
                     .findById(classes.getEtablissement().getId())
                     .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Établissement introuvable"));
             
-            // Validate token if establishment has token options enabled
-            if (etablissement.isOptionTokenGeneral() || etablissement.isCodeUnique()) {
+            if (etablissement.isOptionTokenGeneral()) {
                 validateEtablissementToken(etablissement, classes.getEtablissementToken());
             }
             
             classesEntity.setEtablissement(etablissement);
             classesEntity.setPaymentRequired(false);
         } else {
-            // No establishment provided - payment required
             classesEntity.setPaymentRequired(true);
         }
 
-        // Set default status based on establishment options
         if (classesEntity.getEtat() == null) {
-            if (etablissement != null && (etablissement.isOptionTokenGeneral() || etablissement.isCodeUnique())) {
-                // Auto-approve if valid token provided
-                classesEntity.setEtat(EtatClasse.ACTIF);
-            } else if (etablissement == null) {
-                // No establishment - requires payment but set as pending for now
+            if (etablissement == null) {
                 classesEntity.setEtat(EtatClasse.EN_ATTENTE_APPROBATION);
             } else {
                 classesEntity.setEtat(EtatClasse.EN_ATTENTE_APPROBATION);
@@ -107,6 +180,7 @@ public class ClassesBusiness {
 
         // Map back to return proper response with moderator ID if exists
         Classes result = dozerMapperBean.map(savedEntity, Classes.class);
+        result.setDateCreation(savedEntity.getDateCreation());
         if (savedEntity.getModerator() != null) {
             Professeurs moderator = new Professeurs();
             moderator.setId(savedEntity.getModerator().getId());
@@ -376,38 +450,40 @@ public class ClassesBusiness {
     private void validateEtablissementToken(EtablissementEntity etablissement, String providedToken) {
         if (providedToken == null || providedToken.trim().isEmpty()) {
             throw new SchoolException(SchoolErrorCode.INVALID_INPUT, 
-                "Token requis pour cet établissement");
+                "Code unique requis pour cet établissement");
         }
         
-        boolean tokenValid = false;
-        if (etablissement.isOptionTokenGeneral() && etablissement.getTokenGeneral() != null) {
-            tokenValid = etablissement.getTokenGeneral().equals(providedToken);
-        }
-        if (!tokenValid && etablissement.isCodeUnique() && etablissement.getCodeUniqueValue() != null) {
-            tokenValid = etablissement.getCodeUniqueValue().equals(providedToken);
-        }
-        
-        if (!tokenValid) {
+        if (etablissement.getCodeUnique() == null || !etablissement.getCodeUnique().equals(providedToken)) {
             throw new SchoolException(SchoolErrorCode.UNAUTHORIZED, 
-                "Token invalide pour cet établissement");
+                "Code unique invalide pour cet établissement");
         }
     }
 
     private void handleClassCreationEmail(ClassesEntity classe, EtablissementEntity etablissement) {
         try {
-            if (etablissement.isOptionEnvoiMailVersClasse() && 
-                classe.getEtat() == EtatClasse.EN_ATTENTE_APPROBATION &&
+            if (etablissement.isOptionEnvoiMailNewClasse() && 
                 etablissement.getEmail() != null) {
-                
                 sendApprovalRequestEmail(classe, etablissement);
-            } else if ((etablissement.isOptionTokenGeneral() || etablissement.isCodeUnique()) &&
-                      classe.getEtat() == EtatClasse.ACTIF &&
-                      etablissement.getEmail() != null) {
-                
-                sendApprovalNotificationEmail(classe, etablissement);
             }
         } catch (Exception e) {
             log.error("Erreur lors de l'envoi de l'email: {}", e.getMessage());
+        }
+    }
+
+    private void sendClassCreationNotificationEmail(ClassesEntity classe, EtablissementEntity etablissement) {
+        try {
+            Classes classeDto = dozerMapperBean.map(classe, Classes.class);
+            Etablissement etablissementDto = dozerMapperBean.map(etablissement, Etablissement.class);
+            
+            String htmlContent = emailTemplateService.generateClassCreationNotificationEmail(
+                classeDto, etablissementDto);
+            
+            mailService.sendEmail(etablissement.getEmail(), 
+                "Nouvelle classe créée - " + classe.getNom(), htmlContent);
+            
+            log.info("Email de notification de création envoyé à: {}", etablissement.getEmail());
+        } catch (Exception e) {
+            log.error("Erreur lors de l'envoi de l'email de notification: {}", e.getMessage());
         }
     }
 
