@@ -1,6 +1,7 @@
 package cmr.notep.interfaces.modeles;
 
 import cmr.notep.interfaces.modeles.Media;
+import cmr.notep.interfaces.modeles.Interaction;
 import cmr.notep.modele.EtatEvenement;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -29,4 +30,6 @@ public class Evenement {
     private List<String> participantsIds;
 
     private List<Media> medias;
+    
+    private List<Interaction> interactions;
 }

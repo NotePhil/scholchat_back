@@ -23,9 +23,11 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 public class EvenementBusiness {
 
     private final DaoAccessorService daoAccessorService;
+    private final InteractionBusiness interactionBusiness;
 
-    public EvenementBusiness(DaoAccessorService daoAccessorService) {
+    public EvenementBusiness(DaoAccessorService daoAccessorService, InteractionBusiness interactionBusiness) {
         this.daoAccessorService = daoAccessorService;
+        this.interactionBusiness = interactionBusiness;
     }
 
     public Evenement creerEvenement(Evenement evenement) {
@@ -119,6 +121,7 @@ public class EvenementBusiness {
             // Map back to DTO for response
             Evenement savedEvenement = dozerMapperBean.map(savedEntity, Evenement.class);
             savedEvenement.setCreateurId(savedEntity.getCreateur().getId());
+            savedEvenement.setInteractions(interactionBusiness.getInteractionsByEvent(savedEntity.getId()));
 
             log.info("Event created successfully with ID: {}", savedEntity.getId());
             return savedEvenement;
@@ -150,6 +153,7 @@ public class EvenementBusiness {
             EvenementEntity updated = repo.save(existing);
             Evenement result = dozerMapperBean.map(updated, Evenement.class);
             result.setCreateurId(updated.getCreateur().getId()); // Set creator ID properly
+            result.setInteractions(interactionBusiness.getInteractionsByEvent(id));
 
             log.info("Event updated successfully with ID: {}", id);
             return result;
@@ -174,6 +178,7 @@ public class EvenementBusiness {
                             if (e.getCreateur() != null) {
                                 evenement.setCreateurId(e.getCreateur().getId()); // Set creator ID properly
                             }
+                            evenement.setInteractions(interactionBusiness.getInteractionsByEvent(e.getId()));
                             return evenement;
                         } catch (Exception ex) {
                             log.error("Error mapping event with ID {}: {}", e.getId(), ex.getMessage());
@@ -189,6 +194,7 @@ public class EvenementBusiness {
                             if (e.getCreateur() != null) {
                                 fallbackEvent.setCreateurId(e.getCreateur().getId());
                             }
+                            fallbackEvent.setInteractions(interactionBusiness.getInteractionsByEvent(e.getId()));
                             return fallbackEvent;
                         }
                     })
@@ -227,6 +233,7 @@ public class EvenementBusiness {
             if (entity.getCreateur() != null) {
                 evenement.setCreateurId(entity.getCreateur().getId()); // Set creator ID properly
             }
+            evenement.setInteractions(interactionBusiness.getInteractionsByEvent(id));
             return evenement;
         } catch (SchoolException e) {
             throw e;
@@ -251,6 +258,7 @@ public class EvenementBusiness {
                             if (e.getCreateur() != null) {
                                 evenement.setCreateurId(e.getCreateur().getId()); // Set creator ID properly
                             }
+                            evenement.setInteractions(interactionBusiness.getInteractionsByEvent(e.getId()));
                             return evenement;
                         } catch (Exception ex) {
                             log.error("Error mapping event with ID {} for professor {}: {}", e.getId(), professeurId, ex.getMessage());
@@ -266,6 +274,7 @@ public class EvenementBusiness {
                             if (e.getCreateur() != null) {
                                 fallbackEvent.setCreateurId(e.getCreateur().getId());
                             }
+                            fallbackEvent.setInteractions(interactionBusiness.getInteractionsByEvent(e.getId()));
                             return fallbackEvent;
                         }
                     })
