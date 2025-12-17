@@ -97,11 +97,15 @@ CREATE TABLE IF NOT EXISTS ressources.parent_eleve (
 
 CREATE TABLE IF NOT EXISTS ressources.messages (
     id VARCHAR(255) NOT NULL,
+    objet VARCHAR(255),
     contenu VARCHAR(255),
     datecreation VARCHAR(255),
     datemodification VARCHAR(255),
     etat VARCHAR(255),
     expediteur_id VARCHAR(255),
+    deleted BOOLEAN DEFAULT FALSE,
+    date_suppression VARCHAR(255),
+    etat_original VARCHAR(255),
     CONSTRAINT pk_messages PRIMARY KEY (id)
 );
 

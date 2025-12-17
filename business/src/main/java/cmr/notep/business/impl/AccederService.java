@@ -4,6 +4,7 @@ import cmr.notep.business.business.AccederBusiness;
 import cmr.notep.interfaces.api.AccederApi;
 import cmr.notep.interfaces.modeles.Classes;
 import cmr.notep.interfaces.modeles.DemandeAccesDto;
+import cmr.notep.interfaces.modeles.UtilisateurSimpleDto;
 import cmr.notep.interfaces.modeles.Utilisateurs;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,9 +50,9 @@ public class AccederService implements AccederApi {
     }
 
     @Override
-    public List<Utilisateurs> obtenirUtilisateursAvecAcces(String classeId) {
+    public List<UtilisateurSimpleDto> obtenirUtilisateursAvecAcces(String classeId) {
         log.info("API - Obtenir les utilisateurs ayant accès à la classe {}", classeId);
-        return accederBusiness.obtenirUtilisateursAvecAcces(classeId);
+        return accederBusiness.obtenirUtilisateursAvecAccesSimple(classeId);
     }
 
     @Override
@@ -67,8 +68,8 @@ public class AccederService implements AccederApi {
     }
 
     @Override
-    public List<Utilisateurs> obtenirUtilisateursAvecAcces(List<String> classeIds) {
+    public List<UtilisateurSimpleDto> obtenirUtilisateursAvecAcces(List<String> classeIds) {
         log.info("API - Obtenir les utilisateurs ayant accès aux classes {}", classeIds);
-        return accederBusiness.obtenirUtilisateursAvecAcces(classeIds);
+        return accederBusiness.obtenirUtilisateursAvecAccesSimple(classeIds);
     }
 }

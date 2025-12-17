@@ -173,7 +173,7 @@ public class MessagesBusiness {
                 .collect(Collectors.toList());
     }
 
-    public List<Messages> obtenirMessagesEnvoyes(String utilisateurId) {
+    public List<MessageDto> obtenirMessagesEnvoyes(String utilisateurId) {
         log.info("Obtenir les messages envoyés par l'utilisateur {}", utilisateurId);
 
         if (!daoAccessorService.getRepository(UtilisateursRepository.class).existsById(utilisateurId)) {
@@ -183,14 +183,12 @@ public class MessagesBusiness {
         List<MessagesEntity> sentMessages = daoAccessorService.getRepository(MessagesRepository.class)
                 .findByExpediteurEntityId(utilisateurId);
 
-        sentMessages.forEach(msg -> msg.getDestinatairesEntities().size());
-
         return sentMessages.stream()
-                .map(entity -> mapMessageEntityForSent(entity))
+                .map(this::mapToMessageDto)
                 .collect(Collectors.toList());
     }
 
-    public List<Messages> obtenirMessagesRecus(String utilisateurId) {
+    public List<MessageDto> obtenirMessagesRecus(String utilisateurId) {
         log.info("Obtenir les messages reçus par l'utilisateur {}", utilisateurId);
 
         if (!daoAccessorService.getRepository(UtilisateursRepository.class).existsById(utilisateurId)) {
@@ -200,10 +198,8 @@ public class MessagesBusiness {
         List<MessagesEntity> receivedMessages = daoAccessorService.getRepository(MessagesRepository.class)
                 .findByDestinatairesEntitiesId(utilisateurId);
 
-        receivedMessages.forEach(msg -> msg.getDestinatairesEntities().size());
-
         return receivedMessages.stream()
-                .map(entity -> mapMessageEntityForReceived(entity))
+                .map(this::mapToMessageDto)
                 .collect(Collectors.toList());
     }
 
@@ -258,6 +254,100 @@ public class MessagesBusiness {
         }
         
         return message;
+    }
+    
+    private MessageDto mapToMessageDto(MessagesEntity entity) {
+        MessageDto dto = new MessageDto();
+        dto.setId(entity.getId());
+        dto.setObjet(entity.getObjet());
+        dto.setContenu(entity.getContenu());
+        dto.setDateCreation(entity.getDateCreation());
+        dto.setDateModification(entity.getDateModification());
+        dto.setEtat(entity.getEtat());
+        
+        if (entity.getExpediteurEntity() != null) {
+            dto.setExpediteur(mapToUtilisateurSimpleDto(entity.getExpediteurEntity()));
+        }
+        
+        if (entity.getDestinatairesEntities() != null) {
+            dto.setDestinataires(entity.getDestinatairesEntities().stream()
+                    .map(this::mapToUtilisateurSimpleDto)
+                    .collect(Collectors.toList()));
+        }
+        
+        if (entity.getClasses() != null) {
+            dto.setClasseIds(entity.getClasses().stream()
+                    .map(ClassesEntity::getId)
+                    .collect(Collectors.toList()));
+        }
+        
+        return dto;
+    }
+    
+    private UtilisateurSimpleDto mapToUtilisateurSimpleDto(UtilisateursEntity entity) {
+        UtilisateurSimpleDto dto = new UtilisateurSimpleDto();
+        dto.setId(entity.getId());
+        dto.setNom(entity.getNom());
+        dto.setPrenom(entity.getPrenom());
+        dto.setEmail(entity.getEmail());
+        return dto;
+    }
+    
+    public void supprimerMessage(String messageId) {
+        log.info("Suppression (soft delete) du message avec ID: {}", messageId);
+        
+        MessagesEntity messageEntity = daoAccessorService.getRepository(MessagesRepository.class)
+                .findById(messageId)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Message introuvable avec l'ID: " + messageId));
+        
+        messageEntity.setEtatOriginal(messageEntity.getEtat());
+        messageEntity.setDeleted(true);
+        messageEntity.setDateSuppression(new Date().toString());
+        messageEntity.setEtat("supprimé");
+        
+        daoAccessorService.getRepository(MessagesRepository.class).save(messageEntity);
+        log.info("Message déplacé vers la corbeille avec succès");
+    }
+    
+    public List<MessageDto> obtenirMessagesCorbeille(String utilisateurId) {
+        log.info("Obtenir les messages dans la corbeille pour l'utilisateur {}", utilisateurId);
+        
+        List<MessagesEntity> deletedMessages = daoAccessorService.getRepository(MessagesRepository.class)
+                .findByExpediteurEntityIdAndDeleted(utilisateurId, true);
+        
+        return deletedMessages.stream()
+                .map(this::mapToMessageDto)
+                .collect(Collectors.toList());
+    }
+    
+    public void viderCorbeille() {
+        log.info("Suppression définitive des messages de plus de 24h dans la corbeille");
+        
+        List<MessagesEntity> oldDeletedMessages = daoAccessorService.getRepository(MessagesRepository.class)
+                .findDeletedMessagesOlderThan24Hours();
+        
+        daoAccessorService.getRepository(MessagesRepository.class).deleteAll(oldDeletedMessages);
+        log.info("{} messages supprimés définitivement", oldDeletedMessages.size());
+    }
+    
+    public void restaurerMessage(String messageId) {
+        log.info("Restauration du message avec ID: {}", messageId);
+        
+        MessagesEntity messageEntity = daoAccessorService.getRepository(MessagesRepository.class)
+                .findById(messageId)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Message introuvable avec l'ID: " + messageId));
+        
+        if (!messageEntity.isDeleted()) {
+            throw new SchoolException(SchoolErrorCode.INVALID_STATE, "Le message n'est pas dans la corbeille");
+        }
+        
+        messageEntity.setDeleted(false);
+        messageEntity.setDateSuppression(null);
+        messageEntity.setEtat(messageEntity.getEtatOriginal() != null ? messageEntity.getEtatOriginal() : "envoyé");
+        messageEntity.setEtatOriginal(null);
+        
+        daoAccessorService.getRepository(MessagesRepository.class).save(messageEntity);
+        log.info("Message restauré avec succès");
     }
     
     private Utilisateurs mapUtilisateursEntityToModele(UtilisateursEntity entity) {

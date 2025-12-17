@@ -8,9 +8,15 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface MessagesRepository extends JpaRepository<MessagesEntity, String> {
-    List<MessagesEntity> findByExpediteurEntityId(String utilisateurId);
+    @Query("SELECT m FROM MessagesEntity m WHERE m.expediteurEntity.id = :utilisateurId AND m.deleted = false")
+    List<MessagesEntity> findByExpediteurEntityId(@Param("utilisateurId") String utilisateurId);
 
-    @Query("SELECT m FROM MessagesEntity m JOIN m.destinatairesEntities d WHERE d.id = :utilisateurId")
+    @Query("SELECT m FROM MessagesEntity m JOIN m.destinatairesEntities d WHERE d.id = :utilisateurId AND m.deleted = false")
     List<MessagesEntity> findByDestinatairesEntitiesId(@Param("utilisateurId") String utilisateurId);
+    
+    List<MessagesEntity> findByExpediteurEntityIdAndDeleted(String utilisateurId, boolean deleted);
+    
+    @Query("SELECT m FROM MessagesEntity m WHERE m.deleted = true AND m.dateSuppression < :cutoffDate")
+    List<MessagesEntity> findDeletedMessagesOlderThan24Hours();
 
 }
