@@ -13,6 +13,7 @@ import cmr.notep.ressourcesjpa.repository.ProfesseursRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -163,6 +164,38 @@ public class EvenementBusiness {
             log.error("Error updating event with ID {}: {}", id, e.getMessage(), e);
             throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR,
                     "Erreur lors de la mise à jour de l'événement: " + e.getMessage());
+        }
+    }
+    
+    public void gererParticipantEvenement(String eventId, String userId, boolean rejoindre) {
+        try {
+            EvenementEntity event = daoAccessorService.getRepository(EvenementRepository.class)
+                    .findById(eventId)
+                    .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Événement non trouvé avec l'ID: " + eventId));
+            
+            List<String> participants = event.getParticipantsIds();
+            if (participants == null) {
+                participants = new ArrayList<>();
+            }
+            
+            if (rejoindre) {
+                if (!participants.contains(userId)) {
+                    participants.add(userId);
+                    log.info("Utilisateur {} ajouté aux participants de l'événement {}", userId, eventId);
+                }
+            } else {
+                participants.remove(userId);
+                log.info("Utilisateur {} retiré des participants de l'événement {}", userId, eventId);
+            }
+            
+            event.setParticipantsIds(participants);
+            daoAccessorService.getRepository(EvenementRepository.class).save(event);
+            
+        } catch (SchoolException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Erreur lors de la gestion du participant {} pour l'événement {}: {}", userId, eventId, e.getMessage());
+            throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR, "Erreur lors de la gestion du participant");
         }
     }
 
