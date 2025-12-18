@@ -2,7 +2,7 @@ name: Build and Publish db-init
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ master,feat/backend-EXERCISES-Update ]
     paths:
       - 'db-init/**'
       - '.github/workflows/db-init-ci.yml'
