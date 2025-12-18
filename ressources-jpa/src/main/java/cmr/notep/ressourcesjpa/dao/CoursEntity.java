@@ -18,7 +18,6 @@ public class CoursEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
-
     @Column(nullable = false)
     private String titre;
 
@@ -34,7 +33,8 @@ public class CoursEntity {
     private EtatCours etat;
 
     @Column(columnDefinition = "TEXT")
-    private String references;
+    @Mapping("references")
+    private String reference;
 
     @Column(name = "restriction")
     private String restriction;

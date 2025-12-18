@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1-schema
+      author: db-init
+      changes:
+        - sqlFile:
+            path: classpath:sql/schema-postgres.sql
+            relativeToChangelogFile: false
+  - changeSet:
+      id: 2-data
+      author: db-init
+      changes:
+        - sqlFile:
+            path: classpath:sql/data-postgres.sql
+            relativeToChangelogFile: false

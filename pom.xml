@@ -40,6 +40,8 @@
         <module>interfaces</module>
         <module>business</module>
         <module>commun</module>
+        <module>commun-s3</module>
+        <module>db-init</module>
     </modules>
     <dependencyManagement>
         <dependencies>
