@@ -1,6 +1,7 @@
 package cmr.notep.interfaces.api;
 
 import cmr.notep.interfaces.dto.GroupMessageDto;
+import cmr.notep.interfaces.modeles.MessageDto;
 import cmr.notep.interfaces.modeles.Messages;
 import lombok.NonNull;
 import org.springframework.http.MediaType;
@@ -37,13 +38,13 @@ public interface MessagesApi {
             path = "/utilisateur/{utilisateurId}/sent",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    List<Messages> obtenirMessagesEnvoyes(@PathVariable String utilisateurId);
+    List<MessageDto> obtenirMessagesEnvoyes(@PathVariable String utilisateurId);
     
     @GetMapping(
             path = "/utilisateur/{utilisateurId}/received",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    List<Messages> obtenirMessagesRecus(@PathVariable String utilisateurId);
+    List<MessageDto> obtenirMessagesRecus(@PathVariable String utilisateurId);
     
     @PostMapping(
             path = "/group",
@@ -51,4 +52,28 @@ public interface MessagesApi {
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
     Messages posterMessageGroupe(@NonNull @RequestBody GroupMessageDto groupMessageDto);
+    
+    @DeleteMapping(
+            path = "/{messageId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    void supprimerMessage(@PathVariable String messageId);
+    
+    @GetMapping(
+            path = "/utilisateur/{utilisateurId}/trash",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    List<MessageDto> obtenirMessagesCorbeille(@PathVariable String utilisateurId);
+    
+    @DeleteMapping(
+            path = "/trash/cleanup",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    void viderCorbeille();
+    
+    @PostMapping(
+            path = "/{messageId}/restore",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    void restaurerMessage(@PathVariable String messageId);
 }

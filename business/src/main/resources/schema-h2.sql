@@ -27,11 +27,9 @@ CREATE TABLE IF NOT EXISTS ressources.etablissements (
     pays VARCHAR(255),
     email VARCHAR(255),
     telephone VARCHAR(255),
-    option_envoi_mail_classe BOOLEAN DEFAULT FALSE,
+    option_envoi_mail_new_classe BOOLEAN DEFAULT FALSE,
     option_token_general BOOLEAN DEFAULT FALSE,
-    code_unique BOOLEAN DEFAULT FALSE,
-    token_general VARCHAR(8),
-    code_unique_value VARCHAR(6),
+    code_unique VARCHAR(255) UNIQUE,
     gestionnaire_id VARCHAR(255)
 );
 
@@ -99,11 +97,15 @@ CREATE TABLE IF NOT EXISTS ressources.parent_eleve (
 
 CREATE TABLE IF NOT EXISTS ressources.messages (
     id VARCHAR(255) NOT NULL,
+    objet VARCHAR(255),
     contenu VARCHAR(255),
     datecreation VARCHAR(255),
     datemodification VARCHAR(255),
     etat VARCHAR(255),
     expediteur_id VARCHAR(255),
+    deleted BOOLEAN DEFAULT FALSE,
+    date_suppression VARCHAR(255),
+    etat_original VARCHAR(255),
     CONSTRAINT pk_messages PRIMARY KEY (id)
 );
 
@@ -306,8 +308,8 @@ CREATE TABLE IF NOT EXISTS ressources.cours_programmer (
     id VARCHAR(255) PRIMARY KEY,
     cours_id UUID NOT NULL,
     date_cours_prevue TIMESTAMP NOT NULL,
-    date_debut_effectif TIMESTAMP NOT NULL,
-    date_fin_effectif TIMESTAMP NOT NULL,
+    date_debut_effectif TIMESTAMP,
+    date_fin_effectif TIMESTAMP,
     etat_cours_programme VARCHAR(50) NOT NULL,
     classe_id UUID,
     lieu VARCHAR(255) NOT NULL,

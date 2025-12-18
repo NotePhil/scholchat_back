@@ -140,4 +140,12 @@ public class EmailTemplateService {
         context.setVariable("etablissement", etablissement);
         return templateEngine.process("email/class-approval-notification", context);
     }
+
+    public String generateClassCreationNotificationEmail(Classes classe, Etablissement etablissement) {
+        Context context = new Context();
+        context.setVariable("classe", classe);
+        context.setVariable("etablissement", etablissement);
+        context.setVariable("dateCreation", new Date());
+        return templateEngine.process("email/class-creation-notification", context);
+    }
 }

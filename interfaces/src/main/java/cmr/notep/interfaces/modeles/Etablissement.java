@@ -18,11 +18,9 @@ public class Etablissement implements Serializable {
     private String pays;
     private String email;
     private String telephone;
-    private boolean optionEnvoiMailVersClasse;
+    private boolean optionEnvoiMailNewClasse;
     private boolean optionTokenGeneral;
-    private boolean codeUnique;
-    private String tokenGeneral;
-    private String codeUniqueValue;
+    private String codeUnique;
     @JsonBackReference
     private Utilisateurs gestionnaire;
 }

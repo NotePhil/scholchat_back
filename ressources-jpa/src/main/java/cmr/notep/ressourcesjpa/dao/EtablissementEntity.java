@@ -34,20 +34,14 @@ public class EtablissementEntity {
     @Column(name = "telephone")
     private String telephone;
 
-    @Column(name = "option_envoi_mail_classe")
-    private boolean optionEnvoiMailVersClasse;
+    @Column(name = "option_envoi_mail_new_classe")
+    private boolean optionEnvoiMailNewClasse;
 
     @Column(name = "option_token_general")
     private boolean optionTokenGeneral;
 
-    @Column(name = "code_unique")
-    private boolean codeUnique;
-
-    @Column(name = "token_general")
-    private String tokenGeneral;
-
-    @Column(name = "code_unique_value")
-    private String codeUniqueValue;
+    @Column(name = "code_unique", unique = true)
+    private String codeUnique;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "gestionnaire_id")

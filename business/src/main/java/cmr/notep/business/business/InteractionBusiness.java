@@ -80,6 +80,34 @@ public class InteractionBusiness {
         }
 
         InteractionEntity savedEntity = daoAccessorService.getRepository(InteractionRepository.class).save(entity);
+        
+        // Handle JOIN/LEAVE interactions for events
+        if (interaction.getEventId() != null && 
+            (interaction.getType().name().equals("JOIN") || interaction.getType().name().equals("LEAVE"))) {
+            
+            EvenementEntity event = daoAccessorService.getRepository(EvenementRepository.class)
+                    .findById(interaction.getEventId())
+                    .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND,
+                            "Event not found with id: " + interaction.getEventId()));
+            
+            List<String> participants = event.getParticipantsIds();
+            if (participants == null) {
+                participants = new java.util.ArrayList<>();
+            }
+            
+            if (interaction.getType().name().equals("JOIN")) {
+                if (!participants.contains(interaction.getCreatedById())) {
+                    participants.add(interaction.getCreatedById());
+                    log.info("User {} joined event {}", interaction.getCreatedById(), interaction.getEventId());
+                }
+            } else if (interaction.getType().name().equals("LEAVE")) {
+                participants.remove(interaction.getCreatedById());
+                log.info("User {} left event {}", interaction.getCreatedById(), interaction.getEventId());
+            }
+            
+            event.setParticipantsIds(participants);
+            daoAccessorService.getRepository(EvenementRepository.class).save(event);
+        }
 
         // Map back to Interaction with just IDs
         return mapEntityToInteraction(savedEntity);

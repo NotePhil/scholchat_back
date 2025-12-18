@@ -54,4 +54,13 @@ public class MessagesEntity {
             inverseJoinColumns = @JoinColumn(name = "classe_id")
     )
     private List<ClassesEntity> classes;
+
+    @Column(name = "deleted")
+    private boolean deleted = false;
+
+    @Column(name = "date_suppression")
+    private String dateSuppression;
+
+    @Column(name = "etat_original")
+    private String etatOriginal;
 }

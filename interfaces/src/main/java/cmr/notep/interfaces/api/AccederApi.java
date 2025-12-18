@@ -2,6 +2,7 @@ package cmr.notep.interfaces.api;
 
 import cmr.notep.interfaces.modeles.Classes;
 import cmr.notep.interfaces.modeles.DemandeAccesDto;
+import cmr.notep.interfaces.modeles.UtilisateurSimpleDto;
 import cmr.notep.interfaces.modeles.Utilisateurs;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -67,7 +68,7 @@ public interface AccederApi {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @ResponseStatus(HttpStatus.OK)
-    List<Utilisateurs> obtenirUtilisateursAvecAcces(
+    List<UtilisateurSimpleDto> obtenirUtilisateursAvecAcces(
             @RequestParam List<String> classeIds
     );
 
@@ -76,7 +77,7 @@ public interface AccederApi {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @ResponseStatus(HttpStatus.OK)
-    List<Utilisateurs> obtenirUtilisateursAvecAcces(
+    List<UtilisateurSimpleDto> obtenirUtilisateursAvecAcces(
             @PathVariable String classeId
     );
 

@@ -432,4 +432,56 @@ public class AccederBusiness {
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
+
+    public List<UtilisateurSimpleDto> obtenirUtilisateursAvecAccesSimple(String classeId) throws SchoolException {
+        log.info("Obtenir tous les utilisateurs ayant accès à la classe {} (simple)", classeId);
+
+        if (!daoAccessorService.getRepository(ClassesRepository.class).existsById(classeId)) {
+            throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe introuvable");
+        }
+
+        return daoAccessorService.getRepository(AccederRepository.class)
+                .findByClasseId(classeId)
+                .stream()
+                .map(acceder -> mapToUtilisateurSimpleDto(acceder.getUtilisateur()))
+                .collect(Collectors.toList());
+    }
+
+    public List<UtilisateurSimpleDto> obtenirUtilisateursAvecAccesSimple(List<String> classeIds) throws SchoolException {
+        log.info("Obtenir les utilisateurs ayant accès aux classes {} (simple)", classeIds);
+
+        if (classeIds == null || classeIds.isEmpty()) {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Au moins un ID de classe doit être fourni");
+        }
+
+        for (String classeId : classeIds) {
+            if (!daoAccessorService.getRepository(ClassesRepository.class).existsById(classeId)) {
+                throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe introuvable avec l'ID: " + classeId);
+            }
+        }
+
+        List<AccederEntity> accesList = daoAccessorService.getRepository(AccederRepository.class)
+                .findByClasseIdIn(classeIds);
+
+        return accesList.stream()
+                .map(acceder -> {
+                    if (acceder.getUtilisateur() == null) {
+                        log.warn("Utilisateur non trouvé pour l'accès: {}", acceder);
+                        return null;
+                    }
+                    return mapToUtilisateurSimpleDto(acceder.getUtilisateur());
+                })
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    private UtilisateurSimpleDto mapToUtilisateurSimpleDto(UtilisateursEntity entity) {
+        UtilisateurSimpleDto dto = new UtilisateurSimpleDto();
+        dto.setId(entity.getId());
+        dto.setNom(entity.getNom());
+        dto.setPrenom(entity.getPrenom());
+        dto.setEmail(entity.getEmail());
+        return dto;
+    }
 }

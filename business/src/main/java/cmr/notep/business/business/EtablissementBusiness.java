@@ -2,6 +2,7 @@ package cmr.notep.business.business;
 
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
+import cmr.notep.business.services.TokenService;
 import cmr.notep.interfaces.modeles.Etablissement;
 import cmr.notep.interfaces.modeles.Utilisateurs;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
@@ -24,15 +25,14 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 
 public class EtablissementBusiness {
     private final DaoAccessorService daoAccessorService;
+    private final TokenService tokenService;
 
-    public EtablissementBusiness(DaoAccessorService daoAccessorService) {
+    public EtablissementBusiness(DaoAccessorService daoAccessorService, TokenService tokenService) {
         this.daoAccessorService = daoAccessorService;
+        this.tokenService = tokenService;
     }
 
     public Etablissement creerEtablissement(Etablissement etablissement) {
-            // Validate that only one approval option is enabled
-            validateApprovalOptions(etablissement);
-            
             EtablissementEntity entity = dozerMapperBean.map(etablissement, EtablissementEntity.class);
             
             // Handle gestionnaire if provided
@@ -44,13 +44,8 @@ public class EtablissementBusiness {
                 entity.setGestionnaire(gestionnaire);
             }
             
-            // Generate tokens if options are enabled
-            if (etablissement.isOptionTokenGeneral()) {
-                entity.setTokenGeneral(generateToken(8));
-            }
-            if (etablissement.isCodeUnique()) {
-                entity.setCodeUniqueValue(generateToken(6));
-            }
+            // Auto-generate unique code
+            entity.setCodeUnique(tokenService.generateUniqueCode());
             
             EtablissementEntity saved = daoAccessorService.getRepository(EtablissementRepository.class).save(entity);
             return mapToEtablissement(saved);
@@ -78,24 +73,12 @@ public class EtablissementBusiness {
                 existing.setTelephone(etablissementModifie.getTelephone());
             }
             
-            // Validate approval options before updating
-            validateApprovalOptions(etablissementModifie);
-            
-            existing.setOptionEnvoiMailVersClasse(etablissementModifie.isOptionEnvoiMailVersClasse());
+            existing.setOptionEnvoiMailNewClasse(etablissementModifie.isOptionEnvoiMailNewClasse());
             existing.setOptionTokenGeneral(etablissementModifie.isOptionTokenGeneral());
-            existing.setCodeUnique(etablissementModifie.isCodeUnique());
             
-            // Generate new tokens if options changed
-            if (etablissementModifie.isOptionTokenGeneral() && existing.getTokenGeneral() == null) {
-                existing.setTokenGeneral(generateToken(8));
-            } else if (!etablissementModifie.isOptionTokenGeneral()) {
-                existing.setTokenGeneral(null);
-            }
-            
-            if (etablissementModifie.isCodeUnique() && existing.getCodeUniqueValue() == null) {
-                existing.setCodeUniqueValue(generateToken(6));
-            } else if (!etablissementModifie.isCodeUnique()) {
-                existing.setCodeUniqueValue(null);
+            // Update code unique if provided, otherwise keep existing
+            if (etablissementModifie.getCodeUnique() != null && !etablissementModifie.getCodeUnique().trim().isEmpty()) {
+                existing.setCodeUnique(etablissementModifie.getCodeUnique());
             }
             
             // Handle gestionnaire update
@@ -187,17 +170,7 @@ public class EtablissementBusiness {
         return token.toString();
     }
 
-    private void validateApprovalOptions(Etablissement etablissement) {
-        int enabledOptions = 0;
-        if (etablissement.isOptionEnvoiMailVersClasse()) enabledOptions++;
-        if (etablissement.isOptionTokenGeneral()) enabledOptions++;
-        if (etablissement.isCodeUnique()) enabledOptions++;
-        
-        if (enabledOptions > 1) {
-            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, 
-                "Une seule option d'approbation peut être activée à la fois");
-        }
-    }
+
 
     public void approuverClasseParEtablissement(String classeId, String etablissementId) {
         // This will be implemented in ClassesBusiness but called from here

@@ -24,11 +24,12 @@ public class CoursProgrammerEntity {
     @Column(name = "date_cours_prevue", nullable = false)
     private LocalDateTime dateCoursPrevue;
 
-    @Column(name = "date_debut_effectif", nullable = false)
+    @Column(name = "date_debut_effectif")
     private LocalDateTime dateDebutEffectif;
 
-    @Column(name = "date_fin_effectif", nullable = false)
+    @Column(name = "date_fin_effectif")
     private LocalDateTime dateFinEffectif;
+
 
     @Enumerated(EnumType.STRING)
     @Column(name = "etat_cours_programme", nullable = false)

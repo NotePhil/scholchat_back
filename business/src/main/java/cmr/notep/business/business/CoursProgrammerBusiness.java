@@ -309,21 +309,23 @@ public class CoursProgrammerBusiness {
                 .collect(Collectors.toList());
     }
     private void validateEffectiveDates(CoursProgrammer coursProgrammer) {
-        if (coursProgrammer.getDateDebutEffectif() == null) {
-            throw new IllegalArgumentException("La date de début effective est requise.");
+        // Only validate if both dates are provided
+        if (coursProgrammer.getDateDebutEffectif() != null && coursProgrammer.getDateFinEffectif() != null) {
+            if (coursProgrammer.getDateDebutEffectif().isBefore(coursProgrammer.getDateCoursPrevue())) {
+                throw new IllegalArgumentException("La date de début effective ne peut pas être avant la date prévue du cours.");
+            }
+            if (coursProgrammer.getDateFinEffectif().isBefore(coursProgrammer.getDateDebutEffectif())) {
+                throw new IllegalArgumentException("La date de fin effective doit être après la date de début effective.");
+            }
+            if (coursProgrammer.getDateFinEffectif().isEqual(coursProgrammer.getDateDebutEffectif()) &&
+                    coursProgrammer.getDateFinEffectif().toLocalTime().isBefore(coursProgrammer.getDateDebutEffectif().toLocalTime())) {
+                throw new IllegalArgumentException("Si la date de fin est le même jour que la date de début, l'heure de fin doit être après l'heure de début.");
+            }
         }
-        if (coursProgrammer.getDateFinEffectif() == null) {
-            throw new IllegalArgumentException("La date de fin effective est requise.");
-        }
-        if (coursProgrammer.getDateDebutEffectif().isBefore(coursProgrammer.getDateCoursPrevue())) {
-            throw new IllegalArgumentException("La date de début effective ne peut pas être avant la date prévue du cours.");
-        }
-        if (coursProgrammer.getDateFinEffectif().isBefore(coursProgrammer.getDateDebutEffectif())) {
-            throw new IllegalArgumentException("La date de fin effective doit être après la date de début effective.");
-        }
-        if (coursProgrammer.getDateFinEffectif().isEqual(coursProgrammer.getDateDebutEffectif()) &&
-                coursProgrammer.getDateFinEffectif().toLocalTime().isBefore(coursProgrammer.getDateDebutEffectif().toLocalTime())) {
-            throw new IllegalArgumentException("Si la date de fin est le même jour que la date de début, l'heure de fin doit être après l'heure de début.");
+        // Validate if only one date is provided
+        if ((coursProgrammer.getDateDebutEffectif() != null && coursProgrammer.getDateFinEffectif() == null) ||
+            (coursProgrammer.getDateDebutEffectif() == null && coursProgrammer.getDateFinEffectif() != null)) {
+            throw new IllegalArgumentException("Si une date effective est fournie, les deux dates (début et fin) doivent être fournies.");
         }
     }
 

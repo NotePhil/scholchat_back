@@ -19,11 +19,11 @@ INSERT INTO ressources.utilisateurs (id, nom, prenom, email, passeaccess, teleph
 ('550e8400-e29b-41d4-a716-446655440302', 'Eleve C', 'Paul', 'paul.elevec@example.com', 'password123', '0123456702', '30 Boulevard Université', 'abc123activationcode14', 'ACTIVE', FALSE),
 ('660e8400-e29b-41d4-a716-446655440999', 'Test', 'Professor', 'ulrich@gmail.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456789', 'Test Address', 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJST0xFX0FETUlOIl0sInN1YiI6ImFkbWluQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQ0OTY3MzM1LCJleHAiOjE3NDQ5NjgyMzV9.NVeY4KP8KAM2Nh80NaFXYEJ4__ceTFOPQPe_pGryMQw', 'AWAITING_VALIDATION', FALSE);
 
--- Insert schools (only the three requested)
-INSERT INTO ressources.etablissements (id, nom, localisation, pays, email, telephone, option_envoi_mail_classe, option_token_general, code_unique, token_general, code_unique_value, gestionnaire_id) VALUES
-('550e8400-e29b-41d4-a716-446655440100', 'École Email Approval', 'Yaoundé', 'Cameroun', 'contact@etab-a.cm', '23712345678', TRUE, FALSE, FALSE, NULL, NULL, '550e8400-e29b-41d4-a716-446655440999'),
-('550e8400-e29b-41d4-a716-446655440101', 'Lycée Token General', 'Douala', 'Cameroun', 'info@etab-b.cm', '23787654321', FALSE, TRUE, FALSE, 'A1B2C3D4', NULL, '550e8400-e29b-41d4-a716-446655440000'),
-('550e8400-e29b-41d4-a716-446655440102', 'Collège Code Unique', 'Bafoussam', 'Cameroun', 'admin@college-c.cm', '23798765432', FALSE, FALSE, TRUE, NULL, 'X9Y8Z7', '550e8400-e29b-41d4-a716-446655440007');
+-- Insert schools (updated schema)
+INSERT INTO ressources.etablissements (id, nom, localisation, pays, email, telephone, option_envoi_mail_new_classe, option_token_general, code_unique, gestionnaire_id) VALUES
+('550e8400-e29b-41d4-a716-446655440100', 'École Email Approval', 'Yaoundé', 'Cameroun', 'contact@etab-a.cm', '23712345678', TRUE, FALSE, 'ETB-12345678', '550e8400-e29b-41d4-a716-446655440999'),
+('550e8400-e29b-41d4-a716-446655440101', 'Lycée Token General', 'Douala', 'Cameroun', 'info@etab-b.cm', '23787654321', TRUE, TRUE, 'ETB-87654321', '550e8400-e29b-41d4-a716-446655440000'),
+('550e8400-e29b-41d4-a716-446655440102', 'Collège Code Unique', 'Bafoussam', 'Cameroun', 'admin@college-c.cm', '23798765432', FALSE, TRUE, 'ETB-11223344', '550e8400-e29b-41d4-a716-446655440007');
 
 -- Insert professors (must come after users)
 INSERT INTO ressources.professeurs (professeurs_id, cni_url_front, cni_url_back, selfie_url, matricule_professeur, has_uploaded) VALUES
@@ -55,17 +55,26 @@ INSERT INTO ressources.classes (id, nom, niveau, date_creation, code_activation,
 ('550e8400-e29b-41d4-a716-446655440403', 'Classe D - Pending', '1ère', '2024-11-29 10:00:00', '890123', 'EN_ATTENTE_APPROBATION', '550e8400-e29b-41d4-a716-446655440101', '550e8400-e29b-41d4-a716-446655440008', TRUE, FALSE),
 ('550e8400-e29b-41d4-a716-446655440404', 'Classe E - Inactive', '4ème', '2024-11-30 08:00:00', '901234', 'INACTIF', '550e8400-e29b-41d4-a716-446655440100', '550e8400-e29b-41d4-a716-446655440007', FALSE, FALSE),
 ('550e8400-e29b-41d4-a716-446655440405', 'Classe F - Inactive', 'Terminale', '2024-11-30 09:00:00', '012345', 'INACTIF', '550e8400-e29b-41d4-a716-446655440101', '550e8400-e29b-41d4-a716-446655440008', FALSE, FALSE),
-('550e8400-e29b-41d4-a716-446655440406', 'Independent Class', 'CE1', '2024-12-01 10:00:00', '567890', 'EN_ATTENTE_APPROBATION', NULL, NULL, FALSE, TRUE);
+('550e8400-e29b-41d4-a716-446655440406', 'Independent Class', 'CE1', '2024-12-01 10:00:00', '567890', 'EN_ATTENTE_APPROBATION', NULL, NULL, FALSE, TRUE),
+-- Demo classes for kpgpa237@gmail.com with publication rights
+('550e8400-e29b-41d4-a716-446655440407', 'Demo Class 1', '6ème', '2024-12-01 11:00:00', '111111', 'ACTIF', '550e8400-e29b-41d4-a716-446655440102', '550e8400-e29b-41d4-a716-446655440007', TRUE, FALSE),
+('550e8400-e29b-41d4-a716-446655440408', 'Demo Class 2', '5ème', '2024-12-01 12:00:00', '222222', 'ACTIF', '550e8400-e29b-41d4-a716-446655440102', '550e8400-e29b-41d4-a716-446655440007', TRUE, FALSE);
 
 -- Insert class relationships
 INSERT INTO ressources.classe_parents (classe_id, parent_id) VALUES
 ('550e8400-e29b-41d4-a716-446655440400', '550e8400-e29b-41d4-a716-446655440200'),
-('550e8400-e29b-41d4-a716-446655440401', '550e8400-e29b-41d4-a716-446655440201');
+('550e8400-e29b-41d4-a716-446655440401', '550e8400-e29b-41d4-a716-446655440201'),
+-- Associate parents to demo classes
+('550e8400-e29b-41d4-a716-446655440407', '550e8400-e29b-41d4-a716-446655440200'),
+('550e8400-e29b-41d4-a716-446655440408', '550e8400-e29b-41d4-a716-446655440201');
 
 INSERT INTO ressources.classe_eleves (classe_id, eleve_id) VALUES
 ('550e8400-e29b-41d4-a716-446655440400', '550e8400-e29b-41d4-a716-446655440300'),
 ('550e8400-e29b-41d4-a716-446655440401', '550e8400-e29b-41d4-a716-446655440301'),
-('550e8400-e29b-41d4-a716-446655440400', '550e8400-e29b-41d4-a716-446655440302');
+('550e8400-e29b-41d4-a716-446655440400', '550e8400-e29b-41d4-a716-446655440302'),
+-- Associate students to demo classes
+('550e8400-e29b-41d4-a716-446655440407', '550e8400-e29b-41d4-a716-446655440300'),
+('550e8400-e29b-41d4-a716-446655440408', '550e8400-e29b-41d4-a716-446655440301');
 
 -- Insert moderator relationships
 INSERT INTO ressources.professeur_classes_moderees (professeur_id, classe_id) VALUES
@@ -74,4 +83,27 @@ INSERT INTO ressources.professeur_classes_moderees (professeur_id, classe_id) VA
 ('550e8400-e29b-41d4-a716-446655440009', '550e8400-e29b-41d4-a716-446655440402'),
 ('550e8400-e29b-41d4-a716-446655440008', '550e8400-e29b-41d4-a716-446655440403'),
 ('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440404'),
-('550e8400-e29b-41d4-a716-446655440008', '550e8400-e29b-41d4-a716-446655440405');
+('550e8400-e29b-41d4-a716-446655440008', '550e8400-e29b-41d4-a716-446655440405'),
+-- Demo classes moderated by kpgpa237@gmail.com
+('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440407'),
+('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440408');
+
+-- Insert publication rights
+INSERT INTO ressources.droit_publication (utilisateur_id, classe_id, date_attribution, peut_publier, peut_moderer) VALUES
+('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440407', '2024-12-01 11:00:00', TRUE, TRUE),
+('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440408', '2024-12-01 12:00:00', TRUE, TRUE);
+
+-- Insert access rights for demo classes
+INSERT INTO ressources.acceder (utilisateur_id, classe_id, date_acces) VALUES
+-- Professor access
+('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440407', '2024-12-01 11:00:00'),
+('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440408', '2024-12-01 12:00:00'),
+-- Student access
+('550e8400-e29b-41d4-a716-446655440300', '550e8400-e29b-41d4-a716-446655440407', '2024-12-01 11:00:00'),
+('550e8400-e29b-41d4-a716-446655440301', '550e8400-e29b-41d4-a716-446655440408', '2024-12-01 12:00:00'),
+-- Parent access
+('550e8400-e29b-41d4-a716-446655440200', '550e8400-e29b-41d4-a716-446655440407', '2024-12-01 11:00:00'),
+('550e8400-e29b-41d4-a716-446655440201', '550e8400-e29b-41d4-a716-446655440408', '2024-12-01 12:00:00'),
+-- Additional users access to Demo Class 1
+('550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440407', '2024-12-01 11:00:00'),
+('550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440407', '2024-12-01 11:00:00');

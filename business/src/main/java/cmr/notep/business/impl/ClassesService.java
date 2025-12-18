@@ -6,6 +6,8 @@ import cmr.notep.interfaces.api.ClassesApi;
 import cmr.notep.interfaces.modeles.Classes;
 import cmr.notep.interfaces.modeles.HistoActivation;
 import cmr.notep.interfaces.modeles.Utilisateurs;
+import cmr.notep.interfaces.dto.ClasseCreationDto;
+import cmr.notep.interfaces.dto.ClasseCreationResponseDto;
 import cmr.notep.modele.DroitPublication;
 import cmr.notep.modele.EtatClasse;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,14 @@ public class ClassesService implements ClassesApi {
         Classes nouvelleClasse = classesBusiness.creerClasse(classes);
         log.info("Classe créée avec succès: {}", nouvelleClasse.getId());
         return nouvelleClasse;
+    }
+
+    @Override
+    public ClasseCreationResponseDto creerNouvelleClasse(@NonNull ClasseCreationDto classeDto) {
+        log.info("Tentative de création d'une nouvelle classe avec DTO: {}", classeDto);
+        ClasseCreationResponseDto response = classesBusiness.creerNouvelleClasse(classeDto);
+        log.info("Classe créée avec succès: {}", response.getClasse().getId());
+        return response;
     }
 
 //    @Override
@@ -126,5 +136,19 @@ public class ClassesService implements ClassesApi {
         List<Utilisateurs> moderateurs = classesBusiness.obtenirModerateursDeLaClasse(idClasse);
         log.info("Récupération de {} modérateurs pour la classe: {}", moderateurs.size(), idClasse);
         return moderateurs;
+    }
+
+    @Override
+    public void approuverClasseParEtablissement(@NonNull String classeId, @NonNull String etablissementId) {
+        log.info("Approbation de la classe {} par l'établissement {}", classeId, etablissementId);
+        classesBusiness.approuverClasseParEtablissement(classeId, etablissementId);
+        log.info("Classe {} approuvée avec succès", classeId);
+    }
+
+    @Override
+    public void rejeterClasseParEtablissement(@NonNull String classeId, @NonNull String etablissementId) {
+        log.info("Rejet de la classe {} par l'établissement {}", classeId, etablissementId);
+        classesBusiness.rejeterClasseParEtablissement(classeId, etablissementId);
+        log.info("Classe {} rejetée avec succès", classeId);
     }
 }

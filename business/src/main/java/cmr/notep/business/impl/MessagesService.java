@@ -3,6 +3,7 @@ package cmr.notep.business.impl;
 import cmr.notep.business.business.MessagesBusiness;
 import cmr.notep.interfaces.dto.GroupMessageDto;
 import cmr.notep.interfaces.api.MessagesApi;
+import cmr.notep.interfaces.modeles.MessageDto;
 import cmr.notep.interfaces.modeles.Messages;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -53,15 +54,39 @@ public class MessagesService implements MessagesApi {
     }
 
     @Override
-    public List<Messages> obtenirMessagesEnvoyes(String utilisateurId) {
+    public List<MessageDto> obtenirMessagesEnvoyes(String utilisateurId) {
         log.info("Obtenir les messages envoyés par l'utilisateur {}", utilisateurId);
         return messagesBusiness.obtenirMessagesEnvoyes(utilisateurId);
     }
 
     @Override
-    public List<Messages> obtenirMessagesRecus(String utilisateurId) {
+    public List<MessageDto> obtenirMessagesRecus(String utilisateurId) {
         log.info("Obtenir les messages reçus par l'utilisateur {}", utilisateurId);
         return messagesBusiness.obtenirMessagesRecus(utilisateurId);
+    }
+    
+    @Override
+    public void supprimerMessage(String messageId) {
+        log.info("Suppression du message avec ID: {}", messageId);
+        messagesBusiness.supprimerMessage(messageId);
+    }
+    
+    @Override
+    public List<MessageDto> obtenirMessagesCorbeille(String utilisateurId) {
+        log.info("Obtenir les messages dans la corbeille pour l'utilisateur {}", utilisateurId);
+        return messagesBusiness.obtenirMessagesCorbeille(utilisateurId);
+    }
+    
+    @Override
+    public void viderCorbeille() {
+        log.info("Vider la corbeille - suppression définitive des anciens messages");
+        messagesBusiness.viderCorbeille();
+    }
+    
+    @Override
+    public void restaurerMessage(String messageId) {
+        log.info("Restauration du message avec ID: {}", messageId);
+        messagesBusiness.restaurerMessage(messageId);
     }
 
 }

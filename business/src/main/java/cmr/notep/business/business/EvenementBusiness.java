@@ -13,6 +13,7 @@ import cmr.notep.ressourcesjpa.repository.ProfesseursRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,9 +24,11 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 public class EvenementBusiness {
 
     private final DaoAccessorService daoAccessorService;
+    private final InteractionBusiness interactionBusiness;
 
-    public EvenementBusiness(DaoAccessorService daoAccessorService) {
+    public EvenementBusiness(DaoAccessorService daoAccessorService, InteractionBusiness interactionBusiness) {
         this.daoAccessorService = daoAccessorService;
+        this.interactionBusiness = interactionBusiness;
     }
 
     public Evenement creerEvenement(Evenement evenement) {
@@ -119,6 +122,7 @@ public class EvenementBusiness {
             // Map back to DTO for response
             Evenement savedEvenement = dozerMapperBean.map(savedEntity, Evenement.class);
             savedEvenement.setCreateurId(savedEntity.getCreateur().getId());
+            savedEvenement.setInteractions(interactionBusiness.getInteractionsByEvent(savedEntity.getId()));
 
             log.info("Event created successfully with ID: {}", savedEntity.getId());
             return savedEvenement;
@@ -150,6 +154,7 @@ public class EvenementBusiness {
             EvenementEntity updated = repo.save(existing);
             Evenement result = dozerMapperBean.map(updated, Evenement.class);
             result.setCreateurId(updated.getCreateur().getId()); // Set creator ID properly
+            result.setInteractions(interactionBusiness.getInteractionsByEvent(id));
 
             log.info("Event updated successfully with ID: {}", id);
             return result;
@@ -159,6 +164,38 @@ public class EvenementBusiness {
             log.error("Error updating event with ID {}: {}", id, e.getMessage(), e);
             throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR,
                     "Erreur lors de la mise à jour de l'événement: " + e.getMessage());
+        }
+    }
+    
+    public void gererParticipantEvenement(String eventId, String userId, boolean rejoindre) {
+        try {
+            EvenementEntity event = daoAccessorService.getRepository(EvenementRepository.class)
+                    .findById(eventId)
+                    .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Événement non trouvé avec l'ID: " + eventId));
+            
+            List<String> participants = event.getParticipantsIds();
+            if (participants == null) {
+                participants = new ArrayList<>();
+            }
+            
+            if (rejoindre) {
+                if (!participants.contains(userId)) {
+                    participants.add(userId);
+                    log.info("Utilisateur {} ajouté aux participants de l'événement {}", userId, eventId);
+                }
+            } else {
+                participants.remove(userId);
+                log.info("Utilisateur {} retiré des participants de l'événement {}", userId, eventId);
+            }
+            
+            event.setParticipantsIds(participants);
+            daoAccessorService.getRepository(EvenementRepository.class).save(event);
+            
+        } catch (SchoolException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Erreur lors de la gestion du participant {} pour l'événement {}: {}", userId, eventId, e.getMessage());
+            throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR, "Erreur lors de la gestion du participant");
         }
     }
 
@@ -174,6 +211,7 @@ public class EvenementBusiness {
                             if (e.getCreateur() != null) {
                                 evenement.setCreateurId(e.getCreateur().getId()); // Set creator ID properly
                             }
+                            evenement.setInteractions(interactionBusiness.getInteractionsByEvent(e.getId()));
                             return evenement;
                         } catch (Exception ex) {
                             log.error("Error mapping event with ID {}: {}", e.getId(), ex.getMessage());
@@ -189,6 +227,7 @@ public class EvenementBusiness {
                             if (e.getCreateur() != null) {
                                 fallbackEvent.setCreateurId(e.getCreateur().getId());
                             }
+                            fallbackEvent.setInteractions(interactionBusiness.getInteractionsByEvent(e.getId()));
                             return fallbackEvent;
                         }
                     })
@@ -227,6 +266,7 @@ public class EvenementBusiness {
             if (entity.getCreateur() != null) {
                 evenement.setCreateurId(entity.getCreateur().getId()); // Set creator ID properly
             }
+            evenement.setInteractions(interactionBusiness.getInteractionsByEvent(id));
             return evenement;
         } catch (SchoolException e) {
             throw e;
@@ -251,6 +291,7 @@ public class EvenementBusiness {
                             if (e.getCreateur() != null) {
                                 evenement.setCreateurId(e.getCreateur().getId()); // Set creator ID properly
                             }
+                            evenement.setInteractions(interactionBusiness.getInteractionsByEvent(e.getId()));
                             return evenement;
                         } catch (Exception ex) {
                             log.error("Error mapping event with ID {} for professor {}: {}", e.getId(), professeurId, ex.getMessage());
@@ -266,6 +307,7 @@ public class EvenementBusiness {
                             if (e.getCreateur() != null) {
                                 fallbackEvent.setCreateurId(e.getCreateur().getId());
                             }
+                            fallbackEvent.setInteractions(interactionBusiness.getInteractionsByEvent(e.getId()));
                             return fallbackEvent;
                         }
                     })
