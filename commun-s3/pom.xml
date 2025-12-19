@@ -10,7 +10,7 @@
     </parent>
 
     <groupId>cmr.notep.schochat</groupId>
-    <artifactId>commun</artifactId>
+    <artifactId>commun-s3</artifactId>
     <version>1.0-SNAPSHOT</version>
 
 </project>
