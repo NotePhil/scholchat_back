@@ -42,7 +42,7 @@ public class CoursMapper {
                 .description(entity.getDescription())
                 .dateCreation(entity.getDateCreation())
                 .etat(entity.getEtat())
-                .references(entity.getReferences())
+                .references(entity.getReference())
                 .restriction(entity.getRestriction())
                 .redacteurId(entity.getRedacteur().getId())
                 .exercisesLies(exerciseSummaryList)

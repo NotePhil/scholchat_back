@@ -4,5 +4,6 @@ public enum InteractionType {
     COMMENT,
     LIKE,
     JOIN,
+    UNJOIN,
     LEAVE
 }

@@ -81,9 +81,9 @@ public class InteractionBusiness {
 
         InteractionEntity savedEntity = daoAccessorService.getRepository(InteractionRepository.class).save(entity);
         
-        // Handle JOIN/LEAVE interactions for events
+        // Handle JOIN/UNJOIN/LEAVE interactions for events
         if (interaction.getEventId() != null && 
-            (interaction.getType().name().equals("JOIN") || interaction.getType().name().equals("LEAVE"))) {
+            (interaction.getType().name().equals("JOIN") || interaction.getType().name().equals("UNJOIN") || interaction.getType().name().equals("LEAVE"))) {
             
             EvenementEntity event = daoAccessorService.getRepository(EvenementRepository.class)
                     .findById(interaction.getEventId())
@@ -100,7 +100,7 @@ public class InteractionBusiness {
                     participants.add(interaction.getCreatedById());
                     log.info("User {} joined event {}", interaction.getCreatedById(), interaction.getEventId());
                 }
-            } else if (interaction.getType().name().equals("LEAVE")) {
+            } else if (interaction.getType().name().equals("UNJOIN") || interaction.getType().name().equals("LEAVE")) {
                 participants.remove(interaction.getCreatedById());
                 log.info("User {} left event {}", interaction.getCreatedById(), interaction.getEventId());
             }
@@ -173,5 +173,29 @@ public class InteractionBusiness {
         return daoAccessorService.getRepository(InteractionRepository.class)
                 .findByCreatedByIdAndMessageIdAndType(userId, messageId, cmr.notep.modele.InteractionType.LIKE)
                 .isPresent();
+    }
+
+    public Interaction joinEvent(String eventId, String userId) {
+        Interaction joinInteraction = Interaction.builder()
+                .type(cmr.notep.modele.InteractionType.JOIN)
+                .content("User joined the event")
+                .niveau("INFO")
+                .createdById(userId)
+                .eventId(eventId)
+                .build();
+        
+        return createInteraction(joinInteraction);
+    }
+
+    public Interaction unjoinEvent(String eventId, String userId) {
+        Interaction unjoinInteraction = Interaction.builder()
+                .type(cmr.notep.modele.InteractionType.UNJOIN)
+                .content("User left the event")
+                .niveau("INFO")
+                .createdById(userId)
+                .eventId(eventId)
+                .build();
+        
+        return createInteraction(unjoinInteraction);
     }
 }

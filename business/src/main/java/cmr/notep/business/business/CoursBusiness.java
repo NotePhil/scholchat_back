@@ -138,7 +138,7 @@ public class CoursBusiness {
             existingEntity.setEtat(cours.getEtat());
         }
         if (cours.getReferences() != null) {
-            existingEntity.setReferences(cours.getReferences());
+            existingEntity.setReference(cours.getReferences());
         }
         if (cours.getRestriction() != null) {
             existingEntity.setRestriction(cours.getRestriction());

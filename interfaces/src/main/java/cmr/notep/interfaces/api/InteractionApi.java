@@ -16,6 +16,20 @@ public interface InteractionApi {
     @ResponseStatus(HttpStatus.CREATED)
     Interaction createInteraction(@RequestBody Interaction interaction);
 
+    @PostMapping(
+            path = "/join/{eventId}/{userId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    Interaction joinEvent(@PathVariable String eventId, @PathVariable String userId);
+
+    @PostMapping(
+            path = "/unjoin/{eventId}/{userId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    Interaction unjoinEvent(@PathVariable String eventId, @PathVariable String userId);
+
     @GetMapping(
             path = "/event/{eventId}",
             produces = MediaType.APPLICATION_JSON_VALUE

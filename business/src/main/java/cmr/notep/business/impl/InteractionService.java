@@ -77,4 +77,16 @@ public class InteractionService implements InteractionApi {
     public boolean hasUserLikedMessage(@PathVariable String messageId, @PathVariable String userId) {
         return interactionBusiness.hasUserLikedMessage(userId, messageId);
     }
+
+    @Override
+    public Interaction joinEvent(String eventId, String userId) {
+        log.info("User {} joining event {}", userId, eventId);
+        return interactionBusiness.joinEvent(eventId, userId);
+    }
+
+    @Override
+    public Interaction unjoinEvent(String eventId, String userId) {
+        log.info("User {} leaving event {}", userId, eventId);
+        return interactionBusiness.unjoinEvent(eventId, userId);
+    }
 }
