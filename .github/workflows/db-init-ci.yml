@@ -51,5 +51,6 @@ jobs:
           context: ./db-init
           push: true
           tags: |
-            ghcr.io/${{ toLower(github.repository_owner) }}/scholchat-db-init:latest
-            ghcr.io/${{ toLower(github.repository_owner) }}/scholchat-db-init:${{ github.run_number }}
+            ghcr.io/notephil/scholchat-db-init:latest
+            ghcr.io/notephil/scholchat-db-init:${{ github.run_number }}
+
