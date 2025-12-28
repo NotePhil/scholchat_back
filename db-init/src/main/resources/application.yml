@@ -27,6 +27,9 @@ spring:
   config:
     activate:
       on-profile: prod
+  main:
+    web-application-type: none
+    banner-mode: "off"
   datasource:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
