@@ -176,10 +176,12 @@
                             <goal>repackage</goal>
                         </goals>
                         <configuration>
-                            <classifier>spring-boot</classifier>
+                            <finalName>${project.artifactId}</finalName>
+                            <classifier>installable</classifier>
                             <mainClass>
                                 cmr.notep.schochat.business.BusinessApplication
                             </mainClass>
+                            <layers enabled="true"/>
                         </configuration>
                     </execution>
                 </executions>

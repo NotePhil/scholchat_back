@@ -51,10 +51,21 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>cmr.notep.dbinit.DbInitApplication</mainClass>
-                    <layers enabled="true"/>
-                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>${project.artifactId}</finalName>
+                            <classifier>installable</classifier>
+                            <mainClass>
+                                cmr.notep.dbinit.DbInitApplication
+                            </mainClass>
+                            <layers enabled="true"/>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
