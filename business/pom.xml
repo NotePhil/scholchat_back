@@ -179,7 +179,7 @@
                             <finalName>${project.artifactId}</finalName>
                             <classifier>installable</classifier>
                             <mainClass>
-                                cmr.notep.schochat.business.BusinessApplication
+                                cmr.notep.business.BusinessApplication
                             </mainClass>
                             <layers enabled="true"/>
                         </configuration>
