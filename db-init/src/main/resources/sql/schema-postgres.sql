@@ -206,7 +206,7 @@ CREATE TABLE IF NOT EXISTS interactions (
     creation_date TIMESTAMP NOT NULL,
     niveau VARCHAR(50),
     created_by VARCHAR(255) NOT NULL,
-    event_id VARCHAR(255),
+    event_id UUID,
     message_id VARCHAR(255)
 );
 
@@ -214,7 +214,7 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     token VARCHAR(255) NOT NULL UNIQUE,
     expiry_date TIMESTAMP NOT NULL,
-    utilisateur_id UUID NOT NULL
+    utilisateur_id VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS histo_activation (
@@ -238,7 +238,7 @@ CREATE TABLE IF NOT EXISTS message_classes (
     );
 CREATE TABLE IF NOT EXISTS acceder (
                                                   utilisateur_id VARCHAR(255) NOT NULL,
-    classe_id VARCHAR(255) NOT NULL,
+    classe_id UUID NOT NULL,
     date_acces TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (utilisateur_id, classe_id),
     FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id),
@@ -248,7 +248,7 @@ CREATE TABLE IF NOT EXISTS acceder (
 CREATE TABLE IF NOT EXISTS demandes_acces (
                                                          id VARCHAR(255) PRIMARY KEY,
     utilisateur_id VARCHAR(255) NOT NULL,
-    classe_id VARCHAR(255) NOT NULL,
+    classe_id UUID NOT NULL,
     code_activation VARCHAR(255) NOT NULL,
     etat VARCHAR(50) NOT NULL,
     date_demande TIMESTAMP NOT NULL,
@@ -267,7 +267,7 @@ CREATE TABLE IF NOT EXISTS cours (
     description TEXT,
     date_creation TIMESTAMP NOT NULL,
     etat VARCHAR(50) NOT NULL,
-    references TEXT,
+    reference TEXT,
     contenu TEXT NOT NULL,
     redacteur_id VARCHAR(255) NOT NULL,
     FOREIGN KEY (redacteur_id) REFERENCES professeurs(professeurs_id)
@@ -417,8 +417,6 @@ CREATE TABLE IF NOT EXISTS participer_exo (
     FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id) ON DELETE CASCADE,
     FOREIGN KEY (exercise_programmer_id) REFERENCES exercises_programmer(exercise_id) ON DELETE CASCADE
     );
-
-SET REFERENTIAL_INTEGRITY TRUE;
 
 ALTER TABLE classes DROP CONSTRAINT IF EXISTS fk_etablissement;
 ALTER TABLE classes DROP CONSTRAINT IF EXISTS fk_classes_moderator;
