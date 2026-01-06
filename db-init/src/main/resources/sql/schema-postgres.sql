@@ -2,9 +2,8 @@ CREATE SCHEMA IF NOT EXISTS ressources;
 
 SET search_path TO ressources;
 
--- Tables de base
 CREATE TABLE IF NOT EXISTS utilisateurs (
-    id VARCHAR(255) PRIMARY KEY,
+    id VARCHAR(255) NOT NULL,
     nom VARCHAR(255),
     prenom VARCHAR(255),
     email VARCHAR(255),
@@ -14,7 +13,8 @@ CREATE TABLE IF NOT EXISTS utilisateurs (
     etat VARCHAR(50) DEFAULT 'INACTIVE',
     activation_token VARCHAR(255) UNIQUE,
     creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_admin BOOLEAN DEFAULT FALSE
+    is_admin BOOLEAN DEFAULT FALSE,
+    CONSTRAINT pk_utilisateurs PRIMARY KEY (id)
 );
 
 CREATE TABLE IF NOT EXISTS etablissements (
@@ -24,22 +24,22 @@ CREATE TABLE IF NOT EXISTS etablissements (
     pays VARCHAR(255),
     email VARCHAR(255),
     telephone VARCHAR(255),
-    option_envoi_mail_classe BOOLEAN DEFAULT FALSE,
+    option_envoi_mail_new_classe BOOLEAN DEFAULT FALSE,
     option_token_general BOOLEAN DEFAULT FALSE,
-    code_unique BOOLEAN DEFAULT FALSE,
-    token_general VARCHAR(8),
-    code_unique_value VARCHAR(6),
+    code_unique VARCHAR(255) UNIQUE,
     gestionnaire_id VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS professeurs (
-    professeurs_id VARCHAR(255) PRIMARY KEY,
-    cni_url_front VARCHAR(255),
-    cni_url_back VARCHAR(255),
+    professeurs_id VARCHAR(255) NOT NULL,
+    cni_url_front VARCHAR(255) ,
+    cni_url_back VARCHAR(255) ,
     selfie_url VARCHAR(255),
     matricule_professeur VARCHAR(255) UNIQUE,
-    has_uploaded BOOLEAN DEFAULT FALSE
+    has_uploaded BOOLEAN DEFAULT FALSE,
+    PRIMARY KEY (professeurs_id)
 );
+
 
 CREATE TABLE IF NOT EXISTS classes (
     id UUID PRIMARY KEY,
@@ -65,11 +65,12 @@ CREATE TABLE IF NOT EXISTS eleves (
 );
 
 CREATE TABLE IF NOT EXISTS repetiteurs (
-    repetiteurs_id VARCHAR(255) PRIMARY KEY,
+    repetiteurs_id VARCHAR(255) NOT NULL,
     cni_url_front VARCHAR(255) NOT NULL,
     cni_url_back VARCHAR(255) NOT NULL,
     photo_full_picture VARCHAR(255) NOT NULL,
-    nom_classe VARCHAR(255) NOT NULL
+    nom_classe VARCHAR(255) NOT NULL,
+    PRIMARY KEY (repetiteurs_id)
 );
 
 CREATE TABLE IF NOT EXISTS matieres (
@@ -79,22 +80,26 @@ CREATE TABLE IF NOT EXISTS matieres (
     date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     etat VARCHAR(50) DEFAULT 'ACTIF'
 );
-
 CREATE TABLE IF NOT EXISTS parent_eleve (
     parent_id VARCHAR(255) NOT NULL,
     eleve_id VARCHAR(255) NOT NULL,
     PRIMARY KEY (parent_id, eleve_id),
     FOREIGN KEY (parent_id) REFERENCES parents(parents_id),
     FOREIGN KEY (eleve_id) REFERENCES eleves(eleves_id)
-);
+    );
 
 CREATE TABLE IF NOT EXISTS messages (
-    id VARCHAR(255) PRIMARY KEY,
+    id VARCHAR(255) NOT NULL,
+    objet VARCHAR(255),
     contenu VARCHAR(255),
     datecreation VARCHAR(255),
     datemodification VARCHAR(255),
     etat VARCHAR(255),
-    expediteur_id VARCHAR(255)
+    expediteur_id VARCHAR(255),
+    deleted BOOLEAN DEFAULT FALSE,
+    date_suppression VARCHAR(255),
+    etat_original VARCHAR(255),
+    CONSTRAINT pk_messages PRIMARY KEY (id)
 );
 
 CREATE TABLE IF NOT EXISTS evenements (
@@ -145,7 +150,6 @@ CREATE TABLE IF NOT EXISTS classe_matieres (
     classe_id UUID NOT NULL,
     PRIMARY KEY (matiere_id, classe_id)
 );
-
 CREATE TABLE IF NOT EXISTS droit_publication (
     utilisateur_id VARCHAR(255) NOT NULL,
     classe_id UUID NOT NULL,
@@ -153,10 +157,9 @@ CREATE TABLE IF NOT EXISTS droit_publication (
     peut_publier BOOLEAN NOT NULL DEFAULT FALSE,
     peut_moderer BOOLEAN NOT NULL DEFAULT FALSE,
     PRIMARY KEY (utilisateur_id, classe_id),
-    FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id),
-    FOREIGN KEY (classe_id) REFERENCES classes(id)
+    CONSTRAINT fk_droit_publication_utilisateur FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id),
+    CONSTRAINT fk_droit_publication_classe FOREIGN KEY (classe_id) REFERENCES classes(id)
 );
-
 CREATE TABLE IF NOT EXISTS recevoir (
     message_id VARCHAR(255) NOT NULL,
     utilisateur_id VARCHAR(255) NOT NULL
@@ -208,7 +211,7 @@ CREATE TABLE IF NOT EXISTS interactions (
 );
 
 CREATE TABLE IF NOT EXISTS refresh_tokens (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     token VARCHAR(255) NOT NULL UNIQUE,
     expiry_date TIMESTAMP NOT NULL,
     utilisateur_id UUID NOT NULL
@@ -225,27 +228,27 @@ CREATE TABLE IF NOT EXISTS histo_activation (
     etat_classe VARCHAR(50)
 );
 
+
 CREATE TABLE IF NOT EXISTS message_classes (
-    message_id VARCHAR(255) NOT NULL,
+                                                          message_id VARCHAR(255) NOT NULL,
     classe_id UUID NOT NULL,
     PRIMARY KEY (message_id, classe_id),
-    FOREIGN KEY (message_id) REFERENCES messages(id),
-    FOREIGN KEY (classe_id) REFERENCES classes(id)
-);
-
+    CONSTRAINT fk_message_classes_message FOREIGN KEY (message_id) REFERENCES messages(id),
+    CONSTRAINT fk_message_classes_classe FOREIGN KEY (classe_id) REFERENCES classes(id)
+    );
 CREATE TABLE IF NOT EXISTS acceder (
-    utilisateur_id VARCHAR(255) NOT NULL,
-    classe_id UUID NOT NULL,
+                                                  utilisateur_id VARCHAR(255) NOT NULL,
+    classe_id VARCHAR(255) NOT NULL,
     date_acces TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (utilisateur_id, classe_id),
     FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id),
     FOREIGN KEY (classe_id) REFERENCES classes(id)
-);
+    );
 
 CREATE TABLE IF NOT EXISTS demandes_acces (
-    id VARCHAR(255) PRIMARY KEY,
+                                                         id VARCHAR(255) PRIMARY KEY,
     utilisateur_id VARCHAR(255) NOT NULL,
-    classe_id UUID NOT NULL,
+    classe_id VARCHAR(255) NOT NULL,
     code_activation VARCHAR(255) NOT NULL,
     etat VARCHAR(50) NOT NULL,
     date_demande TIMESTAMP NOT NULL,
@@ -256,51 +259,50 @@ CREATE TABLE IF NOT EXISTS demandes_acces (
     FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id),
     FOREIGN KEY (classe_id) REFERENCES classes(id),
     FOREIGN KEY (eleve_associe_id) REFERENCES eleves(eleves_id)
-);
+    );
 
 CREATE TABLE IF NOT EXISTS cours (
-    id UUID PRIMARY KEY,
-    titre VARCHAR(255) NOT NULL,
+                                                id UUID PRIMARY KEY,
+                                                titre VARCHAR(255) NOT NULL,
     description TEXT,
     date_creation TIMESTAMP NOT NULL,
     etat VARCHAR(50) NOT NULL,
-    reference TEXT,
+    references TEXT,
     contenu TEXT NOT NULL,
     redacteur_id VARCHAR(255) NOT NULL,
     FOREIGN KEY (redacteur_id) REFERENCES professeurs(professeurs_id)
-);
-
+    );
 CREATE TABLE IF NOT EXISTS cours_matiere (
-    cours_id UUID NOT NULL,
-    matiere_id UUID NOT NULL,
-    date_ajout TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ordre_dans_cours INTEGER,
-    PRIMARY KEY (cours_id, matiere_id),
+                                                        cours_id UUID NOT NULL,
+                                                        matiere_id UUID NOT NULL,
+                                                        date_ajout TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                                        ordre_dans_cours INTEGER,
+                                                        PRIMARY KEY (cours_id, matiere_id),
     FOREIGN KEY (cours_id) REFERENCES cours(id) ON DELETE CASCADE,
     FOREIGN KEY (matiere_id) REFERENCES matieres(id) ON DELETE CASCADE
-);
-
+    );
 CREATE TABLE IF NOT EXISTS chapitres (
-    id UUID PRIMARY KEY,
-    titre VARCHAR(255) NOT NULL,
+                                                    id UUID PRIMARY KEY,
+                                                    titre VARCHAR(255) NOT NULL,
     description TEXT,
     ordre INTEGER NOT NULL,
     contenu TEXT NOT NULL,
     image_url VARCHAR(255),
     cours_id UUID NOT NULL,
     FOREIGN KEY (cours_id) REFERENCES cours(id) ON DELETE CASCADE
-);
+    );
 
 CREATE TABLE IF NOT EXISTS cours_programmer (
     id VARCHAR(255) PRIMARY KEY,
     cours_id UUID NOT NULL,
     date_cours_prevue TIMESTAMP NOT NULL,
-    date_debut_effectif TIMESTAMP NOT NULL,
-    date_fin_effectif TIMESTAMP NOT NULL,
+    date_debut_effectif TIMESTAMP,
+    date_fin_effectif TIMESTAMP,
     etat_cours_programme VARCHAR(50) NOT NULL,
     classe_id UUID,
     lieu VARCHAR(255) NOT NULL,
     description TEXT,
+
     date_creation TIMESTAMP,
     date_modification TIMESTAMP,
     cree_par VARCHAR(255),
@@ -308,26 +310,31 @@ CREATE TABLE IF NOT EXISTS cours_programmer (
     FOREIGN KEY (cours_id) REFERENCES cours(id),
     FOREIGN KEY (classe_id) REFERENCES classes(id)
 );
-
 CREATE TABLE IF NOT EXISTS cours_programmer_participants (
-    cours_programmer_id VARCHAR(255) NOT NULL,
+                                                                        cours_programmer_id VARCHAR(255) NOT NULL,
     utilisateur_id VARCHAR(255) NOT NULL,
     PRIMARY KEY (cours_programmer_id, utilisateur_id),
     FOREIGN KEY (cours_programmer_id) REFERENCES cours_programmer(id) ON DELETE CASCADE,
     FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id) ON DELETE CASCADE
-);
+    );
 
+CREATE TABLE IF NOT EXISTS evenement_participants (
+    evenement_id UUID NOT NULL,
+    utilisateur_id VARCHAR(255) NOT NULL,
+    PRIMARY KEY (evenement_id, utilisateur_id)
+);
 CREATE TABLE IF NOT EXISTS cours_programmer_classes (
-    cours_programmer_id VARCHAR(255) NOT NULL,
+                                                                   cours_programmer_id VARCHAR(255) NOT NULL,
     classe_id UUID NOT NULL,
     PRIMARY KEY (cours_programmer_id, classe_id),
     FOREIGN KEY (cours_programmer_id) REFERENCES cours_programmer(id) ON DELETE CASCADE,
     FOREIGN KEY (classe_id) REFERENCES classes(id) ON DELETE CASCADE
-);
+    );
+
 
 CREATE TABLE IF NOT EXISTS exercises (
-    id UUID PRIMARY KEY,
-    nom VARCHAR(255) NOT NULL,
+                                                    id UUID PRIMARY KEY,
+                                                    nom VARCHAR(255) NOT NULL,
     description TEXT,
     date_creation TIMESTAMP NOT NULL,
     etat VARCHAR(50) NOT NULL,
@@ -335,37 +342,39 @@ CREATE TABLE IF NOT EXISTS exercises (
     niveau VARCHAR(50) NOT NULL,
     redacteur_id VARCHAR(255) NOT NULL,
     FOREIGN KEY (redacteur_id) REFERENCES professeurs(professeurs_id)
-);
+    );
+
+
 
 CREATE TABLE IF NOT EXISTS cours_exercises (
-    exercise_id UUID NOT NULL,
-    cours_id UUID NOT NULL,
-    date_liaison TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (exercise_id, cours_id),
+                                                          exercise_id UUID NOT NULL,
+                                                          cours_id UUID NOT NULL,
+                                                          date_liaison TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                                          PRIMARY KEY (exercise_id, cours_id),
     FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
     FOREIGN KEY (cours_id) REFERENCES cours(id) ON DELETE CASCADE
-);
+    );
 
 CREATE TABLE IF NOT EXISTS questions_reponses (
-    id UUID PRIMARY KEY,
-    intitule VARCHAR(1000) NOT NULL,
+                                                             id UUID PRIMARY KEY,
+                                                             intitule VARCHAR(1000) NOT NULL,
     reponse TEXT,
     type_question VARCHAR(50) NOT NULL,
     exercise_id UUID NOT NULL,
     FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE
-);
+    );
 
 CREATE TABLE IF NOT EXISTS exercise_matieres (
-    exercise_id UUID NOT NULL,
-    matiere_id UUID NOT NULL,
-    date_association TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (exercise_id, matiere_id),
+                                                            exercise_id UUID NOT NULL,
+                                                            matiere_id UUID NOT NULL,
+                                                            date_association TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                                            PRIMARY KEY (exercise_id, matiere_id),
     FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
     FOREIGN KEY (matiere_id) REFERENCES matieres(id) ON DELETE CASCADE
-);
+    );
 
 CREATE TABLE IF NOT EXISTS repondre (
-    utilisateur_id VARCHAR(255) NOT NULL,
+                                                   utilisateur_id VARCHAR(255) NOT NULL,
     question_id UUID NOT NULL,
     note VARCHAR(50),
     appreciation VARCHAR(255),
@@ -375,32 +384,239 @@ CREATE TABLE IF NOT EXISTS repondre (
     PRIMARY KEY (utilisateur_id, question_id),
     FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id) ON DELETE CASCADE,
     FOREIGN KEY (question_id) REFERENCES questions_reponses(id) ON DELETE CASCADE
-);
-
+    );
 CREATE TABLE IF NOT EXISTS exercises_programmer (
-    exercise_id UUID PRIMARY KEY,
-    date_exo_prevue TIMESTAMP NOT NULL,
-    date_debut_exo_effectif TIMESTAMP NOT NULL,
-    date_fin_exo_effectif TIMESTAMP NOT NULL,
-    etat_exo_programme VARCHAR(50) NOT NULL,
-    date_creation TIMESTAMP,
-    date_modification TIMESTAMP,
-    cree_par VARCHAR(255),
-    modifie_par VARCHAR(255)
-);
+                                                               exercise_id UUID PRIMARY KEY,
+                                                               date_exo_prevue TIMESTAMP NOT NULL,
+                                                               date_debut_exo_effectif TIMESTAMP NOT NULL,
+                                                               date_fin_exo_effectif TIMESTAMP NOT NULL,
+                                                               etat_exercise_programmer VARCHAR(50),
+    programme_par_id VARCHAR(255) NOT NULL,
+    FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
+    FOREIGN KEY (programme_par_id) REFERENCES professeurs(professeurs_id)
+    );
 
-CREATE TABLE IF NOT EXISTS exercises_programmer_participants (
-    exercises_programmer_id UUID NOT NULL,
-    utilisateur_id VARCHAR(255) NOT NULL,
-    PRIMARY KEY (exercises_programmer_id, utilisateur_id),
-    FOREIGN KEY (exercises_programmer_id) REFERENCES exercises_programmer(exercise_id) ON DELETE CASCADE,
-    FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS exercises_programmer_classes (
-    exercises_programmer_id UUID NOT NULL,
-    classe_id UUID NOT NULL,
-    PRIMARY KEY (exercises_programmer_id, classe_id),
-    FOREIGN KEY (exercises_programmer_id) REFERENCES exercises_programmer(exercise_id) ON DELETE CASCADE,
+CREATE TABLE IF NOT EXISTS exercise_programmer_classes (
+                                                                      exercise_programmer_id UUID NOT NULL,
+                                                                      classe_id UUID NOT NULL,
+                                                                      date_diffusion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                                                      PRIMARY KEY (exercise_programmer_id, classe_id),
+    FOREIGN KEY (exercise_programmer_id) REFERENCES exercises_programmer(exercise_id) ON DELETE CASCADE,
     FOREIGN KEY (classe_id) REFERENCES classes(id) ON DELETE CASCADE
-);
+    );
+
+CREATE TABLE IF NOT EXISTS participer_exo (
+                                                         utilisateur_id VARCHAR(255) NOT NULL,
+    exercise_programmer_id UUID NOT NULL,
+    note VARCHAR(50),
+    appreciation VARCHAR(255),
+    date_debut TIMESTAMP NOT NULL,
+    date_fin TIMESTAMP,
+    date_soumission TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (utilisateur_id, exercise_programmer_id),
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id) ON DELETE CASCADE,
+    FOREIGN KEY (exercise_programmer_id) REFERENCES exercises_programmer(exercise_id) ON DELETE CASCADE
+    );
+
+SET REFERENTIAL_INTEGRITY TRUE;
+
+ALTER TABLE classes DROP CONSTRAINT IF EXISTS fk_etablissement;
+ALTER TABLE classes DROP CONSTRAINT IF EXISTS fk_classes_moderator;
+ALTER TABLE professeurs DROP CONSTRAINT IF EXISTS fk_professeurs_utilisateurs;
+ALTER TABLE parents DROP CONSTRAINT IF EXISTS fk_parents_utilisateurs;
+ALTER TABLE eleves DROP CONSTRAINT IF EXISTS fk_eleves_utilisateurs;
+ALTER TABLE repetiteurs DROP CONSTRAINT IF EXISTS fk_repetiteurs_utilisateurs;
+ALTER TABLE professeur_classes_moderees DROP CONSTRAINT IF EXISTS fk_prof_moderateur;
+ALTER TABLE professeur_classes_moderees DROP CONSTRAINT IF EXISTS fk_classe_moderee;
+ALTER TABLE classe_parents DROP CONSTRAINT IF EXISTS fk_classe_parents_classe;
+ALTER TABLE classe_parents DROP CONSTRAINT IF EXISTS fk_classe_parents_parent;
+ALTER TABLE classe_eleves DROP CONSTRAINT IF EXISTS fk_classe_eleves_classe;
+ALTER TABLE classe_eleves DROP CONSTRAINT IF EXISTS fk_classe_eleves_eleve;
+ALTER TABLE canaux DROP CONSTRAINT IF EXISTS fk_canaux_professeurs;
+ALTER TABLE canaux DROP CONSTRAINT IF EXISTS fk_canaux_classes;
+ALTER TABLE professeur_matiere DROP CONSTRAINT IF EXISTS fk_professeur_matiere_professeur;
+ALTER TABLE professeur_matiere DROP CONSTRAINT IF EXISTS fk_professeur_matiere_matiere;
+ALTER TABLE classe_matieres DROP CONSTRAINT IF EXISTS fk_classe_matieres_matiere;
+ALTER TABLE classe_matieres DROP CONSTRAINT IF EXISTS fk_classe_matieres_classe;
+ALTER TABLE evenements DROP CONSTRAINT IF EXISTS fk_evenement_professeur;
+ALTER TABLE evenement_participants DROP CONSTRAINT IF EXISTS fk_evenement_participants_evenement;
+ALTER TABLE evenement_participants DROP CONSTRAINT IF EXISTS fk_evenement_participants_utilisateur;
+ALTER TABLE messages DROP CONSTRAINT IF EXISTS FK_MESSAGES_ON_EXPEDITEUR;
+ALTER TABLE recevoir DROP CONSTRAINT IF EXISTS fk_recevoir_on_messages_entity;
+ALTER TABLE recevoir DROP CONSTRAINT IF EXISTS fk_recevoir_on_utilisateurs_entity;
+ALTER TABLE media DROP CONSTRAINT IF EXISTS fk_media_owner;
+ALTER TABLE media DROP CONSTRAINT IF EXISTS fk_media_evenement;
+ALTER TABLE interactions DROP CONSTRAINT IF EXISTS fk_interaction_user;
+ALTER TABLE interactions DROP CONSTRAINT IF EXISTS fk_interaction_event;
+ALTER TABLE interactions DROP CONSTRAINT IF EXISTS fk_interaction_message;
+ALTER TABLE refresh_tokens DROP CONSTRAINT IF EXISTS fk_refresh_tokens_utilisateur;
+ALTER TABLE cours ADD COLUMN IF NOT EXISTS restriction VARCHAR(50) DEFAULT 'PRIVE';
+
+ALTER TABLE professeurs
+    ADD CONSTRAINT fk_professeurs_utilisateurs
+    FOREIGN KEY (professeurs_id) REFERENCES utilisateurs(id);
+
+ALTER TABLE parents
+    ADD CONSTRAINT fk_parents_utilisateurs
+    FOREIGN KEY (parents_id) REFERENCES utilisateurs(id);
+
+ALTER TABLE eleves
+    ADD CONSTRAINT fk_eleves_utilisateurs
+    FOREIGN KEY (eleves_id) REFERENCES utilisateurs(id);
+
+ALTER TABLE repetiteurs
+    ADD CONSTRAINT fk_repetiteurs_utilisateurs
+    FOREIGN KEY (repetiteurs_id) REFERENCES utilisateurs(id);
+
+
+ALTER TABLE classes
+    ADD CONSTRAINT fk_etablissement
+    FOREIGN KEY (etablissement_id) REFERENCES etablissements(id);
+
+ALTER TABLE etablissements
+    ADD CONSTRAINT fk_etablissement_gestionnaire
+    FOREIGN KEY (gestionnaire_id) REFERENCES utilisateurs(id);
+
+ALTER TABLE classes
+    ADD CONSTRAINT fk_classes_moderator
+    FOREIGN KEY (moderator_id) REFERENCES professeurs(professeurs_id);
+
+ALTER TABLE professeur_classes_moderees
+    ADD CONSTRAINT fk_prof_moderateur
+    FOREIGN KEY (professeur_id) REFERENCES professeurs(professeurs_id);
+
+ALTER TABLE professeur_classes_moderees
+    ADD CONSTRAINT fk_classe_moderee
+    FOREIGN KEY (classe_id) REFERENCES classes(id);
+
+ALTER TABLE classe_parents
+    ADD CONSTRAINT fk_classe_parents_classe
+    FOREIGN KEY (classe_id) REFERENCES classes(id);
+
+ALTER TABLE classe_parents
+    ADD CONSTRAINT fk_classe_parents_parent
+    FOREIGN KEY (parent_id) REFERENCES parents(parents_id);
+
+ALTER TABLE classe_eleves
+    ADD CONSTRAINT fk_classe_eleves_classe
+    FOREIGN KEY (classe_id) REFERENCES classes(id);
+
+ALTER TABLE classe_eleves
+    ADD CONSTRAINT fk_classe_eleves_eleve
+    FOREIGN KEY (eleve_id) REFERENCES eleves(eleves_id);
+
+ALTER TABLE canaux
+    ADD CONSTRAINT fk_canaux_professeurs
+    FOREIGN KEY (professeur_id) REFERENCES professeurs(professeurs_id);
+
+ALTER TABLE canaux
+    ADD CONSTRAINT fk_canaux_classes
+    FOREIGN KEY (classe_id) REFERENCES classes(id);
+
+ALTER TABLE professeur_matiere
+    ADD CONSTRAINT fk_professeur_matiere_professeur
+    FOREIGN KEY (professeur_id) REFERENCES professeurs(professeurs_id);
+
+ALTER TABLE professeur_matiere
+    ADD CONSTRAINT fk_professeur_matiere_matiere
+    FOREIGN KEY (matiere_id) REFERENCES matieres(id);
+
+ALTER TABLE classe_matieres
+    ADD CONSTRAINT fk_classe_matieres_matiere
+    FOREIGN KEY (matiere_id) REFERENCES matieres(id);
+
+ALTER TABLE classe_matieres
+    ADD CONSTRAINT fk_classe_matieres_classe
+    FOREIGN KEY (classe_id) REFERENCES classes(id);
+
+ALTER TABLE evenements
+    ADD CONSTRAINT fk_evenement_professeur
+    FOREIGN KEY (createur_id) REFERENCES professeurs(professeurs_id);
+
+ALTER TABLE evenement_participants
+    ADD CONSTRAINT fk_evenement_participants_evenement
+    FOREIGN KEY (evenement_id) REFERENCES evenements(id);
+
+ALTER TABLE evenement_participants
+    ADD CONSTRAINT fk_evenement_participants_utilisateur
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id);
+
+ALTER TABLE messages
+    ADD CONSTRAINT FK_MESSAGES_ON_EXPEDITEUR
+    FOREIGN KEY (expediteur_id) REFERENCES utilisateurs(id);
+
+ALTER TABLE recevoir
+    ADD CONSTRAINT fk_recevoir_on_messages_entity
+    FOREIGN KEY (message_id) REFERENCES messages(id);
+
+ALTER TABLE recevoir
+    ADD CONSTRAINT fk_recevoir_on_utilisateurs_entity
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id);
+
+ALTER TABLE media
+    ADD CONSTRAINT fk_media_owner
+    FOREIGN KEY (owner_id) REFERENCES utilisateurs(id) ON DELETE SET NULL;
+
+ALTER TABLE media
+    ADD CONSTRAINT fk_media_evenement
+    FOREIGN KEY (evenement_id) REFERENCES evenements(id);
+
+ALTER TABLE interactions
+    ADD CONSTRAINT fk_interaction_user
+    FOREIGN KEY (created_by) REFERENCES utilisateurs(id);
+
+ALTER TABLE interactions
+    ADD CONSTRAINT fk_interaction_event
+    FOREIGN KEY (event_id) REFERENCES evenements(id);
+
+ALTER TABLE interactions
+    ADD CONSTRAINT fk_interaction_message
+    FOREIGN KEY (message_id) REFERENCES messages(id);
+
+ALTER TABLE refresh_tokens
+    ADD CONSTRAINT fk_refresh_tokens_utilisateur
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id) ON DELETE CASCADE;
+
+ALTER TABLE acceder
+    ADD CONSTRAINT fk_acceder_classe
+        FOREIGN KEY (classe_id) REFERENCES classes(id);
+
+
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS objet VARCHAR(255);
+ALTER TABLE cours_programmer
+    ADD COLUMN professeur_id VARCHAR(255) NOT NULL;
+
+ALTER TABLE cours_programmer
+    ADD CONSTRAINT fk_cours_programmer_professeur
+        FOREIGN KEY (professeur_id) REFERENCES professeurs(professeurs_id);
+
+CREATE INDEX IF NOT EXISTS idx_classes_etat ON classes(etat);
+CREATE INDEX IF NOT EXISTS idx_classes_moderator ON classes(moderator_id);
+CREATE INDEX IF NOT EXISTS idx_prof_moderated_classes ON professeur_classes_moderees(professeur_id);
+CREATE INDEX IF NOT EXISTS idx_classe_etablissement ON classes(etablissement_id);
+CREATE INDEX IF NOT EXISTS idx_utilisateur_email ON utilisateurs(email);
+CREATE INDEX IF NOT EXISTS idx_acceder_classe ON acceder(classe_id);
+CREATE INDEX IF NOT EXISTS idx_acceder_utilisateur ON acceder(utilisateur_id);
+
+CREATE INDEX IF NOT EXISTS idx_chapitres_cours ON chapitres(cours_id);
+CREATE INDEX IF NOT EXISTS idx_chapitres_ordre ON chapitres(ordre);
+CREATE INDEX IF NOT EXISTS idx_cours_restriction ON cours(restriction);
+
+ALTER TABLE cours ALTER COLUMN contenu DROP NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_exercises_redacteur ON exercises(redacteur_id);
+CREATE INDEX IF NOT EXISTS idx_exercises_niveau ON exercises(niveau);
+CREATE INDEX IF NOT EXISTS idx_exercises_restriction ON exercises(restriction);
+CREATE INDEX IF NOT EXISTS idx_cours_exercises_cours ON cours_exercises(cours_id);
+CREATE INDEX IF NOT EXISTS idx_repondre_utilisateur ON repondre(utilisateur_id);
+CREATE INDEX IF NOT EXISTS idx_repondre_question ON repondre(question_id);
+CREATE INDEX IF NOT EXISTS idx_repondre_date ON repondre(date_reponse);
+
+CREATE INDEX IF NOT EXISTS idx_exercise_programmer_prof ON exercises_programmer(programme_par_id);
+CREATE INDEX IF NOT EXISTS idx_exercise_programmer_date_prevue ON exercises_programmer(date_exo_prevue);
+CREATE INDEX IF NOT EXISTS idx_exercise_programmer_etat ON exercises_programmer(etat_exercise_programmer);
+CREATE INDEX IF NOT EXISTS idx_exercise_programmer_classes_classe ON exercise_programmer_classes(classe_id);
+
+CREATE INDEX IF NOT EXISTS idx_participer_exo_utilisateur ON participer_exo(utilisateur_id);
+CREATE INDEX IF NOT EXISTS idx_participer_exo_exercise ON participer_exo(exercise_programmer_id);
+CREATE INDEX IF NOT EXISTS idx_participer_exo_dates ON participer_exo(date_debut, date_fin);
