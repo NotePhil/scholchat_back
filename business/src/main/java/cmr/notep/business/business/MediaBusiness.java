@@ -38,8 +38,8 @@ public class MediaBusiness {
                                 "User not found with ID: " + ownerId));
 
                 String userFolderPath = "users/" + ownerId;
-                mediaService.ensureFolderExists(userFolderPath);
-                mediaService.ensureFolderExists(userFolderPath + "/" + mediaType.toLowerCase());
+               // mediaService.ensureFolderExists(userFolderPath);
+               // mediaService.ensureFolderExists(userFolderPath + "/" + mediaType.toLowerCase());
             }
 
             // Check if media with same file path already exists
@@ -87,7 +87,7 @@ public class MediaBusiness {
             String sanitizedFileName = sanitizeFileName(fileName);
             String filePath = buildUserMediaPath(ownerId, mediaType, documentType, sanitizedFileName);
 
-            ensureUserMediaFoldersExist(ownerId, mediaType, documentType);
+            //ensureUserMediaFoldersExist(ownerId, mediaType, documentType);
 
             MediaEntity savedMedia = saveMediaMetadata(fileName, filePath, contentType, mediaType, ownerId);
             log.debug("Media metadata saved with ID: {}", savedMedia.getId());

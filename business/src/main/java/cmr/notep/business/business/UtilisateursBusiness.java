@@ -229,12 +229,12 @@ public class UtilisateursBusiness {
         try {
             if (savedUserEntity.getId() != null && !savedUserEntity.getId().equals("temp")) {
                 String userFolderPath = "users/" + savedUserEntity.getId();
-                mediaService.ensureFolderExists(userFolderPath);
+               // mediaService.ensureFolderExists(userFolderPath);
                 log.info("Created user folder for ID: {}", savedUserEntity.getId());
                 // Create standard subfolders
-                mediaService.ensureFolderExists(userFolderPath + "/photos");
-                mediaService.ensureFolderExists(userFolderPath + "/documents");
-                mediaService.ensureFolderExists(userFolderPath + "/videos");
+                //mediaService.ensureFolderExists(userFolderPath + "/photos");
+                //mediaService.ensureFolderExists(userFolderPath + "/documents");
+                //mediaService.ensureFolderExists(userFolderPath + "/videos");
             }
         } catch (Exception e) {
             log.error("Failed to create user folder for ID: {}", savedUserEntity.getId(), e);
