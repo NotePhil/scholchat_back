@@ -34,6 +34,7 @@ import java.time.LocalDateTime;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
@@ -223,6 +224,7 @@ public class UtilisateursBusiness {
 
         // Mapping et sauvegarde
         UtilisateursEntity userEntity = mapUtilisateursModeleToEntity(utilisateur);
+        userEntity.setId(UUID.randomUUID().toString());
         UtilisateursEntity savedUserEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .save(userEntity);
 

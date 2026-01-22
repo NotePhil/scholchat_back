@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -64,9 +65,13 @@ public class CoursProgrammerBusiness {
                 .findById(id)
                 .orElseThrow(() -> new RuntimeException("Scheduled course not found with ID: " + id));
 
-        // Validate input dates
-        validateCourseScheduleDates(coursProgrammer);
-        validateEffectiveDates(coursProgrammer);
+        // Only validate dates if they are being updated
+        if (coursProgrammer.getDateCoursPrevue() != null) {
+            validateCourseScheduleDates(coursProgrammer);
+        }
+        if (coursProgrammer.getDateDebutEffectif() != null || coursProgrammer.getDateFinEffectif() != null) {
+            validateEffectiveDates(coursProgrammer);
+        }
         // Update entity fields
         updateEntityFromDto(existingEntity, coursProgrammer);
 
@@ -117,14 +122,25 @@ public class CoursProgrammerBusiness {
     }
 
     private void updateEntityFromDto(CoursProgrammerEntity entity, CoursProgrammer dto) {
-        // Update basic fields
-        entity.setDateCoursPrevue(dto.getDateCoursPrevue());
-        entity.setDateDebutEffectif(dto.getDateDebutEffectif());
-        entity.setDateFinEffectif(dto.getDateFinEffectif());
-        entity.setEtatCoursProgramme(dto.getEtatCoursProgramme() != null ?
-                dto.getEtatCoursProgramme() : EtatCoursProgramme.PLANIFIE);
-        entity.setLieu(dto.getLieu());
-        entity.setDescription(dto.getDescription());
+        // Update basic fields only if provided
+        if (dto.getDateCoursPrevue() != null) {
+            entity.setDateCoursPrevue(dto.getDateCoursPrevue());
+        }
+        if (dto.getDateDebutEffectif() != null) {
+            entity.setDateDebutEffectif(dto.getDateDebutEffectif());
+        }
+        if (dto.getDateFinEffectif() != null) {
+            entity.setDateFinEffectif(dto.getDateFinEffectif());
+        }
+        if (dto.getEtatCoursProgramme() != null) {
+            entity.setEtatCoursProgramme(dto.getEtatCoursProgramme());
+        }
+        if (dto.getLieu() != null) {
+            entity.setLieu(dto.getLieu());
+        }
+        if (dto.getDescription() != null) {
+            entity.setDescription(dto.getDescription());
+        }
 
         // Update classes if provided
         if (dto.getClassesIds() != null) {
@@ -182,6 +198,7 @@ public class CoursProgrammerBusiness {
     }
     private CoursProgrammerEntity createScheduledCourseEntity(CoursProgrammer coursProgrammer, CoursEntity cours, ProfesseursEntity professeur) {
         CoursProgrammerEntity entity = new CoursProgrammerEntity();
+        entity.setId(UUID.randomUUID().toString());
 
         // Set basic fields
         entity.setDateCoursPrevue(coursProgrammer.getDateCoursPrevue());

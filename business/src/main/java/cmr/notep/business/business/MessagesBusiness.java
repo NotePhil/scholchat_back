@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -46,6 +47,7 @@ public class MessagesBusiness {
         }
 
         MessagesEntity messageEntity = dozerMapperBean.map(message, MessagesEntity.class);
+        messageEntity.setId(UUID.randomUUID().toString());
         
         // Set required fields if not already set
         if (messageEntity.getDateCreation() == null) {
@@ -71,6 +73,7 @@ public class MessagesBusiness {
 
         // Create message entity
         MessagesEntity messageEntity = new MessagesEntity();
+        messageEntity.setId(UUID.randomUUID().toString());
         messageEntity.setContenu(groupMessageDto.getContent());
         messageEntity.setObjet(groupMessageDto.getObjet());
         messageEntity.setExpediteurEntity(sender);

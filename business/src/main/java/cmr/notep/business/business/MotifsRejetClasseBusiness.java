@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
@@ -26,6 +27,7 @@ public class MotifsRejetClasseBusiness {
         log.info("Création d'un nouveau motif de rejet de classe: {}", motifRejetClasse.getCode());
 
         MotifRejetClasseEntity entity = dozerMapperBean.map(motifRejetClasse, MotifRejetClasseEntity.class);
+        entity.setId(UUID.randomUUID().toString());
         entity.setDateCreation(LocalDateTime.now());
 
         MotifRejetClasseEntity savedEntity = daoAccessorService.getRepository(MotifRejetClasseRepository.class).save(entity);

@@ -20,8 +20,8 @@ import java.time.LocalDateTime;
 public class UtilisateursEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", nullable = false, updatable = false, columnDefinition = "UUID")
+    
+    @Column(name = "id", nullable = false, updatable = false)
     private String id;
 
     @Column(name = "nom")

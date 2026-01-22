@@ -13,7 +13,7 @@ import java.util.Date;
 @Table(name = "demandes_acces", schema = "ressources")
 public class DemandeAccesEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    
     private String id;
 
     @ManyToOne

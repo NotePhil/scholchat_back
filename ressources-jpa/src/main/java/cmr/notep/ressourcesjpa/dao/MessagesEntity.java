@@ -13,8 +13,8 @@ import java.util.List;
 @Table(name = "messages", schema = "ressources")
 public class MessagesEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", nullable = false, updatable = false, columnDefinition = "UUID")
+    
+    @Column(name = "id", nullable = false, updatable = false)
     private String id;
 
     @Column(name = "objet")

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -30,6 +31,7 @@ public class MotifsRejetBusiness {
         log.info("Création d'un nouveau motif de rejet: {}", motifRejet.getCode());
 
         MotifRejetEntity entity = dozerMapperBean.map(motifRejet, MotifRejetEntity.class);
+        entity.setId(UUID.randomUUID().toString());
         entity.setDateCreation(LocalDateTime.now());
 
         MotifRejetEntity savedEntity = daoAccessorService.getRepository(MotifRejetRepository.class).save(entity);

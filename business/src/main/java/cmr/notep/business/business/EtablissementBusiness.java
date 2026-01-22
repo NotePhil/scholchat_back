@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 
 import java.security.SecureRandom;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
@@ -34,6 +35,7 @@ public class EtablissementBusiness {
 
     public Etablissement creerEtablissement(Etablissement etablissement) {
             EtablissementEntity entity = dozerMapperBean.map(etablissement, EtablissementEntity.class);
+            entity.setId(UUID.randomUUID().toString());
             
             // Handle gestionnaire if provided
             if (etablissement.getGestionnaire() != null && etablissement.getGestionnaire().getId() != null) {

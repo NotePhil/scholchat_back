@@ -16,8 +16,8 @@ import java.util.List;
 public class CoursProgrammerEntity {
 
     @Id
-    @GeneratedValue(generator = "UUID")
-    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+    
+    
     @Column(name = "id", nullable = false, updatable = false)
     private String id;
 

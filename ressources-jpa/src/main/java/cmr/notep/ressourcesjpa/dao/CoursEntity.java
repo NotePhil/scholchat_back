@@ -16,7 +16,7 @@ import java.util.List;
 @Table(name = "cours", schema = "ressources")
 public class CoursEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    
     private String id;
     @Column(nullable = false)
     private String titre;

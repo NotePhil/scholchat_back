@@ -10,7 +10,7 @@ import lombok.Setter;
 @Table(name = "chapitres", schema = "ressources")
 public class ChapitreEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    
     private String id;
 
     @Column(nullable = false)

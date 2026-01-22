@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Table(name = "motifs_rejet", schema = "ressources")
 public class MotifRejetEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    
     private String id;
 
     @Column(nullable = false, unique = true)

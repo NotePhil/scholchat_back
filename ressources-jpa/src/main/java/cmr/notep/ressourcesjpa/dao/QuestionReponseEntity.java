@@ -14,7 +14,7 @@ import java.util.List;
 @Table(name = "questions_reponses", schema = "ressources")
 public class QuestionReponseEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    
     private String id;
 
     @Column(nullable = false)

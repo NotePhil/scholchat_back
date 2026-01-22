@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.mail.MessagingException;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
@@ -49,6 +50,7 @@ public class ClassesBusiness {
         log.info("Creating new class with data: {}", classeDto);
         
         ClassesEntity classesEntity = new ClassesEntity();
+        classesEntity.setId(UUID.randomUUID().toString());
         classesEntity.setNom(classeDto.getNom());
         classesEntity.setNiveau(classeDto.getNiveau());
         classesEntity.setDateCreation(new java.util.Date());
@@ -119,6 +121,7 @@ public class ClassesBusiness {
     public Classes creerClasse(Classes classes) throws SchoolException {
         log.info("Creating class with data: {}", classes);
         ClassesEntity classesEntity = dozerMapperBean.map(classes, ClassesEntity.class);
+        classesEntity.setId(UUID.randomUUID().toString());
 
         EtablissementEntity etablissement = null;
         if (classes.getEtablissement() != null && 
