@@ -72,6 +72,7 @@ public class UtilisateursEntity {
     @ManyToMany
     @JoinTable(
             name = "classe_eleves",
+            schema = "ressources",
             joinColumns = @JoinColumn(name = "eleve_id"),
             inverseJoinColumns = @JoinColumn(name = "classe_id")
     )
