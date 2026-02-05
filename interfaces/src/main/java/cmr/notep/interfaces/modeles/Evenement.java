@@ -32,4 +32,8 @@ public class Evenement {
     private List<Media> medias;
     
     private List<Interaction> interactions;
+    
+    // Nouveaux champs pour supporter la logique du frontend
+    private String visibility; // PUBLIC ou PRIVATE
+    private List<String> selectedClasses; // IDs des classes sélectionnées pour les événements privés
 }

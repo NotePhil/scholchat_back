@@ -43,6 +43,20 @@ public class EvenementBusiness {
             // Map the event DTO to entity
             EvenementEntity entity = dozerMapperBean.map(evenement, EvenementEntity.class);
             entity.setId(UUID.randomUUID().toString());
+            
+            // Set default etat to PLANIFIE if not specified
+            if (entity.getEtat() == null) {
+                entity.setEtat(cmr.notep.modele.EtatEvenement.PLANIFIE);
+            }
+            
+            // Handle visibility mapping - if etat is PUBLIC/PRIVATE, map to visibility
+            if (evenement.getEtat() != null) {
+                String etatString = evenement.getEtat().toString();
+                if ("PUBLIC".equals(etatString) || "PRIVATE".equals(etatString)) {
+                    entity.setVisibility(etatString);
+                    entity.setEtat(cmr.notep.modele.EtatEvenement.PLANIFIE); // Set default etat
+                }
+            }
 
             // Fetch and set the creator
             ProfesseursEntity createur = daoAccessorService.getRepository(ProfesseursRepository.class)
@@ -54,6 +68,24 @@ public class EvenementBusiness {
             // Set participants if needed
             if (evenement.getParticipantsIds() != null) {
                 entity.setParticipantsIds(evenement.getParticipantsIds());
+            }
+            
+            // Set visibility and selected classes for frontend compatibility
+            entity.setVisibility(evenement.getVisibility());
+            if (evenement.getSelectedClasses() != null) {
+                entity.setSelectedClasses(evenement.getSelectedClasses());
+            }
+            
+            // Handle frontend sending PUBLIC/PRIVATE in etat field
+            if (evenement.getEtat() != null) {
+                String etatString = evenement.getEtat().toString();
+                if ("PUBLIC".equals(etatString)) {
+                    entity.setVisibility("PUBLIC");
+                    entity.setEtat(cmr.notep.modele.EtatEvenement.PLANIFIE);
+                } else if ("PRIVATE".equals(etatString)) {
+                    entity.setVisibility("PRIVATE");
+                    entity.setEtat(cmr.notep.modele.EtatEvenement.PLANIFIE);
+                }
             }
 
             // Handle media properly with all required fields
@@ -152,6 +184,12 @@ public class EvenementBusiness {
             existing.setEtat(evenement.getEtat());
             existing.setHeureDebut(evenement.getHeureDebut());
             existing.setHeureFin(evenement.getHeureFin());
+            
+            // Update new fields
+            existing.setVisibility(evenement.getVisibility());
+            if (evenement.getSelectedClasses() != null) {
+                existing.setSelectedClasses(evenement.getSelectedClasses());
+            }
 
             EvenementEntity updated = repo.save(existing);
             Evenement result = dozerMapperBean.map(updated, Evenement.class);

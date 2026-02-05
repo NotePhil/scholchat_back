@@ -200,4 +200,20 @@ public class InteractionBusiness {
         
         return createInteraction(unjoinInteraction);
     }
+    
+    public void toggleLike(String eventId, String userId) {
+        Interaction likeInteraction = Interaction.builder()
+                .type(cmr.notep.modele.InteractionType.LIKE)
+                .content("User liked the event")
+                .niveau("INFO")
+                .createdById(userId)
+                .eventId(eventId)
+                .build();
+        
+        createInteraction(likeInteraction); // createInteraction already handles toggle logic
+    }
+    
+    public List<Interaction> getInteractionsByEventId(String eventId) {
+        return getInteractionsByEvent(eventId);
+    }
 }

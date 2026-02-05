@@ -51,4 +51,14 @@ public class EvenementEntity {
 
     @OneToMany(mappedBy = "evenement", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MediaEntity> medias;
+    
+    // Nouveaux champs pour supporter la logique du frontend
+    @Column(name = "visibility")
+    private String visibility; // PUBLIC ou PRIVATE
+    
+    @ElementCollection
+    @CollectionTable(name = "evenement_classes", schema = "ressources",
+            joinColumns = @JoinColumn(name = "evenement_id"))
+    @Column(name = "classe_id")
+    private List<String> selectedClasses; // IDs des classes sélectionnées pour les événements privés
 }
