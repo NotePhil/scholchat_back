@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
@@ -34,6 +35,7 @@ public class MatiereBusiness {
         }
 
         MatiereEntity entity = dozerMapperBean.map(matiere, MatiereEntity.class);
+        entity.setId(UUID.randomUUID().toString());
         entity.setDateCreation(LocalDateTime.now());
         entity.setEtat(EtatMatieres.ACTIF);
         MatiereEntity savedEntity = daoAccessorService.getRepository(MatiereRepository.class).save(entity);

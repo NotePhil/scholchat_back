@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
@@ -41,6 +42,7 @@ public class EvenementBusiness {
 
             // Map the event DTO to entity
             EvenementEntity entity = dozerMapperBean.map(evenement, EvenementEntity.class);
+            entity.setId(UUID.randomUUID().toString());
 
             // Fetch and set the creator
             ProfesseursEntity createur = daoAccessorService.getRepository(ProfesseursRepository.class)

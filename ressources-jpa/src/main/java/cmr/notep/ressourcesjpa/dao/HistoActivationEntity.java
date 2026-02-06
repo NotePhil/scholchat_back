@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Table(name = "histo_activation", schema = "ressources")
 public class HistoActivationEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    
     private String id;
 
     @ManyToOne

@@ -15,7 +15,6 @@ import java.util.List;
 @Table(name = "matieres", schema = "ressources")
 public class MatiereEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     @Column(nullable = false, unique = true)

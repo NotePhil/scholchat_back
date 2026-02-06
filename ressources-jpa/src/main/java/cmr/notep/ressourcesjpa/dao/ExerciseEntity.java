@@ -17,7 +17,7 @@ import java.util.List;
 @Inheritance(strategy = InheritanceType.JOINED)
 public class ExerciseEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    
     private String id;
 
     @Column(nullable = false)

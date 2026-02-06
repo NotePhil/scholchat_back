@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Table(name = "interactions", schema = "ressources")
 public class InteractionEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    
     private String id;
 
     @Enumerated(EnumType.STRING)

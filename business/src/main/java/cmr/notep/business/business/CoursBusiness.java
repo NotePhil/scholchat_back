@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
@@ -40,6 +41,7 @@ public class CoursBusiness {
 
         // Map and save course
         CoursEntity entity = dozerMapperBean.map(cours, CoursEntity.class);
+        entity.setId(UUID.randomUUID().toString());
         entity.setRedacteur(professeur);
         entity.setDateCreation(new Date());
 
@@ -73,8 +75,8 @@ public class CoursBusiness {
             for (Chapitre chapitre : cours.getChapitres()) {
                 ChapitreEntity chapitreEntity = dozerMapperBean.map(chapitre, ChapitreEntity.class);
 
-                // Ensure ID is null for new chapters to avoid the "id must not be null" error
-                chapitreEntity.setId(null);
+                // Generate UUID for new chapters
+                chapitreEntity.setId(UUID.randomUUID().toString());
 
                 // Set the course reference for the chapter
                 chapitreEntity.setCours(entity);
@@ -166,6 +168,10 @@ public class CoursBusiness {
 
             for (Chapitre chapitre : cours.getChapitres()) {
                 ChapitreEntity chapitreEntity = dozerMapperBean.map(chapitre, ChapitreEntity.class);
+                // Generate UUID for new chapters
+                if (chapitreEntity.getId() == null) {
+                    chapitreEntity.setId(UUID.randomUUID().toString());
+                }
                 chapitreEntity.setCours(existingEntity);
                 chapitreEntities.add(chapitreEntity);
 

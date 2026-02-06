@@ -24,6 +24,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
@@ -42,6 +43,7 @@ public class ExerciseBusiness {
                 .findById(exercise.getRedacteurId())
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Professeur introuvable"));
         ExerciseEntity entity = dozerMapperBean.map(exercise, ExerciseEntity.class);
+        entity.setId(UUID.randomUUID().toString());
         entity.setRedacteur(professeur);
         entity.setDateCreation(new Date());
         if (entity.getCoursLies() == null) {

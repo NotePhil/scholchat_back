@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -48,6 +49,7 @@ public class InteractionBusiness {
         }
 
         InteractionEntity entity = dozerMapperBean.map(interaction, InteractionEntity.class);
+        entity.setId(UUID.randomUUID().toString());
 
         // Ensure creation date is set
         if (entity.getCreationDate() == null) {
