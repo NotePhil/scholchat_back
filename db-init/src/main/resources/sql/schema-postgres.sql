@@ -110,7 +110,16 @@ CREATE TABLE IF NOT EXISTS evenements (
     etat VARCHAR(50) NOT NULL,
     heure_debut TIMESTAMP NOT NULL,
     heure_fin TIMESTAMP,
-    createur_id VARCHAR(255) NOT NULL
+    createur_id VARCHAR(255) NOT NULL,
+    visibility VARCHAR(20) DEFAULT 'PUBLIC'
+);
+
+CREATE TABLE IF NOT EXISTS evenement_classes (
+    evenement_id VARCHAR(255) NOT NULL,
+    classe_id VARCHAR(255) NOT NULL,
+    PRIMARY KEY (evenement_id, classe_id),
+    FOREIGN KEY (evenement_id) REFERENCES evenements(id) ON DELETE CASCADE,
+    FOREIGN KEY (classe_id) REFERENCES classes(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS professeur_classes_moderees (
