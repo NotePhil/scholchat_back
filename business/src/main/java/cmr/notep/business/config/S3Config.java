@@ -29,9 +29,6 @@ public class S3Config {
     @Value("${s3.bucket.name}")
     private String bucketName;
 
-    @Value("${s3.region}")
-    private String region;
-
     @Value("${s3.presigned-url.expiry}")
     private int presignedUrlExpiry;
 
@@ -41,8 +38,8 @@ public class S3Config {
                 .endpointOverride(URI.create(endpoint))
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(accessKey, secretKey)))
-                .region(Region.of(region))
-                .forcePathStyle(true) // ← This is correct
+                .region(Region.US_EAST_1) // Default region for Wasabi
+                .forcePathStyle(true)
                 .build();
     }
 
@@ -57,8 +54,8 @@ public class S3Config {
                 .endpointOverride(URI.create(endpoint))
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(accessKey, secretKey)))
-                .region(Region.of(region))
-                .serviceConfiguration(s3Configuration) // ← Apply the configuration
+                .region(Region.US_EAST_1) // Default region for Wasabi
+                .serviceConfiguration(s3Configuration)
                 .build();
     }
 }
