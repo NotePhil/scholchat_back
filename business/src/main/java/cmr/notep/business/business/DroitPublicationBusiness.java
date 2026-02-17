@@ -142,6 +142,11 @@ public class DroitPublicationBusiness {
             return getAllClassesForAdmin();
         }
 
+        // For professors, include moderated classes + classes with publication rights
+        if (utilisateur instanceof ProfesseursEntity) {
+            return getClassesForProfessor((ProfesseursEntity) utilisateur, utilisateurId);
+        }
+
         return getClassesWithPublicationRights(utilisateurId);
     }
 
@@ -151,6 +156,31 @@ public class DroitPublicationBusiness {
                 .stream()
                 .map(this::mapClassWithMinimalData)
                 .collect(Collectors.toList());
+    }
+
+    private List<Classes> getClassesForProfessor(ProfesseursEntity professor, String userId) {
+        Set<String> classIds = new HashSet<>();
+        List<Classes> result = new ArrayList<>();
+
+        // Add moderated classes
+        if (professor.getModeratedClasses() != null) {
+            for (ClassesEntity classe : professor.getModeratedClasses()) {
+                if (classIds.add(classe.getId())) {
+                    result.add(mapClassWithMinimalData(classe));
+                }
+            }
+        }
+
+        // Add classes with publication rights
+        List<DroitPublicationEntity> droits = daoAccessorService.getRepository(DroitPublicationRepository.class)
+                .findAllClassesByUserId(userId);
+        for (DroitPublicationEntity droit : droits) {
+            if (droit.getClasse() != null && classIds.add(droit.getClasse().getId())) {
+                result.add(mapClassWithMinimalData(droit.getClasse()));
+            }
+        }
+
+        return result;
     }
 
     private List<Classes> getClassesWithPublicationRights(String userId) {

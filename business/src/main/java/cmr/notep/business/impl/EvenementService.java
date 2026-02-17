@@ -9,7 +9,9 @@ import cmr.notep.interfaces.modeles.Interaction;
 import cmr.notep.interfaces.modeles.CommentRequest;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.AccederEntity;
+import cmr.notep.ressourcesjpa.dao.UtilisateursEntity;
 import cmr.notep.ressourcesjpa.repository.AccederRepository;
+import cmr.notep.ressourcesjpa.repository.UtilisateursRepository;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -32,11 +34,15 @@ public class EvenementService implements EvenementApi {
         this.daoAccessorService = daoAccessorService;
     }
 
-    // Méthode utilitaire pour obtenir l'ID de l'utilisateur connecté
+    // Resolve the authenticated user's email to their actual user ID
     private String getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated()) {
-            return authentication.getName(); // Assuming the name is the user ID
+            String email = authentication.getName();
+            UtilisateursEntity user = daoAccessorService.getRepository(UtilisateursRepository.class)
+                    .findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+            return user.getId();
         }
         throw new RuntimeException("Utilisateur non authentifié");
     }

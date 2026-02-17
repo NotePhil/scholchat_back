@@ -38,7 +38,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
-import cmr.notep.business.services.MediaService;
 @Component
 @Slf4j
 @Transactional(noRollbackFor = SchoolException.class)
@@ -51,7 +50,6 @@ public class UtilisateursBusiness {
     private final RoleService roleService;
     private final UserValidationService userValidationService;
     private final AwaitingValidationEmailService awaitingValidationEmailService;
-    private final MediaService mediaService;
 
     @Autowired
     private TemplateEngine templateEngine;
@@ -62,8 +60,7 @@ public class UtilisateursBusiness {
                                 MailServiceInterface mailService,
                                 IRejectionEmailService rejectionEmailService,
                                 RoleService roleService, UserValidationService userValidationService, UserValidationService userValidationService1,
-                                AwaitingValidationEmailService awaitingValidationEmailService,
-                                MediaService mediaService) {
+                                AwaitingValidationEmailService awaitingValidationEmailService) {
         this.daoAccessorService = daoAccessorService;
         this.activationEmailService = activationEmailService;
         this.jwtUtil = jwtUtil;
@@ -72,7 +69,6 @@ public class UtilisateursBusiness {
         this.roleService = roleService;
         this.userValidationService = userValidationService1;
         this.awaitingValidationEmailService = awaitingValidationEmailService;
-        this.mediaService = mediaService;
     }
     public Utilisateurs patcherUtilisateur(String idUtilisateur, Utilisateurs partialUpdate) {
         log.info("Patching user with ID: {}", idUtilisateur);

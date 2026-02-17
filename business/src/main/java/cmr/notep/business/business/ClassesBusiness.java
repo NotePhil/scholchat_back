@@ -4,6 +4,7 @@ import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.EmailTemplateService;
 import cmr.notep.business.services.MailService;
+import cmr.notep.business.services.NotificationService;
 import cmr.notep.business.services.TokenService;
 import cmr.notep.business.services.PaymentService;
 import cmr.notep.interfaces.dto.ClasseCreationDto;
@@ -35,15 +36,17 @@ public class ClassesBusiness {
     private final EmailTemplateService emailTemplateService;
     private final TokenService tokenService;
     private final PaymentService paymentService;
+    private final NotificationService notificationService;
 
-    public ClassesBusiness(DaoAccessorService daoAccessorService, MailService mailService, 
+    public ClassesBusiness(DaoAccessorService daoAccessorService, MailService mailService,
                           EmailTemplateService emailTemplateService, TokenService tokenService,
-                          PaymentService paymentService) {
+                          PaymentService paymentService, NotificationService notificationService) {
         this.daoAccessorService = daoAccessorService;
         this.mailService = mailService;
         this.emailTemplateService = emailTemplateService;
         this.tokenService = tokenService;
         this.paymentService = paymentService;
+        this.notificationService = notificationService;
     }
 
     public ClasseCreationResponseDto creerNouvelleClasse(ClasseCreationDto classeDto) throws SchoolException {
@@ -360,6 +363,19 @@ public class ClassesBusiness {
 
         classe.setEtat(EtatClasse.ACTIF);
         ClassesEntity saved = classesRepository.save(classe);
+
+        // Notify the professor/moderator that their class was approved
+        try {
+            if (classe.getModerator() != null) {
+                notificationService.createClassValidationNotification(
+                        classe.getId(), classe.getNom(),
+                        classe.getModerator().getId(),
+                        null, "Administration");
+            }
+        } catch (Exception e) {
+            log.error("Error sending class approval notification: {}", e.getMessage());
+        }
+
         return dozerMapperBean.map(saved, Classes.class);
     }
 
@@ -377,8 +393,20 @@ public class ClassesBusiness {
         }
 
         classe.setEtat(EtatClasse.INACTIF);
-        // You might want to store the rejection reason in a separate table
         ClassesEntity saved = classesRepository.save(classe);
+
+        // Notify the professor/moderator that their class was rejected
+        try {
+            if (classe.getModerator() != null) {
+                notificationService.createClassRejectedNotification(
+                        classe.getId(), classe.getNom(),
+                        classe.getModerator().getId(),
+                        "Administration");
+            }
+        } catch (Exception e) {
+            log.error("Error sending class rejection notification: {}", e.getMessage());
+        }
+
         return dozerMapperBean.map(saved, Classes.class);
     }
 
@@ -541,10 +569,22 @@ public class ClassesBusiness {
             
             classe.setEtat(EtatClasse.ACTIF);
             daoAccessorService.getRepository(ClassesRepository.class).save(classe);
-            
+
             // Send approval notification email
             sendApprovalNotificationEmail(classe, etablissement);
-            
+
+            // Send in-app notification to the professor
+            try {
+                if (classe.getModerator() != null) {
+                    notificationService.createClassValidationNotification(
+                            classe.getId(), classe.getNom(),
+                            classe.getModerator().getId(),
+                            null, etablissement.getNom());
+                }
+            } catch (Exception ex) {
+                log.error("Error sending class approval notification: {}", ex.getMessage());
+            }
+
             log.info("Classe {} approuvée par l'établissement {}", classeId, etablissementId);
         } catch (Exception e) {
             log.error("Erreur lors de l'approbation de la classe: {}", e.getMessage());

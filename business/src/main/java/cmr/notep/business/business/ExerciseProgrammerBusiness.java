@@ -2,6 +2,7 @@ package cmr.notep.business.business;
 
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
+import cmr.notep.business.services.NotificationService;
 import cmr.notep.interfaces.modeles.Classes;
 import cmr.notep.interfaces.modeles.ExerciseProgrammer;
 import cmr.notep.modele.EtatExercise;
@@ -26,6 +27,7 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 public class ExerciseProgrammerBusiness {
 
     private final DaoAccessorService daoAccessorService;
+    private final NotificationService notificationService;
 
     public ExerciseProgrammer programmerExercise(ExerciseProgrammer exerciseProgrammer) {
         log.info("Programmation d'un nouvel exercice à partir de l'exercice ID: {}", exerciseProgrammer.getExerciseId());
@@ -100,8 +102,23 @@ public class ExerciseProgrammerBusiness {
 
         // Diffuser dans les classes spécifiées (si des IDs de classes sont fournis)
         if (exerciseProgrammer.getClassesDiffusees() != null && !exerciseProgrammer.getClassesDiffusees().isEmpty()) {
+            List<String> classeIds = new ArrayList<>();
             for (Classes classe : exerciseProgrammer.getClassesDiffusees()) {
                 diffuserExerciseDansClasse(exerciseProgramme.getId(), classe.getId());
+                classeIds.add(classe.getId());
+            }
+
+            // Send notifications to students in the classes
+            try {
+                ProfesseursEntity prof = daoAccessorService.getRepository(ProfesseursRepository.class)
+                        .findById(exerciseProgrammer.getProgrammeParId()).orElse(null);
+                if (prof != null) {
+                    String profName = prof.getPrenom() + " " + prof.getNom();
+                    notificationService.createExerciseAssignedNotification(
+                            exerciseProgramme.getNom(), prof.getId(), profName, classeIds);
+                }
+            } catch (Exception e) {
+                log.error("Error sending exercise notifications: {}", e.getMessage());
             }
         }
 

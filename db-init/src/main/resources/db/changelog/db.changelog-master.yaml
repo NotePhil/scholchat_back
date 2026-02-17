@@ -13,3 +13,10 @@ databaseChangeLog:
         - sqlFile:
             path: classpath:sql/data-postgres.sql
             relativeToChangelogFile: false
+  - changeSet:
+      id: 3-add-notifications
+      author: db-init
+      changes:
+        - sqlFile:
+            path: classpath:sql/migration-add-notifications.sql
+            relativeToChangelogFile: false

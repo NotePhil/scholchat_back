@@ -1,5 +1,6 @@
 package cmr.notep.business.business;
 
+import cmr.notep.business.services.NotificationService;
 import cmr.notep.interfaces.modeles.CoursProgrammer;
 import cmr.notep.modele.EtatCours;
 import cmr.notep.modele.EtatCoursProgramme;
@@ -19,9 +20,11 @@ import java.util.stream.Collectors;
 public class CoursProgrammerBusiness {
 
     private final DaoAccessorService daoAccessorService;
+    private final NotificationService notificationService;
 
-    public CoursProgrammerBusiness(DaoAccessorService daoAccessorService) {
+    public CoursProgrammerBusiness(DaoAccessorService daoAccessorService, NotificationService notificationService) {
         this.daoAccessorService = daoAccessorService;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -54,6 +57,20 @@ public class CoursProgrammerBusiness {
 
         // Update course status if needed
         updateCourseStatusAfterScheduling(cours);
+
+        // Send notifications to students in the classes
+        try {
+            if (savedEntity.getClasses() != null && !savedEntity.getClasses().isEmpty()) {
+                String profName = professeur.getPrenom() + " " + professeur.getNom();
+                List<String> classeIds = savedEntity.getClasses().stream()
+                        .map(ClassesEntity::getId)
+                        .collect(Collectors.toList());
+                notificationService.createCourseScheduledNotification(
+                        cours.getTitre(), professeur.getId(), profName, classeIds);
+            }
+        } catch (Exception e) {
+            // Don't fail the course scheduling if notifications fail
+        }
 
         return mapToDto(savedEntity);
     }

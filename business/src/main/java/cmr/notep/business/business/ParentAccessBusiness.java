@@ -3,6 +3,7 @@ package cmr.notep.business.business;
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.MailServiceInterface;
+import cmr.notep.business.services.NotificationService;
 import cmr.notep.interfaces.dto.ClasseInfoDto;
 import cmr.notep.interfaces.dto.EleveInfoDto;
 import cmr.notep.interfaces.dto.ParentAccessRequestDto;
@@ -27,10 +28,13 @@ public class ParentAccessBusiness {
 
     private final DaoAccessorService daoAccessorService;
     private final MailServiceInterface mailService;
+    private final NotificationService notificationService;
 
-    public ParentAccessBusiness(DaoAccessorService daoAccessorService, MailServiceInterface mailService) {
+    public ParentAccessBusiness(DaoAccessorService daoAccessorService, MailServiceInterface mailService,
+                                NotificationService notificationService) {
         this.daoAccessorService = daoAccessorService;
         this.mailService = mailService;
+        this.notificationService = notificationService;
     }
 
     public ClasseInfoDto validerTokenEtRecupererInfos(String token, String classeId) throws SchoolException {
@@ -154,6 +158,16 @@ public class ParentAccessBusiness {
             demande.setEstParent(estParent);
             demande.setEleveAssocieId(eleveAssocieId);
             daoAccessorService.getRepository(DemandeAccesRepository.class).save(demande);
+
+            // Send in-app notifications
+            try {
+                UtilisateursEntity user = demande.getUtilisateur();
+                String userName = user.getPrenom() + " " + user.getNom();
+                ClassesEntity classe = demande.getClasse();
+                notificationService.createAccessRequestNotification(classeId, classe.getNom(), utilisateurId, userName);
+            } catch (Exception e) {
+                log.error("Error sending parent access request notification: {}", e.getMessage());
+            }
         }
     }
     private void notifierModerateur(ClassesEntity classe, ParentsEntity parent,

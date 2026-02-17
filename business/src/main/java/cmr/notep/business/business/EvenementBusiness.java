@@ -2,6 +2,7 @@ package cmr.notep.business.business;
 
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
+import cmr.notep.business.services.NotificationService;
 import cmr.notep.interfaces.modeles.Evenement;
 import cmr.notep.interfaces.modeles.Media;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
@@ -26,10 +27,13 @@ public class EvenementBusiness {
 
     private final DaoAccessorService daoAccessorService;
     private final InteractionBusiness interactionBusiness;
+    private final NotificationService notificationService;
 
-    public EvenementBusiness(DaoAccessorService daoAccessorService, InteractionBusiness interactionBusiness) {
+    public EvenementBusiness(DaoAccessorService daoAccessorService, InteractionBusiness interactionBusiness,
+                             NotificationService notificationService) {
         this.daoAccessorService = daoAccessorService;
         this.interactionBusiness = interactionBusiness;
+        this.notificationService = notificationService;
     }
 
     public Evenement creerEvenement(Evenement evenement) {
@@ -159,6 +163,20 @@ public class EvenementBusiness {
             savedEvenement.setInteractions(interactionBusiness.getInteractionsByEvent(savedEntity.getId()));
 
             log.info("Event created successfully with ID: {}", savedEntity.getId());
+
+            // Send notifications to students in the selected classes
+            try {
+                String creatorName = createur.getPrenom() + " " + createur.getNom();
+                List<String> selectedClasses = savedEntity.getSelectedClasses();
+                if (selectedClasses != null && !selectedClasses.isEmpty()) {
+                    notificationService.createActivityNotification(
+                            savedEntity.getId(), savedEntity.getTitre(),
+                            createur.getId(), creatorName, selectedClasses);
+                }
+            } catch (Exception ex) {
+                log.error("Error sending event notifications: {}", ex.getMessage());
+            }
+
             return savedEvenement;
 
         } catch (SchoolException e) {

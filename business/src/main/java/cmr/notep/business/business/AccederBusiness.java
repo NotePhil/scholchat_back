@@ -5,6 +5,7 @@ import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.AccessConfirmationEmailService;
 import cmr.notep.business.services.AccessRejectionEmailService;
 import cmr.notep.business.services.MailServiceInterface;
+import cmr.notep.business.services.NotificationService;
 import cmr.notep.interfaces.modeles.*;
 import cmr.notep.modele.EtatClasse;
 import cmr.notep.modele.EtatDemandeAcces;
@@ -29,16 +30,19 @@ public class AccederBusiness {
     private final DaoAccessorService daoAccessorService;
     private final AccessConfirmationEmailService accessConfirmationEmailService;
     private final AccessRejectionEmailService accessRejectionEmailService;
-    private final MailServiceInterface mailService; // Add this
+    private final MailServiceInterface mailService;
+    private final NotificationService notificationService;
 
     public AccederBusiness(DaoAccessorService daoAccessorService,
                            AccessConfirmationEmailService accessConfirmationEmailService,
                            AccessRejectionEmailService accessRejectionEmailService,
-                           MailServiceInterface mailService) { // Add this parameter
+                           MailServiceInterface mailService,
+                           NotificationService notificationService) {
         this.daoAccessorService = daoAccessorService;
         this.accessConfirmationEmailService = accessConfirmationEmailService;
         this.accessRejectionEmailService = accessRejectionEmailService;
-        this.mailService = mailService; // Initialize it
+        this.mailService = mailService;
+        this.notificationService = notificationService;
     }
 
     public void demanderAcces(String utilisateurId, String classeId, String codeActivation) throws SchoolException {
@@ -89,6 +93,7 @@ public class AccederBusiness {
 
         // Create new access request
         DemandeAccesEntity demande = new DemandeAccesEntity();
+        demande.setId(UUID.randomUUID().toString());
         demande.setUtilisateur(utilisateur);
         demande.setClasse(classe);
         demande.setCodeActivation(codeActivation);
@@ -97,6 +102,14 @@ public class AccederBusiness {
 
         daoAccessorService.getRepository(DemandeAccesRepository.class).save(demande);
         log.info("Demande d'accès créée avec succès");
+
+        // Send in-app notifications to student, moderator, and admins
+        try {
+            String studentName = utilisateur.getPrenom() + " " + utilisateur.getNom();
+            notificationService.createAccessRequestNotification(classeId, classe.getNom(), utilisateurId, studentName);
+        } catch (Exception e) {
+            log.error("Erreur lors de la création des notifications: {}", e.getMessage());
+        }
 
         // Envoyer une notification au modérateur
         if (classe.getModerator() != null) {
@@ -184,6 +197,24 @@ public class AccederBusiness {
 
         // 4. Finaliser la demande
         finaliserDemande(demande);
+
+        // 5. Send approval notification to the student
+        try {
+            String moderatorName = demande.getClasse().getModerator() != null
+                    ? demande.getClasse().getModerator().getPrenom() + " " + demande.getClasse().getModerator().getNom()
+                    : "Modérateur";
+            String moderatorId = demande.getClasse().getModerator() != null
+                    ? demande.getClasse().getModerator().getId() : null;
+            notificationService.createAccessApprovedNotification(
+                    demande.getClasse().getId(),
+                    demande.getClasse().getNom(),
+                    demande.getUtilisateur().getId(),
+                    moderatorId,
+                    moderatorName
+            );
+        } catch (Exception e) {
+            log.error("Erreur lors de la notification d'approbation: {}", e.getMessage());
+        }
     }
     private void accorderAcces(String utilisateurId, String classeId) {
         if (!daoAccessorService.getRepository(AccederRepository.class)
@@ -246,6 +277,22 @@ public class AccederBusiness {
                 dozerMapperBean.map(demande.getClasse(), Classes.class),
                 motifRejet
         );
+
+        // Send rejection notification to the student
+        try {
+            String moderatorName = demande.getClasse().getModerator() != null
+                    ? demande.getClasse().getModerator().getPrenom() + " " + demande.getClasse().getModerator().getNom()
+                    : "Modérateur";
+            notificationService.createAccessRejectedNotification(
+                    demande.getClasse().getId(),
+                    demande.getClasse().getNom(),
+                    demande.getUtilisateur().getId(),
+                    moderatorName,
+                    motifRejet
+            );
+        } catch (Exception e) {
+            log.error("Erreur lors de la notification de rejet: {}", e.getMessage());
+        }
 
         log.info("Demande d'accès rejetée avec succès");
     }

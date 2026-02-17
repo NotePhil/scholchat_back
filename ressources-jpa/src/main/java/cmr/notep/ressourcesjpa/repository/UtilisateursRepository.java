@@ -28,6 +28,7 @@ public interface UtilisateursRepository extends JpaRepository<UtilisateursEntity
     @Query("SELECT u FROM UtilisateursEntity u JOIN u.classes c WHERE c.id = :classeId")
     List<UtilisateursEntity> findByClasseId(@Param("classeId") String classeId);
 
-
+    @Query("SELECT u.id FROM UtilisateursEntity u WHERE u.admin = true")
+    List<String> findAdminUserIds();
 
 }
