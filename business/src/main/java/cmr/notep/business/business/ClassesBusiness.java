@@ -479,14 +479,10 @@ public class ClassesBusiness {
         }
         
         // Delete all related records first
-        try {
-            List<DroitPublicationEntity> droits = droitPublicationRepository.findAllUsersByClassId(idClasse);
-            if (!droits.isEmpty()) {
-                droitPublicationRepository.deleteAll(droits);
-                log.info("{} droits de publication supprimés pour la classe: {}", droits.size(), idClasse);
-            }
-        } catch (Exception e) {
-            log.error("Erreur lors de la suppression des droits de publication: {}", e.getMessage());
+        List<DroitPublicationEntity> droits = droitPublicationRepository.findAllUsersByClassId(idClasse);
+        if (!droits.isEmpty()) {
+            droitPublicationRepository.deleteAllInBatch(droits);
+            log.info("{} droits de publication supprimés pour la classe: {}", droits.size(), idClasse);
         }
         
         classesRepository.deleteById(idClasse);
