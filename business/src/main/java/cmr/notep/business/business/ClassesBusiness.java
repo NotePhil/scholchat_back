@@ -472,9 +472,16 @@ public class ClassesBusiness {
 
     public void supprimerClasse(String idClasse) throws SchoolException {
         ClassesRepository classesRepository = daoAccessorService.getRepository(ClassesRepository.class);
+        DroitPublicationRepository droitPublicationRepository = daoAccessorService.getRepository(DroitPublicationRepository.class);
+        
         if (!classesRepository.existsById(idClasse)) {
             throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe non trouvée avec l'ID: " + idClasse);
         }
+        
+        // Delete related droit_publication records first
+        droitPublicationRepository.deleteByClasseId(idClasse);
+        log.info("Droits de publication supprimés pour la classe: {}", idClasse);
+        
         classesRepository.deleteById(idClasse);
         log.info("Classe supprimée avec succès: {}", idClasse);
     }
