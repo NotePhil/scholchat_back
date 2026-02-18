@@ -470,6 +470,7 @@ public class ClassesBusiness {
         return dozerMapperBean.map(saved, Classes.class);
     }
 
+    @Transactional
     public void supprimerClasse(String idClasse) throws SchoolException {
         ClassesRepository classesRepository = daoAccessorService.getRepository(ClassesRepository.class);
         DroitPublicationRepository droitPublicationRepository = daoAccessorService.getRepository(DroitPublicationRepository.class);
@@ -479,8 +480,13 @@ public class ClassesBusiness {
         }
         
         // Delete related droit_publication records first
-        droitPublicationRepository.deleteByClasseId(idClasse);
-        log.info("Droits de publication supprimés pour la classe: {}", idClasse);
+        try {
+            droitPublicationRepository.deleteByClasseId(idClasse);
+            droitPublicationRepository.flush();
+            log.info("Droits de publication supprimés pour la classe: {}", idClasse);
+        } catch (Exception e) {
+            log.warn("Erreur lors de la suppression des droits de publication: {}", e.getMessage());
+        }
         
         classesRepository.deleteById(idClasse);
         log.info("Classe supprimée avec succès: {}", idClasse);
