@@ -129,6 +129,9 @@ public class ClassesBusiness {
         if (savedEntity.getModerator() != null) {
             Professeurs moderatorDto = new Professeurs();
             moderatorDto.setId(savedEntity.getModerator().getId());
+            moderatorDto.setNom(savedEntity.getModerator().getNom());
+            moderatorDto.setPrenom(savedEntity.getModerator().getPrenom());
+            moderatorDto.setEmail(savedEntity.getModerator().getEmail());
             classeResponse.setModerator(moderatorDto);
         }
         
@@ -228,6 +231,9 @@ public class ClassesBusiness {
         if (savedEntity.getModerator() != null) {
             Professeurs moderatorDto = new Professeurs();
             moderatorDto.setId(savedEntity.getModerator().getId());
+            moderatorDto.setNom(savedEntity.getModerator().getNom());
+            moderatorDto.setPrenom(savedEntity.getModerator().getPrenom());
+            moderatorDto.setEmail(savedEntity.getModerator().getEmail());
             result.setModerator(moderatorDto);
         }
 
@@ -486,6 +492,7 @@ public class ClassesBusiness {
             moderator.setId(classeEntity.getModerator().getId());
             moderator.setNom(classeEntity.getModerator().getNom());
             moderator.setPrenom(classeEntity.getModerator().getPrenom());
+            moderator.setEmail(classeEntity.getModerator().getEmail());
             classe.setModerator(moderator);
         }
 
