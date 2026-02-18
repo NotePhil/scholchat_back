@@ -24,8 +24,11 @@ public class ClassesService implements ClassesApi {
     private final ClassesBusiness classesBusiness;
     private final HistoActivationBusiness histoActivationBusiness;
 
+    // Deprecated - Use creerNouvelleClasse instead
     @Override
+    @Deprecated
     public Classes creerClasse(@NonNull Classes classes) {
+        log.warn("DEPRECATED: Using old endpoint POST /classes. Use POST /classes/nouvelle instead");
         log.info("Tentative de création d'une nouvelle classe: {}", classes);
         Classes nouvelleClasse = classesBusiness.creerClasse(classes);
         log.info("Classe créée avec succès: {}", nouvelleClasse.getId());
@@ -35,6 +38,20 @@ public class ClassesService implements ClassesApi {
     @Override
     public ClasseCreationResponseDto creerNouvelleClasse(@NonNull ClasseCreationDto classeDto) {
         log.info("Tentative de création d'une nouvelle classe avec DTO: {}", classeDto);
+        
+        // Get connected user from security context
+        String connectedUserId = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication().getName();
+        
+        // Check if connected user is a professor
+        boolean isProfessor = classesBusiness.isProfessor(connectedUserId);
+        
+        // If no moderatorId provided and user is professor, use connected user
+        if (isProfessor && (classeDto.getModeratorId() == null || classeDto.getModeratorId().trim().isEmpty())) {
+            classeDto.setModeratorId(connectedUserId);
+            log.info("Professor creating class, set as moderator: {}", connectedUserId);
+        }
+        
         ClasseCreationResponseDto response = classesBusiness.creerNouvelleClasse(classeDto);
         log.info("Classe créée avec succès: {}", response.getClasse().getId());
         return response;

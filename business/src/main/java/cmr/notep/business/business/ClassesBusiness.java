@@ -63,13 +63,15 @@ public class ClassesBusiness {
         EtablissementEntity etablissement = null;
         ProfesseursEntity moderator = null;
         
-        // Handle moderator assignment - professor creating the class becomes moderator by default
+        // Handle moderator assignment
         if (classeDto.getModeratorId() != null && !classeDto.getModeratorId().trim().isEmpty()) {
             moderator = daoAccessorService.getRepository(ProfesseursRepository.class)
                     .findById(classeDto.getModeratorId())
-                    .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Modérateur introuvable"));
-            classesEntity.setModerator(moderator);
-            log.info("Moderator {} assigned to class", classeDto.getModeratorId());
+                    .orElse(null);
+            if (moderator != null) {
+                classesEntity.setModerator(moderator);
+                log.info("Moderator {} assigned to class", classeDto.getModeratorId());
+            }
         }
         
         if (classeDto.getEtablissementId() != null && !classeDto.getEtablissementId().trim().isEmpty()) {
@@ -87,8 +89,7 @@ public class ClassesBusiness {
             }
             
             classesEntity.setEtablissement(etablissement);
-            // If created by a professor (has moderator), set to pending approval
-            // If created independently (no moderator), set to active
+            // Only professors need approval, others get ACTIF directly
             classesEntity.setEtat(moderator != null ? EtatClasse.EN_ATTENTE_APPROBATION : EtatClasse.ACTIF);
             classesEntity.setPaymentRequired(false);
             token = tokenService.generateClassToken();
@@ -118,7 +119,8 @@ public class ClassesBusiness {
             }
         }
         
-        if (etablissement != null && etablissement.isOptionEnvoiMailNewClasse() && etablissement.getEmail() != null) {
+        // Send email only if professor created the class
+        if (etablissement != null && moderator != null && etablissement.isOptionEnvoiMailNewClasse() && etablissement.getEmail() != null) {
             sendApprovalRequestEmail(savedEntity, etablissement);
         }
         
@@ -130,8 +132,8 @@ public class ClassesBusiness {
             classeResponse.setModerator(moderatorDto);
         }
         
-        String message = etablissement != null 
-            ? (moderator != null ? "Classe créée en attente de validation" : "Classe créée et activée")
+        String message = moderator != null 
+            ? "Classe créée en attente de validation" 
             : "Classe créée et activée";
         
         return ClasseCreationResponseDto.builder()
@@ -141,6 +143,12 @@ public class ClassesBusiness {
                 .paymentRequired(savedEntity.isPaymentRequired())
                 .message(message)
                 .build();
+    }
+
+    public boolean isProfessor(String userId) {
+        return daoAccessorService.getRepository(ProfesseursRepository.class)
+                .findById(userId)
+                .isPresent();
     }
 
     public Classes creerClasse(Classes classes) throws SchoolException {
