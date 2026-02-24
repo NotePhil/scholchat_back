@@ -72,6 +72,11 @@ CREATE TABLE IF NOT EXISTS repetiteurs (
     PRIMARY KEY (repetiteurs_id)
 );
 
+CREATE TABLE IF NOT EXISTS gestionnaires (
+    gestionnaires_id VARCHAR(255) NOT NULL,
+    PRIMARY KEY (gestionnaires_id)
+);
+
 CREATE TABLE IF NOT EXISTS matieres (
     id VARCHAR(255) PRIMARY KEY,
     nom VARCHAR(255) NOT NULL UNIQUE,
@@ -458,6 +463,10 @@ ALTER TABLE eleves
 ALTER TABLE repetiteurs
     ADD CONSTRAINT fk_repetiteurs_utilisateurs
     FOREIGN KEY (repetiteurs_id) REFERENCES utilisateurs(id);
+
+ALTER TABLE gestionnaires
+    ADD CONSTRAINT fk_gestionnaires_utilisateurs
+    FOREIGN KEY (gestionnaires_id) REFERENCES utilisateurs(id);
 
 ALTER TABLE classes
     ADD CONSTRAINT fk_etablissement

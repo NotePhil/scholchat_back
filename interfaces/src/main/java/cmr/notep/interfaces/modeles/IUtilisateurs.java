@@ -16,7 +16,8 @@ import java.time.LocalDateTime;
         @JsonSubTypes.Type(value = Professeurs.class, name = "professeur"),
         @JsonSubTypes.Type(value = Eleves.class, name = "eleve"),
         @JsonSubTypes.Type(value = Repetiteurs.class, name = "repetiteur"),
-        @JsonSubTypes.Type(value = Parents.class, name = "parent")
+        @JsonSubTypes.Type(value = Parents.class, name = "parent"),
+        @JsonSubTypes.Type(value = Gestionnaires.class, name = "gestionnaire")
 })
 public interface IUtilisateurs {
 

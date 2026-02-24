@@ -301,6 +301,8 @@ public class UtilisateursBusiness {
             return dozerMapperBean.map(utilisateurEntity, Repetiteurs.class);
         else if (utilisateurEntity instanceof ParentsEntity)
             return dozerMapperBean.map(utilisateurEntity, Parents.class);
+        else if (utilisateurEntity instanceof GestionnairesEntity)
+            return dozerMapperBean.map(utilisateurEntity, Gestionnaires.class);
         else
             return dozerMapperBean.map(utilisateurEntity, Utilisateurs.class);
     }
@@ -315,6 +317,8 @@ public class UtilisateursBusiness {
             return dozerMapperBean.map(utilisateur, RepetiteursEntity.class);
         else if (utilisateur instanceof Parents)
             return dozerMapperBean.map(utilisateur, ParentsEntity.class);
+        else if (utilisateur instanceof Gestionnaires)
+            return dozerMapperBean.map(utilisateur, GestionnairesEntity.class);
         else
             return dozerMapperBean.map(utilisateur, UtilisateursEntity.class);
     }

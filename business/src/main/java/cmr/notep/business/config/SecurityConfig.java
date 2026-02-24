@@ -64,6 +64,7 @@ public class SecurityConfig {
                                 "/auth/users/byEmail",
                                 "/auth/users/register",
                                 "/etablissements","/etablissements/**",
+                                "/gestionnaires","/gestionnaires/**",
                                 "/reset-password-request",
                                 "/utilisateurs/regenerate-activation",
                                 "/evenements/**",

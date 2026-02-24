@@ -34,6 +34,9 @@ public class RoleService {
         if (utilisateur instanceof Repetiteurs) {
             roles.add("ROLE_TUTOR");
         }
+        if (utilisateur instanceof Gestionnaires) {
+            roles.add("ROLE_GESTIONNAIRE");
+        }
 
         return roles;
     }
