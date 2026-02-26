@@ -59,6 +59,13 @@ public interface ExerciseProgrammerApi {
     @ResponseStatus(HttpStatus.OK)
     List<ExerciseProgrammerResponseDTO> obtenirExercisesProgrammesParClasse(@PathVariable String classeId);
 
+    @GetMapping(
+            path = "/exercise/{exerciseId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    List<ExerciseProgrammerResponseDTO> obtenirExercisesProgrammesParExercise(@PathVariable String exerciseId);
+
     @PatchMapping(
             path = "/{exerciseProgrammerId}/etat",
             produces = MediaType.APPLICATION_JSON_VALUE

@@ -23,6 +23,22 @@ public class ExerciseMapper {
                 .build();
     }
 
+    public ExerciseResponseDTO toResponseDTO(Exercise exercise) {
+        return ExerciseResponseDTO.builder()
+                .id(exercise.getId())
+                .nom(exercise.getNom())
+                .description(exercise.getDescription())
+                .dateCreation(exercise.getDateCreation())
+                .etat(exercise.getEtat())
+                .restriction(exercise.getRestriction())
+                .niveau(exercise.getNiveau())
+                .redacteurId(exercise.getRedacteurId())
+                .coursLies(new ArrayList<>())
+                .matieres(new ArrayList<>())
+                .questions(new ArrayList<>())
+                .build();
+    }
+
     public ExerciseResponseDTO toResponseDTO(ExerciseEntity entity) {
         List<CoursSummaryDTO> coursSummaryList = (entity.getCoursLies() != null) ?
                 entity.getCoursLies().stream()

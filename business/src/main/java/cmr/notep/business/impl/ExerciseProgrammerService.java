@@ -88,6 +88,19 @@ public class ExerciseProgrammerService implements ExerciseProgrammerApi {
     }
 
     @Override
+    public List<ExerciseProgrammerResponseDTO> obtenirExercisesProgrammesParExercise(String exerciseId) {
+        log.info("Récupération des programmations pour l'exercice: {}", exerciseId);
+
+        return exerciseProgrammerBusiness.obtenirExercisesProgrammesParExercise(exerciseId)
+                .stream()
+                .map(exercise -> {
+                    ExerciseProgrammerEntity entity = exerciseProgrammerBusiness.obtenirExerciseProgrammeEntityParId(exercise.getId());
+                    return exerciseProgrammerMapper.toResponseDTO(entity);
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public ExerciseProgrammerResponseDTO mettreAJourEtatExerciseProgramme(String exerciseProgrammerId, EtatExercise nouvelEtat) {
         log.info("Mise à jour de l'état de l'exercice programmé {} vers {}", exerciseProgrammerId, nouvelEtat);
 

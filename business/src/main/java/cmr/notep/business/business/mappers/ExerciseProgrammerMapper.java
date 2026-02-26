@@ -18,17 +18,28 @@ public class ExerciseProgrammerMapper {
 
     public ExerciseProgrammer toModel(ExerciseProgrammerRequestDTO requestDTO) {
         ExerciseProgrammer exerciseProgrammer = new ExerciseProgrammer();
-        exerciseProgrammer.setExerciseId(requestDTO.getExerciseId()); // Stocker l'ID de l'exercice source
+        exerciseProgrammer.setExerciseId(requestDTO.getExerciseId());
         exerciseProgrammer.setProgrammeParId(requestDTO.getProgrammeParId());
         exerciseProgrammer.setDateExoPrevue(requestDTO.getDateExoPrevue());
         exerciseProgrammer.setDateDebutExoEffectif(requestDTO.getDateDebutExoEffectif());
         exerciseProgrammer.setDateFinExoEffectif(requestDTO.getDateFinExoEffectif());
 
-        // Ensure etat is never null
         if (requestDTO.getEtat() != null) {
             exerciseProgrammer.setEtat(requestDTO.getEtat());
         } else {
-            exerciseProgrammer.setEtat(EtatExercise.BROUILLON); // Default value
+            exerciseProgrammer.setEtat(EtatExercise.BROUILLON);
+        }
+
+        // Convertir classeIds en classesDiffusees
+        if (requestDTO.getClasseIds() != null && !requestDTO.getClasseIds().isEmpty()) {
+            List<cmr.notep.interfaces.modeles.Classes> classes = requestDTO.getClasseIds().stream()
+                .map(id -> {
+                    cmr.notep.interfaces.modeles.Classes classe = new cmr.notep.interfaces.modeles.Classes();
+                    classe.setId(id);
+                    return classe;
+                })
+                .collect(Collectors.toList());
+            exerciseProgrammer.setClassesDiffusees(classes);
         }
 
         return exerciseProgrammer;
@@ -39,7 +50,7 @@ public class ExerciseProgrammerMapper {
                 .utilisateurNom(participation.getUtilisateur().getNom())
                 .utilisateurPrenom(participation.getUtilisateur().getPrenom())
                 .exerciseProgrammerId(participation.getExerciseProgrammer().getId())
-                .exerciseProgrammerNom(participation.getExerciseProgrammer().getNom())
+                .exerciseProgrammerNom(participation.getExerciseProgrammer().getExercise().getNom())
                 .note(participation.getNote())
                 .appreciation(participation.getAppreciation())
                 .dateDebut(participation.getDateDebut())
@@ -51,13 +62,13 @@ public class ExerciseProgrammerMapper {
         // Récupérer les données de l'exercice parent
         ExerciseProgrammerResponseDTO responseDTO = ExerciseProgrammerResponseDTO.builder()
                 .id(entity.getId())
-                .nom(entity.getNom())
-                .description(entity.getDescription())
-                .dateCreation(entity.getDateCreation())
+                .nom(entity.getExercise().getNom())
+                .description(entity.getExercise().getDescription())
+                .dateCreation(entity.getExercise().getDateCreation())
                 .etat(entity.getEtat())
-                .restriction(entity.getRestriction())
-                .niveau(entity.getNiveau())
-                .redacteurId(entity.getRedacteur().getId())
+                .restriction(entity.getExercise().getRestriction())
+                .niveau(entity.getExercise().getNiveau())
+                .redacteurId(entity.getExercise().getRedacteur().getId())
                 .programmeParId(entity.getProgrammePar().getId())
                 .programmeParNom(entity.getProgrammePar().getNom())
                 .programmeParPrenom(entity.getProgrammePar().getPrenom())
@@ -78,8 +89,8 @@ public class ExerciseProgrammerMapper {
                         .collect(Collectors.toList()) :
                 new ArrayList<>();
 
-        List<MatiereSummaryDTO> matiereSummaryList = (entity.getMatieres() != null) ?
-                entity.getMatieres().stream()
+        List<MatiereSummaryDTO> matiereSummaryList = (entity.getExercise().getMatieres() != null) ?
+                entity.getExercise().getMatieres().stream()
                         .map(matiere -> MatiereSummaryDTO.builder()
                                 .id(matiere.getId())
                                 .nom(matiere.getNom())
@@ -88,8 +99,8 @@ public class ExerciseProgrammerMapper {
                         .collect(Collectors.toList()) :
                 new ArrayList<>();
 
-        List<QuestionReponseSummaryDTO> questionSummaryList = (entity.getQuestions() != null) ?
-                entity.getQuestions().stream()
+        List<QuestionReponseSummaryDTO> questionSummaryList = (entity.getExercise().getQuestions() != null) ?
+                entity.getExercise().getQuestions().stream()
                         .map(question -> QuestionReponseSummaryDTO.builder()
                                 .id(question.getId())
                                 .intitule(question.getIntitule())
@@ -98,8 +109,8 @@ public class ExerciseProgrammerMapper {
                         .collect(Collectors.toList()) :
                 new ArrayList<>();
 
-        List<CoursSummaryDTO> coursSummaryList = (entity.getCoursLies() != null) ?
-                entity.getCoursLies().stream()
+        List<CoursSummaryDTO> coursSummaryList = (entity.getExercise().getCoursLies() != null) ?
+                entity.getExercise().getCoursLies().stream()
                         .map(cours -> CoursSummaryDTO.builder()
                                 .id(cours.getId())
                                 .titre(cours.getTitre())

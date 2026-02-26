@@ -13,11 +13,14 @@ import java.util.List;
 @Setter
 @Entity
 @Table(name = "exercises_programmer", schema = "ressources")
-@PrimaryKeyJoinColumn(name = "exercise_id")
-public class ExerciseProgrammerEntity extends ExerciseEntity {
+public class ExerciseProgrammerEntity {
+
+    @Id
+    @Column(name = "exercise_id")
+    private String id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "exercise_id", insertable = false, updatable = false)
+    @JoinColumn(name = "exercise_id", nullable = false, insertable = false, updatable = false)
     private ExerciseEntity exercise;
 
     @Column(name = "date_exo_prevue", nullable = false)
@@ -35,6 +38,10 @@ public class ExerciseProgrammerEntity extends ExerciseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "programme_par_id", nullable = false)
     private ProfesseursEntity programmePar;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "etat_exercise_programmer", nullable = false)
+    private EtatExercise etat;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "exercise_programmer_classes", schema = "ressources",

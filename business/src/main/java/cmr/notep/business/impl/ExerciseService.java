@@ -30,8 +30,7 @@ public class ExerciseService implements ExerciseApi {
         log.info("Création d'un nouvel exercice: {}", exerciseRequestDTO.getNom());
         Exercise exercise = exerciseMapper.toEntity(exerciseRequestDTO);
         Exercise createdExercise = exerciseBusiness.creerExercise(exercise);
-        ExerciseEntity exerciseEntity = exerciseBusiness.obtenirExerciseEntityParId(createdExercise.getId());
-        return exerciseMapper.toResponseDTO(exerciseEntity);
+        return exerciseMapper.toResponseDTO(createdExercise);
     }
     @Override
     public ExerciseResponseDTO lierExerciseAMatiere(@NonNull String exerciseId, @NonNull String matiereId) {

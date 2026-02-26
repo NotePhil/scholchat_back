@@ -9,9 +9,21 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ExerciseRepository extends JpaRepository<ExerciseEntity, String> {
+    
+    @Query("SELECT DISTINCT e FROM ExerciseEntity e " +
+           "LEFT JOIN FETCH e.questions " +
+           "WHERE e.redacteur.id = :professeurId")
+    List<ExerciseEntity> findByRedacteurIdWithDetails(@Param("professeurId") String professeurId);
+    
+    @Query("SELECT DISTINCT e FROM ExerciseEntity e " +
+           "LEFT JOIN FETCH e.questions " +
+           "WHERE e.id = :id")
+    Optional<ExerciseEntity> findByIdWithDetails(@Param("id") String id);
+    
     List<ExerciseEntity> findByRedacteurId(String professeurId);
     List<ExerciseEntity> findByNiveau(ListeNiveau niveau);
     List<ExerciseEntity> findByRestriction(String restriction);

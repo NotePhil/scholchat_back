@@ -373,8 +373,21 @@ CREATE TABLE IF NOT EXISTS questions_reponses (
     intitule VARCHAR(1000) NOT NULL,
     reponse TEXT,
     type_question VARCHAR(50) NOT NULL,
+    reponse_attendue_vrai_faux BOOLEAN,
+    reponse_attendue_courte TEXT,
+    reponse_attendue_longue TEXT,
+    points DOUBLE PRECISION,
     exercise_id VARCHAR(255) NOT NULL,
     FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS choix_reponses (
+    id VARCHAR(255) PRIMARY KEY,
+    texte VARCHAR(1000) NOT NULL,
+    est_correct BOOLEAN NOT NULL DEFAULT FALSE,
+    ordre_affichage INTEGER,
+    question_id VARCHAR(255) NOT NULL,
+    FOREIGN KEY (question_id) REFERENCES questions_reponses(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS exercise_matieres (

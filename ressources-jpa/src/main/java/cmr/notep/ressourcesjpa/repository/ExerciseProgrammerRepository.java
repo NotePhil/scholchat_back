@@ -21,6 +21,9 @@ public interface ExerciseProgrammerRepository extends JpaRepository<ExerciseProg
             @Param("endDate") Date endDate);
     @Query("SELECT ep FROM ExerciseProgrammerEntity ep JOIN ep.classesDiffusees c WHERE c.id = :classeId")
     List<ExerciseProgrammerEntity> findByClasseId(@Param("classeId") String classeId);
+    
+    @Query("SELECT ep FROM ExerciseProgrammerEntity ep WHERE ep.exercise.id = :exerciseId")
+    List<ExerciseProgrammerEntity> findByExerciseId(@Param("exerciseId") String exerciseId);
     @Query("SELECT ep FROM ExerciseProgrammerEntity ep WHERE ep.dateExoPrevue < :currentDate AND ep.etat = 'PUBLIE'")
     List<ExerciseProgrammerEntity> findExercisesToStart(@Param("currentDate") Date currentDate);
 }

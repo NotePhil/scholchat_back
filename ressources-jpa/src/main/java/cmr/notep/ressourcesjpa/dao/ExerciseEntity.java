@@ -14,7 +14,6 @@ import java.util.List;
 @Setter
 @Entity
 @Table(name = "exercises", schema = "ressources")
-@Inheritance(strategy = InheritanceType.JOINED)
 public class ExerciseEntity {
     @Id
     

@@ -42,51 +42,15 @@ public class ExerciseProgrammerBusiness {
                 .findById(exerciseProgrammer.getProgrammeParId())
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Professeur programmeur introuvable"));
 
-        // Créer l'entité ExerciseProgrammer en copiant les données de l'exercice source
+        // Créer l'entité ExerciseProgrammer
         ExerciseProgrammerEntity entity = new ExerciseProgrammerEntity();
-
-        // Copier les propriétés de base de l'exercice source
-        entity.setNom(exerciseExistante.getNom());
-        entity.setDescription(exerciseExistante.getDescription());
-        entity.setNiveau(exerciseExistante.getNiveau());
-        entity.setRestriction(exerciseExistante.getRestriction());
-        entity.setRedacteur(exerciseExistante.getRedacteur());
-        entity.setDateCreation(new Date());
-
-        // Créer de NOUVELLES instances des collections pour éviter le partage
-        if (exerciseExistante.getMatieres() != null) {
-            entity.setMatieres(new ArrayList<>(exerciseExistante.getMatieres()));
-        } else {
-            entity.setMatieres(new ArrayList<>());
-        }
-
-        if (exerciseExistante.getCoursLies() != null) {
-            entity.setCoursLies(new ArrayList<>(exerciseExistante.getCoursLies()));
-        } else {
-            entity.setCoursLies(new ArrayList<>());
-        }
-
-        if (exerciseExistante.getQuestions() != null) {
-            entity.setQuestions(new ArrayList<>(exerciseExistante.getQuestions()));
-        } else {
-            entity.setQuestions(new ArrayList<>());
-        }
-
-        // Définir l'état - utiliser le champ hérité de ExerciseEntity
-        if (exerciseProgrammer.getEtat() != null) {
-            entity.setEtat(exerciseProgrammer.getEtat());
-        } else {
-            entity.setEtat(EtatExercise.BROUILLON);
-        }
-
-        // Définir les propriétés spécifiques à la programmation
+        entity.setId(exerciseProgrammer.getExerciseId()); // Use exercise_id as PK
+        entity.setExercise(exerciseExistante);
         entity.setProgrammePar(professeur);
         entity.setDateExoPrevue(exerciseProgrammer.getDateExoPrevue());
         entity.setDateDebutExoEffectif(exerciseProgrammer.getDateDebutExoEffectif());
         entity.setDateFinExoEffectif(exerciseProgrammer.getDateFinExoEffectif());
-
-        // Lier à l'exercice source
-        entity.setExercise(exerciseExistante);
+        entity.setEtat(EtatExercise.PUBLIE); // Default state
 
         // Save the entity
         ExerciseProgrammerEntity savedEntity = daoAccessorService.getRepository(ExerciseProgrammerRepository.class).save(entity);
@@ -177,12 +141,20 @@ public class ExerciseProgrammerBusiness {
                 .collect(Collectors.toList());
     }
 
+    public List<ExerciseProgrammer> obtenirExercisesProgrammesParExercise(String exerciseId) {
+        return daoAccessorService.getRepository(ExerciseProgrammerRepository.class)
+                .findByExerciseId(exerciseId)
+                .stream()
+                .map(e -> dozerMapperBean.map(e, ExerciseProgrammer.class))
+                .collect(Collectors.toList());
+    }
+
     public ExerciseProgrammer mettreAJourEtatExerciseProgramme(String exerciseProgrammerId, EtatExercise nouvelEtat) {
         ExerciseProgrammerEntity exerciseProgrammer = daoAccessorService.getRepository(ExerciseProgrammerRepository.class)
                 .findById(exerciseProgrammerId)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Exercice programmé introuvable"));
 
-        exerciseProgrammer.setEtat(nouvelEtat);
+        exerciseProgrammer.getExercise().setEtat(nouvelEtat);
         ExerciseProgrammerEntity updatedEntity = daoAccessorService.getRepository(ExerciseProgrammerRepository.class).save(exerciseProgrammer);
 
         log.info("État de l'exercice programmé {} mis à jour vers {}", exerciseProgrammerId, nouvelEtat);

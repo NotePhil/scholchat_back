@@ -26,7 +26,8 @@ public enum SchoolErrorCode {
     ALREADY_EXISTS("Existing entity"),
     INVALID_CODE("Code d'activation invalide"),
     CONFLICT("Utilisateur existe deja"),
-    PAYMENT_FAILED("Payment processing failed");
+    PAYMENT_FAILED("Payment processing failed"),
+    BAD_REQUEST("Bad request");
     private final String message;
 
     SchoolErrorCode(String message) {

@@ -136,7 +136,7 @@ public class ParticipationExerciseBusiness {
                 .utilisateurNom(participation.getUtilisateur().getNom())
                 .utilisateurPrenom(participation.getUtilisateur().getPrenom())
                 .exerciseProgrammerId(participation.getExerciseProgrammer().getId())
-                .exerciseProgrammerNom(participation.getExerciseProgrammer().getNom())
+                .exerciseProgrammerNom(participation.getExerciseProgrammer().getExercise().getNom())
                 .note(participation.getNote())
                 .appreciation(participation.getAppreciation())
                 .dateDebut(participation.getDateDebut())
