@@ -726,4 +726,12 @@ public class ClassesBusiness {
         return moderateurs;
     }
 
+    public List<Classes> obtenirClassesAccessibles() {
+        ClassesRepository classesRepository = daoAccessorService.getRepository(ClassesRepository.class);
+        return classesRepository.findByDroitPublicationAndEtat(DroitPublication.TOUS_LES_PROFESSEURS, EtatClasse.ACTIF)
+                .stream()
+                .map(c -> dozerMapperBean.map(c, Classes.class))
+                .collect(Collectors.toList());
+    }
+
 }

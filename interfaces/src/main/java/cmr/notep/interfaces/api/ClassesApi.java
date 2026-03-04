@@ -127,6 +127,13 @@ public interface ClassesApi {
             @RequestParam String etablissementId);
 
 
+    @GetMapping(
+            path = "/accessibles",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    List<Classes> obtenirClassesAccessibles();
+
 //    @GetMapping(
 //            path = "/{idClasse}/users",
 //            produces = MediaType.APPLICATION_JSON_VALUE

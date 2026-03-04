@@ -168,4 +168,12 @@ public class ClassesService implements ClassesApi {
         classesBusiness.rejeterClasseParEtablissement(classeId, etablissementId);
         log.info("Classe {} rejetée avec succès", classeId);
     }
+
+    @Override
+    public List<Classes> obtenirClassesAccessibles() {
+        log.info("Récupération des classes accessibles à tous les professeurs");
+        List<Classes> classes = classesBusiness.obtenirClassesAccessibles();
+        log.info("Récupération de {} classes accessibles", classes.size());
+        return classes;
+    }
 }

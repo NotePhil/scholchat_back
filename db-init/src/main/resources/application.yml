@@ -10,8 +10,8 @@ spring:
       on-profile: local
   datasource:
     url: jdbc:postgresql://localhost:5432/scholchat
-    username: scholchat_user
-    password: StrongPassword123
+    username: scholchat
+    password: scholchat
     driver-class-name: org.postgresql.Driver
   liquibase:
     enabled: true

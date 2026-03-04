@@ -591,6 +591,7 @@ ALTER TABLE refresh_tokens
 
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_classes_etat ON classes(etat);
+CREATE INDEX IF NOT EXISTS idx_classes_droit_publication ON classes(droit_publication);
 CREATE INDEX IF NOT EXISTS idx_classes_moderator ON classes(moderator_id);
 CREATE INDEX IF NOT EXISTS idx_prof_moderated_classes ON professeur_classes_moderees(professeur_id);
 CREATE INDEX IF NOT EXISTS idx_classe_etablissement ON classes(etablissement_id);
