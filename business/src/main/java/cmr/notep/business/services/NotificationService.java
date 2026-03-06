@@ -141,8 +141,8 @@ public class NotificationService {
     }
     
     @Transactional
-    public void createAssignmentNotification(String assignmentId, String assignmentTitle, String professorId, String professorName, String classeId) {
-        List<String> studentIds = accederRepository.findUserIdsByClasseId(classeId);
+    public void createAssignmentNotification(String assignmentId, String assignmentTitle, String professorId, String professorName, String classId) {
+        List<String> studentIds = accederRepository.findUserIdsByClasseId(classId);
         for (String studentId : studentIds) {
             if (!studentId.equals(professorId)) {
                 saveNotification(studentId, "ASSIGNMENT_GIVEN", "Nouveau devoir",
@@ -150,7 +150,31 @@ public class NotificationService {
                         professorId, professorName, assignmentId, "ASSIGNMENT");
             }
         }
-        log.info("Assignment notification sent for assignment {} in class {}", assignmentId, classeId);
+        log.info("Assignment notification sent for assignment {} in class {}", assignmentId, classId);
+    }
+
+    @Transactional
+    public void createClassCreatedNotification(String classeId, String className, String professorId, String professorName) {
+        // Notify admins
+        List<String> adminIds = utilisateursRepository.findAdminUserIds();
+        for (String adminId : adminIds) {
+            saveNotification(adminId, "CLASS_CREATED", "Nouvelle classe créée",
+                    professorName + " a créé une nouvelle classe: " + className,
+                    professorId, professorName, classeId, "CLASS");
+        }
+        log.info("Class created notification sent to admins for class {}", classeId);
+    }
+
+    @Transactional
+    public void createProfessorCreatedNotification(String professorId, String professorName) {
+        // Notify admins
+        List<String> adminIds = utilisateursRepository.findAdminUserIds();
+        for (String adminId : adminIds) {
+            saveNotification(adminId, "PROFESSOR_CREATED", "Nouveau professeur",
+                    "Un nouveau professeur s'est inscrit: " + professorName,
+                    professorId, professorName, professorId, "PROFESSOR");
+        }
+        log.info("Professor created notification sent to admins for {}", professorId);
     }
     
     public List<NotificationEntity> getUserNotifications(String userId) {

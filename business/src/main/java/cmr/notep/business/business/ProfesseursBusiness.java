@@ -27,10 +27,13 @@ public class ProfesseursBusiness {
     private final DaoAccessorService daoAccessorService;
     private final ActivationEmailService activationEmailService;
     private final JwtUtil jwtUtil;
-    public ProfesseursBusiness(DaoAccessorService daoAccessorService, ActivationEmailService activationEmailService, JwtUtil jwtUtil) {
+    private final cmr.notep.business.services.NotificationService notificationService;
+
+    public ProfesseursBusiness(DaoAccessorService daoAccessorService, ActivationEmailService activationEmailService, JwtUtil jwtUtil, cmr.notep.business.services.NotificationService notificationService) {
         this.daoAccessorService = daoAccessorService;
         this.activationEmailService = activationEmailService;
         this.jwtUtil = jwtUtil;
+        this.notificationService = notificationService;
     }
 
     public Professeurs avoirProfesseur(String idProfesseur) {
@@ -56,11 +59,16 @@ public class ProfesseursBusiness {
     }
 
     public Professeurs posterProfesseur(Professeurs professeur) {
-        return dozerMapperBean.map(
+        Professeurs savedProfesseur = dozerMapperBean.map(
                 this.daoAccessorService.getRepository(ProfesseursRepository.class)
                         .save(dozerMapperBean.map(professeur, ProfesseursEntity.class)),
                 Professeurs.class
         );
+        
+        // Notify admins about new professor registration
+        notificationService.createProfessorCreatedNotification(savedProfesseur.getId(), savedProfesseur.getNom() + " " + savedProfesseur.getPrenom());
+        
+        return savedProfesseur;
     }
 
     public Professeurs modifierProfesseurPartiellement(String idProfesseur, Professeurs partialUpdate) {
@@ -132,6 +140,9 @@ public class ProfesseursBusiness {
 
             // Send activation email
             activationEmailService.sendActivationEmail(existingProfesseur, activationToken);
+            
+            // Notify admins that a professor is ready for validation (documents uploaded)
+            notificationService.createProfessorCreatedNotification(existingProfesseur.getId(), existingProfesseur.getNom() + " " + existingProfesseur.getPrenom() + " (Documents téléchargés)");
         }
 
         return dozerMapperBean.map(updatedEntity, Professeurs.class);
