@@ -1,5 +1,6 @@
 package cmr.notep.business.services;
 
+import cmr.notep.ressourcesjpa.dao.EtablissementEntity;
 import cmr.notep.ressourcesjpa.dao.NotificationEntity;
 import cmr.notep.ressourcesjpa.repository.NotificationRepository;
 import cmr.notep.ressourcesjpa.repository.AccederRepository;
@@ -155,6 +156,11 @@ public class NotificationService {
 
     @Transactional
     public void createClassCreatedNotification(String classeId, String className, String professorId, String professorName) {
+        createClassCreatedNotification(classeId, className, professorId, professorName, null);
+    }
+
+    @Transactional
+    public void createClassCreatedNotification(String classeId, String className, String professorId, String professorName, EtablissementEntity etablissement) {
         // Notify admins
         List<String> adminIds = utilisateursRepository.findAdminUserIds();
         for (String adminId : adminIds) {
@@ -162,7 +168,74 @@ public class NotificationService {
                     professorName + " a créé une nouvelle classe: " + className,
                     professorId, professorName, classeId, "CLASS");
         }
-        log.info("Class created notification sent to admins for class {}", classeId);
+
+        // Notify gestionnaire of the establishment if applicable
+        if (etablissement != null && etablissement.getGestionnaire() != null) {
+            String gestionnaireId = etablissement.getGestionnaire().getId();
+            // Avoid duplicate if gestionnaire is also an admin
+            if (!adminIds.contains(gestionnaireId)) {
+                saveNotification(gestionnaireId, "CLASS_CREATED", "Nouvelle classe dans votre établissement",
+                        professorName + " a créé la classe '" + className + "' dans " + etablissement.getNom(),
+                        professorId, professorName, classeId, "CLASS");
+            }
+        }
+
+        log.info("Class created notification sent to admins and gestionnaire for class {}", classeId);
+    }
+
+    @Transactional
+    public void createCourseCreatedNotification(String coursId, String coursName, String professorId, String professorName, List<String> classeIds) {
+        // Notify all students in the related classes
+        if (classeIds != null && !classeIds.isEmpty()) {
+            for (String classeId : classeIds) {
+                List<String> userIds = accederRepository.findUserIdsByClasseId(classeId);
+                for (String userId : userIds) {
+                    if (!userId.equals(professorId)) {
+                        saveNotification(userId, "NEW_COURSE", "Nouveau cours disponible",
+                                professorName + " a publié un nouveau cours: " + coursName,
+                                professorId, professorName, coursId, "COURSE");
+                    }
+                }
+            }
+        }
+
+        // Notify admins
+        List<String> adminIds = utilisateursRepository.findAdminUserIds();
+        for (String adminId : adminIds) {
+            if (!adminId.equals(professorId)) {
+                saveNotification(adminId, "NEW_COURSE", "Nouveau cours créé",
+                        professorName + " a créé le cours: " + coursName,
+                        professorId, professorName, coursId, "COURSE");
+            }
+        }
+        log.info("Course created notifications sent for course {}", coursId);
+    }
+
+    @Transactional
+    public void createExerciseCreatedNotification(String exerciseId, String exerciseName, String professorId, String professorName) {
+        // Notify admins
+        List<String> adminIds = utilisateursRepository.findAdminUserIds();
+        for (String adminId : adminIds) {
+            if (!adminId.equals(professorId)) {
+                saveNotification(adminId, "EXERCISE_CREATED", "Nouvel exercice créé",
+                        professorName + " a créé l'exercice: " + exerciseName,
+                        professorId, professorName, exerciseId, "EXERCISE");
+            }
+        }
+        log.info("Exercise created notification sent to admins for exercise {}", exerciseId);
+    }
+
+    @Transactional
+    public void createClassMemberNotification(String classeId, String className, String actionType, String title, String message, String actorId, String actorName) {
+        // Notify all members of the class
+        List<String> userIds = accederRepository.findUserIdsByClasseId(classeId);
+        for (String userId : userIds) {
+            if (!userId.equals(actorId)) {
+                saveNotification(userId, actionType, title, message,
+                        actorId, actorName, classeId, "CLASS");
+            }
+        }
+        log.info("{} notification sent to {} class members for class {}", actionType, userIds.size(), classeId);
     }
 
     @Transactional

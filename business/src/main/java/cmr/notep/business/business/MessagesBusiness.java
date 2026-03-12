@@ -267,23 +267,29 @@ public class MessagesBusiness {
         dto.setDateCreation(entity.getDateCreation());
         dto.setDateModification(entity.getDateModification());
         dto.setEtat(entity.getEtat());
-        
+
         if (entity.getExpediteurEntity() != null) {
             dto.setExpediteur(mapToUtilisateurSimpleDto(entity.getExpediteurEntity()));
         }
-        
+
         if (entity.getDestinatairesEntities() != null) {
             dto.setDestinataires(entity.getDestinatairesEntities().stream()
                     .map(this::mapToUtilisateurSimpleDto)
                     .collect(Collectors.toList()));
         }
-        
-        if (entity.getClasses() != null) {
-            dto.setClasseIds(entity.getClasses().stream()
-                    .map(ClassesEntity::getId)
-                    .collect(Collectors.toList()));
+
+        // Safely access lazy-loaded classes collection
+        try {
+            if (entity.getClasses() != null) {
+                dto.setClasseIds(entity.getClasses().stream()
+                        .map(ClassesEntity::getId)
+                        .collect(Collectors.toList()));
+            }
+        } catch (Exception e) {
+            log.debug("Could not load classes for message {}: {}", entity.getId(), e.getMessage());
+            dto.setClasseIds(new ArrayList<>());
         }
-        
+
         return dto;
     }
     
@@ -325,10 +331,13 @@ public class MessagesBusiness {
     
     public void viderCorbeille() {
         log.info("Suppression définitive des messages de plus de 24h dans la corbeille");
-        
+
+        // Calculate cutoff date (24 hours ago)
+        String cutoffDate = new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000).toString();
+
         List<MessagesEntity> oldDeletedMessages = daoAccessorService.getRepository(MessagesRepository.class)
-                .findDeletedMessagesOlderThan24Hours();
-        
+                .findAllDeletedMessages();
+
         daoAccessorService.getRepository(MessagesRepository.class).deleteAll(oldDeletedMessages);
         log.info("{} messages supprimés définitivement", oldDeletedMessages.size());
     }

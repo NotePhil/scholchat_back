@@ -139,20 +139,23 @@ public class ClassesBusiness {
             ? "Classe créée en attente de validation" 
             : "Classe créée et activée";
         
-        // Notify admins about the new class if created by a professor
-        if (moderator != null) {
-            try {
-                notificationService.createClassCreatedNotification(
-                    savedEntity.getId(), 
-                    savedEntity.getNom(), 
-                    moderator.getId(), 
-                    moderator.getNom() + " " + moderator.getPrenom()
-                );
-            } catch (Exception e) {
-                log.error("Failed to send class creation notification to admins: {}", e.getMessage());
-            }
+        // Notify admins and gestionnaire about the new class
+        try {
+            String actorName = moderator != null
+                ? moderator.getNom() + " " + moderator.getPrenom()
+                : "Administration";
+            String actorId = moderator != null ? moderator.getId() : null;
+            notificationService.createClassCreatedNotification(
+                savedEntity.getId(),
+                savedEntity.getNom(),
+                actorId,
+                actorName,
+                etablissement
+            );
+        } catch (Exception e) {
+            log.error("Failed to send class creation notification: {}", e.getMessage());
         }
-        
+
         return ClasseCreationResponseDto.builder()
                 .classe(classeResponse)
                 .token(token)
@@ -239,18 +242,21 @@ public class ClassesBusiness {
             log.info("Class created without approval requirement");
         }
 
-        // Notify admins about the new class if created by a professor
-        if (moderator != null) {
-            try {
-                notificationService.createClassCreatedNotification(
-                    savedEntity.getId(), 
-                    savedEntity.getNom(), 
-                    moderator.getId(), 
-                    moderator.getNom() + " " + moderator.getPrenom()
-                );
-            } catch (Exception e) {
-                log.error("Failed to send class creation notification to admins: {}", e.getMessage());
-            }
+        // Notify admins and gestionnaire about the new class
+        try {
+            String actorName = moderator != null
+                ? moderator.getNom() + " " + moderator.getPrenom()
+                : "Administration";
+            String actorId = moderator != null ? moderator.getId() : null;
+            notificationService.createClassCreatedNotification(
+                savedEntity.getId(),
+                savedEntity.getNom(),
+                actorId,
+                actorName,
+                etablissement
+            );
+        } catch (Exception e) {
+            log.error("Failed to send class creation notification: {}", e.getMessage());
         }
 
         // Map back to return proper response with moderator ID if exists

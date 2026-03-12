@@ -2,6 +2,7 @@ package cmr.notep.business.business;
 
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
+import cmr.notep.business.services.NotificationService;
 import cmr.notep.interfaces.modeles.Exercise;
 import cmr.notep.modele.EtatCours;
 import cmr.notep.modele.EtatExercise;
@@ -36,6 +37,7 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 public class ExerciseBusiness {
 
     private final DaoAccessorService daoAccessorService;
+    private final NotificationService notificationService;
 
     public Exercise creerExercise(Exercise exercise) {
         log.info("Création d'un nouvel exercice: {}", exercise.getNom());
@@ -57,6 +59,17 @@ public class ExerciseBusiness {
         }
         ExerciseEntity savedEntity = daoAccessorService.getRepository(ExerciseRepository.class).save(entity);
         log.info("Exercise créé avec ID: {}", savedEntity.getId());
+
+        // Send notification for exercise creation
+        try {
+            String profName = professeur.getPrenom() + " " + professeur.getNom();
+            notificationService.createExerciseCreatedNotification(
+                savedEntity.getId(), savedEntity.getNom(),
+                professeur.getId(), profName);
+        } catch (Exception e) {
+            log.error("Failed to send exercise creation notification: {}", e.getMessage());
+        }
+
         return dozerMapperBean.map(savedEntity, Exercise.class);
     }
 

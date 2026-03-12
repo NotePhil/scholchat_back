@@ -2,6 +2,7 @@ package cmr.notep.business.business;
 
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
+import cmr.notep.business.services.NotificationService;
 import cmr.notep.interfaces.modeles.Chapitre;
 import cmr.notep.interfaces.modeles.Cours;
 import cmr.notep.interfaces.modeles.Matiere;
@@ -27,9 +28,11 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 @Slf4j
 public class CoursBusiness {
     private final DaoAccessorService daoAccessorService;
+    private final NotificationService notificationService;
 
-    public CoursBusiness(DaoAccessorService daoAccessorService) {
+    public CoursBusiness(DaoAccessorService daoAccessorService, NotificationService notificationService) {
         this.daoAccessorService = daoAccessorService;
+        this.notificationService = notificationService;
     }
 
 
@@ -96,6 +99,16 @@ public class CoursBusiness {
         // Save the course (cascade will save chapters)
         CoursEntity savedEntity = daoAccessorService.getRepository(CoursRepository.class).save(entity);
         log.info("Saved course entity ID: {}", savedEntity.getId());
+
+        // Send notification for course creation
+        try {
+            String profName = professeur.getPrenom() + " " + professeur.getNom();
+            notificationService.createCourseCreatedNotification(
+                savedEntity.getId(), savedEntity.getTitre(),
+                professeur.getId(), profName, null);
+        } catch (Exception e) {
+            log.error("Failed to send course creation notification: {}", e.getMessage());
+        }
 
         // Map back to DTO
         Cours result = dozerMapperBean.map(savedEntity, Cours.class);
