@@ -373,8 +373,18 @@ CREATE TABLE IF NOT EXISTS questions_reponses (
     intitule VARCHAR(1000) NOT NULL,
     reponse TEXT,
     type_question VARCHAR(50) NOT NULL,
+    points INTEGER,
     exercise_id VARCHAR(255) NOT NULL,
     FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS choix_reponses (
+    id VARCHAR(255) PRIMARY KEY,
+    texte TEXT NOT NULL,
+    est_correct BOOLEAN NOT NULL DEFAULT FALSE,
+    ordre_affichage INTEGER,
+    question_id VARCHAR(255) NOT NULL,
+    FOREIGN KEY (question_id) REFERENCES questions_reponses(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS exercise_matieres (
@@ -400,13 +410,14 @@ CREATE TABLE IF NOT EXISTS repondre (
 );
 
 CREATE TABLE IF NOT EXISTS exercises_programmer (
-    exercise_id VARCHAR(255) PRIMARY KEY,
+    id VARCHAR(255) PRIMARY KEY,
+    source_exercise_id VARCHAR(255) NOT NULL,
     date_exo_prevue TIMESTAMP NOT NULL,
     date_debut_exo_effectif TIMESTAMP NOT NULL,
     date_fin_exo_effectif TIMESTAMP NOT NULL,
     etat_exercise_programmer VARCHAR(50),
     programme_par_id VARCHAR(255) NOT NULL,
-    FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
+    FOREIGN KEY (source_exercise_id) REFERENCES exercises(id),
     FOREIGN KEY (programme_par_id) REFERENCES professeurs(professeurs_id)
 );
 
@@ -415,7 +426,7 @@ CREATE TABLE IF NOT EXISTS exercise_programmer_classes (
     classe_id VARCHAR(255) NOT NULL,
     date_diffusion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (exercise_programmer_id, classe_id),
-    FOREIGN KEY (exercise_programmer_id) REFERENCES exercises_programmer(exercise_id) ON DELETE CASCADE,
+    FOREIGN KEY (exercise_programmer_id) REFERENCES exercises_programmer(id) ON DELETE CASCADE,
     FOREIGN KEY (classe_id) REFERENCES classes(id) ON DELETE CASCADE
 );
 
@@ -429,7 +440,7 @@ CREATE TABLE IF NOT EXISTS participer_exo (
     date_soumission TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (utilisateur_id, exercise_programmer_id),
     FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id) ON DELETE CASCADE,
-    FOREIGN KEY (exercise_programmer_id) REFERENCES exercises_programmer(exercise_id) ON DELETE CASCADE
+    FOREIGN KEY (exercise_programmer_id) REFERENCES exercises_programmer(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS notifications (
@@ -605,3 +616,4 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(is_read);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, is_read) WHERE is_read = FALSE;
+CREATE INDEX IF NOT EXISTS idx_choix_reponses_question ON choix_reponses(question_id);

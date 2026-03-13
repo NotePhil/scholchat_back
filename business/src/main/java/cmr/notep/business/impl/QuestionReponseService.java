@@ -28,10 +28,19 @@ public class QuestionReponseService implements QuestionReponseApi {
         log.info("Création d'une nouvelle question pour l'exercice: {}", exerciseId);
         QuestionReponse question = questionReponseMapper.toModel(questionRequestDTO);
         QuestionReponse createdQuestion = questionReponseBusiness.creerQuestion(exerciseId, question);
-        // Pas besoin de refaire un mapping ici, car `createdQuestion` est déjà un modèle.
-        // On récupère l'entité depuis la base pour être sûr que tout est bien lié.
-        QuestionReponseEntity savedEntity = dozerMapperBean.map(createdQuestion, QuestionReponseEntity.class);
-        return questionReponseMapper.toResponseDTO(savedEntity);
+        return mapToResponseDTO(createdQuestion);
+    }
+
+    private QuestionReponseResponseDTO mapToResponseDTO(QuestionReponse question) {
+        QuestionReponseResponseDTO dto = new QuestionReponseResponseDTO();
+        dto.setId(question.getId());
+        dto.setIntitule(question.getIntitule());
+        dto.setReponse(question.getReponse());
+        dto.setTypeQuestion(question.getTypeQuestion());
+        dto.setExerciseId(question.getExerciseId());
+        dto.setPoints(question.getPoints());
+        dto.setChoixReponses(question.getChoixReponses());
+        return dto;
     }
 
 
@@ -40,9 +49,7 @@ public class QuestionReponseService implements QuestionReponseApi {
         log.info("Récupération des questions pour l'exercice: {}", exerciseId);
         return questionReponseBusiness.obtenirQuestionsParExercise(exerciseId)
                 .stream()
-                .map(q -> questionReponseMapper.toResponseDTO(
-                        dozerMapperBean.map(q, cmr.notep.ressourcesjpa.dao.QuestionReponseEntity.class)
-                ))
+                .map(this::mapToResponseDTO)
                 .collect(Collectors.toList());
     }
 
@@ -51,9 +58,7 @@ public class QuestionReponseService implements QuestionReponseApi {
         log.info("Mise à jour de la question: {}", questionId);
         QuestionReponse question = questionReponseMapper.toModel(questionRequestDTO);
         QuestionReponse updatedQuestion = questionReponseBusiness.mettreAJourQuestion(questionId, question);
-        return questionReponseMapper.toResponseDTO(
-                dozerMapperBean.map(updatedQuestion, cmr.notep.ressourcesjpa.dao.QuestionReponseEntity.class)
-        );
+        return mapToResponseDTO(updatedQuestion);
     }
 
     @Override

@@ -14,6 +14,8 @@ public class QuestionReponseMapper {
                 .intitule(requestDTO.getIntitule())
                 .reponse(requestDTO.getReponse())
                 .typeQuestion(requestDTO.getTypeQuestion())
+                .points(requestDTO.getPoints())
+                .choixReponses(requestDTO.getChoixReponses())
                 .build();
     }
 

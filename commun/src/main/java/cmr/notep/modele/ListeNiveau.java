@@ -5,5 +5,6 @@ public enum ListeNiveau {
     PRIMAIRE,
     COLLEGE,
     LYCEE,
-    UNIVERSITE
+    UNIVERSITE,
+    AUTRE
 }

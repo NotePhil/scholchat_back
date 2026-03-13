@@ -13,12 +13,18 @@ import java.util.List;
 @Setter
 @Entity
 @Table(name = "exercises_programmer", schema = "ressources")
-@PrimaryKeyJoinColumn(name = "exercise_id")
-public class ExerciseProgrammerEntity extends ExerciseEntity {
+public class ExerciseProgrammerEntity {
+
+    @Id
+    private String id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "exercise_id", insertable = false, updatable = false)
+    @JoinColumn(name = "source_exercise_id", nullable = false)
     private ExerciseEntity exercise;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "etat_exercise_programmer")
+    private EtatExercise etat;
 
     @Column(name = "date_exo_prevue", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)

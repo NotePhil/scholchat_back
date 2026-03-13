@@ -32,63 +32,26 @@ public class ExerciseProgrammerBusiness {
     public ExerciseProgrammer programmerExercise(ExerciseProgrammer exerciseProgrammer) {
         log.info("Programmation d'un nouvel exercice à partir de l'exercice ID: {}", exerciseProgrammer.getExerciseId());
 
-        // Récupérer l'exercice existant
-        ExerciseEntity exerciseExistante = daoAccessorService.getRepository(ExerciseRepository.class)
+        ExerciseEntity exerciseSource = daoAccessorService.getRepository(ExerciseRepository.class)
                 .findById(exerciseProgrammer.getExerciseId())
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Exercice source introuvable"));
 
-        // Validate and fetch required entities
         ProfesseursEntity professeur = daoAccessorService.getRepository(ProfesseursRepository.class)
                 .findById(exerciseProgrammer.getProgrammeParId())
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Professeur programmeur introuvable"));
 
-        // Créer l'entité ExerciseProgrammer en copiant les données de l'exercice source
         ExerciseProgrammerEntity entity = new ExerciseProgrammerEntity();
-
-        // Copier les propriétés de base de l'exercice source
-        entity.setNom(exerciseExistante.getNom());
-        entity.setDescription(exerciseExistante.getDescription());
-        entity.setNiveau(exerciseExistante.getNiveau());
-        entity.setRestriction(exerciseExistante.getRestriction());
-        entity.setRedacteur(exerciseExistante.getRedacteur());
-        entity.setDateCreation(new Date());
-
-        // Créer de NOUVELLES instances des collections pour éviter le partage
-        if (exerciseExistante.getMatieres() != null) {
-            entity.setMatieres(new ArrayList<>(exerciseExistante.getMatieres()));
-        } else {
-            entity.setMatieres(new ArrayList<>());
-        }
-
-        if (exerciseExistante.getCoursLies() != null) {
-            entity.setCoursLies(new ArrayList<>(exerciseExistante.getCoursLies()));
-        } else {
-            entity.setCoursLies(new ArrayList<>());
-        }
-
-        if (exerciseExistante.getQuestions() != null) {
-            entity.setQuestions(new ArrayList<>(exerciseExistante.getQuestions()));
-        } else {
-            entity.setQuestions(new ArrayList<>());
-        }
-
-        // Définir l'état - utiliser le champ hérité de ExerciseEntity
-        if (exerciseProgrammer.getEtat() != null) {
-            entity.setEtat(exerciseProgrammer.getEtat());
-        } else {
-            entity.setEtat(EtatExercise.BROUILLON);
-        }
-
-        // Définir les propriétés spécifiques à la programmation
+        entity.setId(UUID.randomUUID().toString());
+        entity.setExercise(exerciseSource);
         entity.setProgrammePar(professeur);
         entity.setDateExoPrevue(exerciseProgrammer.getDateExoPrevue());
         entity.setDateDebutExoEffectif(exerciseProgrammer.getDateDebutExoEffectif());
         entity.setDateFinExoEffectif(exerciseProgrammer.getDateFinExoEffectif());
+        entity.setEtat(EtatExercise.ACTIF);
 
-        // Lier à l'exercice source
-        entity.setExercise(exerciseExistante);
+        exerciseSource.setEtat(EtatExercise.ACTIF);
+        daoAccessorService.getRepository(ExerciseRepository.class).save(exerciseSource);
 
-        // Save the entity
         ExerciseProgrammerEntity savedEntity = daoAccessorService.getRepository(ExerciseProgrammerRepository.class).save(entity);
         log.info("Exercice programmé avec ID: {} à partir de l'exercice source: {}", savedEntity.getId(), exerciseProgrammer.getExerciseId());
 
@@ -108,6 +71,13 @@ public class ExerciseProgrammerBusiness {
                 classeIds.add(classe.getId());
             }
 
+            ExerciseEntity source = daoAccessorService.getRepository(ExerciseRepository.class)
+                    .findById(exerciseProgramme.getExerciseId()).orElse(null);
+            if (source != null) {
+                source.setEtat(EtatExercise.PUBLIE);
+                daoAccessorService.getRepository(ExerciseRepository.class).save(source);
+            }
+
             // Send notifications to students in the classes
             try {
                 ProfesseursEntity prof = daoAccessorService.getRepository(ProfesseursRepository.class)
@@ -115,7 +85,7 @@ public class ExerciseProgrammerBusiness {
                 if (prof != null) {
                     String profName = prof.getPrenom() + " " + prof.getNom();
                     notificationService.createExerciseAssignedNotification(
-                            exerciseProgramme.getNom(), prof.getId(), profName, classeIds);
+                            exerciseProgramme.getExerciseId(), prof.getId(), profName, classeIds);
                 }
             } catch (Exception e) {
                 log.error("Error sending exercise notifications: {}", e.getMessage());
@@ -197,12 +167,32 @@ public class ExerciseProgrammerBusiness {
         return dozerMapperBean.map(entity, ExerciseProgrammer.class);
     }
 
+    public List<ExerciseProgrammer> obtenirExercisesProgrammesParExerciseId(String exerciseId) {
+        return daoAccessorService.getRepository(ExerciseProgrammerRepository.class)
+                .findByExerciseId(exerciseId)
+                .stream()
+                .map(e -> dozerMapperBean.map(e, ExerciseProgrammer.class))
+                .collect(Collectors.toList());
+    }
+
     public void supprimerExerciseProgramme(String exerciseProgrammerId) {
         ExerciseProgrammerEntity exerciseProgrammer = daoAccessorService.getRepository(ExerciseProgrammerRepository.class)
                 .findById(exerciseProgrammerId)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Exercice programmé introuvable"));
 
+        String sourceExerciseId = exerciseProgrammer.getExercise().getId();
         daoAccessorService.getRepository(ExerciseProgrammerRepository.class).delete(exerciseProgrammer);
+
+        boolean hasOtherProgrammations = !daoAccessorService.getRepository(ExerciseProgrammerRepository.class)
+                .findByExerciseId(sourceExerciseId).isEmpty();
+        if (!hasOtherProgrammations) {
+            ExerciseEntity source = daoAccessorService.getRepository(ExerciseRepository.class)
+                    .findById(sourceExerciseId).orElse(null);
+            if (source != null) {
+                source.setEtat(EtatExercise.INACTIF);
+                daoAccessorService.getRepository(ExerciseRepository.class).save(source);
+            }
+        }
         log.info("Exercice programmé {} supprimé", exerciseProgrammerId);
     }
 

@@ -76,6 +76,13 @@ public interface ExerciseProgrammerApi {
     @ResponseStatus(HttpStatus.OK)
     ExerciseProgrammerResponseDTO obtenirExerciseProgrammeParId(@PathVariable String exerciseProgrammerId);
 
+    @GetMapping(
+            path = "/exercise/{exerciseId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    List<ExerciseProgrammerResponseDTO> obtenirExercisesProgrammesParExerciseId(@PathVariable String exerciseId);
+
     @DeleteMapping(
             path = "/{exerciseProgrammerId}",
             produces = MediaType.APPLICATION_JSON_VALUE

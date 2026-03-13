@@ -122,12 +122,28 @@ public class DroitPublicationBusiness {
     }
 
     private Utilisateurs mapUserWithMinimalData(DroitPublicationEntity droit) {
-        Utilisateurs user = dozerMapperBean.map(droit.getUtilisateur(), Utilisateurs.class);
+        UtilisateursEntity entity = droit.getUtilisateur();
+        Utilisateurs user = mapToSpecificUserType(entity);
         // Clear sensitive data
         user.setPasseAccess(null);
         user.setActivationToken(null);
         user.setResetPasswordToken(null);
         return user;
+    }
+
+    private Utilisateurs mapToSpecificUserType(UtilisateursEntity entity) {
+        if (entity instanceof ProfesseursEntity) {
+            return dozerMapperBean.map(entity, cmr.notep.interfaces.modeles.Professeurs.class);
+        } else if (entity instanceof ElevesEntity) {
+            return dozerMapperBean.map(entity, cmr.notep.interfaces.modeles.Eleves.class);
+        } else if (entity instanceof ParentsEntity) {
+            return dozerMapperBean.map(entity, cmr.notep.interfaces.modeles.Parents.class);
+        } else if (entity instanceof RepetiteursEntity) {
+            return dozerMapperBean.map(entity, cmr.notep.interfaces.modeles.Repetiteurs.class);
+        } else if (entity instanceof GestionnairesEntity) {
+            return dozerMapperBean.map(entity, cmr.notep.interfaces.modeles.Gestionnaires.class);
+        }
+        return dozerMapperBean.map(entity, Utilisateurs.class);
     }
 
     public List<Classes> obtenirClassesAvecDroitPublication(String utilisateurId) throws SchoolException {

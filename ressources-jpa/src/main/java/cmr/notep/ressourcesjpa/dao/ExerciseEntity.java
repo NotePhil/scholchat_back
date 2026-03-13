@@ -60,7 +60,6 @@ public class ExerciseEntity {
     @OneToMany(mappedBy = "exercise", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<QuestionReponseEntity> questions = new ArrayList<>();
 
-    // Add relationship with ExerciseProgrammerEntity
-    @OneToMany(mappedBy = "exercise", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "exercise", fetch = FetchType.LAZY)
     private List<ExerciseProgrammerEntity> exercisesProgrammes = new ArrayList<>();
 }

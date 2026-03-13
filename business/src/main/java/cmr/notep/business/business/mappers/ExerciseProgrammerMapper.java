@@ -3,6 +3,7 @@ package cmr.notep.business.business.mappers;
 import cmr.notep.interfaces.dto.*;
 import cmr.notep.interfaces.modeles.ExerciseProgrammer;
 import cmr.notep.modele.EtatExercise;
+import cmr.notep.ressourcesjpa.dao.ExerciseEntity;
 import cmr.notep.ressourcesjpa.dao.ExerciseProgrammerEntity;
 import cmr.notep.ressourcesjpa.dao.ParticiperExoEntity;
 import org.springframework.stereotype.Component;
@@ -39,7 +40,7 @@ public class ExerciseProgrammerMapper {
                 .utilisateurNom(participation.getUtilisateur().getNom())
                 .utilisateurPrenom(participation.getUtilisateur().getPrenom())
                 .exerciseProgrammerId(participation.getExerciseProgrammer().getId())
-                .exerciseProgrammerNom(participation.getExerciseProgrammer().getNom())
+                .exerciseProgrammerNom(participation.getExerciseProgrammer().getExercise().getNom())
                 .note(participation.getNote())
                 .appreciation(participation.getAppreciation())
                 .dateDebut(participation.getDateDebut())
@@ -48,16 +49,17 @@ public class ExerciseProgrammerMapper {
                 .build();
     }
     public ExerciseProgrammerResponseDTO toResponseDTO(ExerciseProgrammerEntity entity) {
-        // Récupérer les données de l'exercice parent
+        ExerciseEntity source = entity.getExercise();
+
         ExerciseProgrammerResponseDTO responseDTO = ExerciseProgrammerResponseDTO.builder()
                 .id(entity.getId())
-                .nom(entity.getNom())
-                .description(entity.getDescription())
-                .dateCreation(entity.getDateCreation())
+                .nom(source.getNom())
+                .description(source.getDescription())
+                .dateCreation(source.getDateCreation())
                 .etat(entity.getEtat())
-                .restriction(entity.getRestriction())
-                .niveau(entity.getNiveau())
-                .redacteurId(entity.getRedacteur().getId())
+                .restriction(source.getRestriction())
+                .niveau(source.getNiveau())
+                .redacteurId(source.getRedacteur().getId())
                 .programmeParId(entity.getProgrammePar().getId())
                 .programmeParNom(entity.getProgrammePar().getNom())
                 .programmeParPrenom(entity.getProgrammePar().getPrenom())
@@ -66,8 +68,7 @@ public class ExerciseProgrammerMapper {
                 .dateFinExoEffectif(entity.getDateFinExoEffectif())
                 .build();
 
-        // Mapper les relations
-        List<ClasseSummaryDTO> classesDiffusees = (entity.getClassesDiffusees() != null) ?
+        responseDTO.setClassesDiffusees(entity.getClassesDiffusees() != null ?
                 entity.getClassesDiffusees().stream()
                         .map(classe -> ClasseSummaryDTO.builder()
                                 .id(classe.getId())
@@ -75,50 +76,39 @@ public class ExerciseProgrammerMapper {
                                 .niveau(classe.getNiveau())
                                 .codeActivation(classe.getCodeActivation())
                                 .build())
-                        .collect(Collectors.toList()) :
-                new ArrayList<>();
+                        .collect(Collectors.toList()) : new ArrayList<>());
 
-        List<MatiereSummaryDTO> matiereSummaryList = (entity.getMatieres() != null) ?
-                entity.getMatieres().stream()
+        responseDTO.setMatieres(source.getMatieres() != null ?
+                source.getMatieres().stream()
                         .map(matiere -> MatiereSummaryDTO.builder()
                                 .id(matiere.getId())
                                 .nom(matiere.getNom())
                                 .description(matiere.getDescription())
                                 .build())
-                        .collect(Collectors.toList()) :
-                new ArrayList<>();
+                        .collect(Collectors.toList()) : new ArrayList<>());
 
-        List<QuestionReponseSummaryDTO> questionSummaryList = (entity.getQuestions() != null) ?
-                entity.getQuestions().stream()
+        responseDTO.setQuestions(source.getQuestions() != null ?
+                source.getQuestions().stream()
                         .map(question -> QuestionReponseSummaryDTO.builder()
                                 .id(question.getId())
                                 .intitule(question.getIntitule())
                                 .typeQuestion(question.getTypeQuestion())
                                 .build())
-                        .collect(Collectors.toList()) :
-                new ArrayList<>();
+                        .collect(Collectors.toList()) : new ArrayList<>());
 
-        List<CoursSummaryDTO> coursSummaryList = (entity.getCoursLies() != null) ?
-                entity.getCoursLies().stream()
+        responseDTO.setCoursLies(source.getCoursLies() != null ?
+                source.getCoursLies().stream()
                         .map(cours -> CoursSummaryDTO.builder()
                                 .id(cours.getId())
                                 .titre(cours.getTitre())
                                 .description(cours.getDescription())
                                 .build())
-                        .collect(Collectors.toList()) :
-                new ArrayList<>();
+                        .collect(Collectors.toList()) : new ArrayList<>());
 
-        List<ParticipationExerciseResponseDTO> participations = (entity.getParticipants() != null) ?
+        responseDTO.setParticipations(entity.getParticipants() != null ?
                 entity.getParticipants().stream()
                         .map(this::mapParticipationToDTO)
-                        .collect(Collectors.toList()) :
-                new ArrayList<>();
-
-        responseDTO.setClassesDiffusees(classesDiffusees);
-        responseDTO.setMatieres(matiereSummaryList);
-        responseDTO.setQuestions(questionSummaryList);
-        responseDTO.setCoursLies(coursSummaryList);
-        responseDTO.setParticipations(participations);
+                        .collect(Collectors.toList()) : new ArrayList<>());
 
         return responseDTO;
     }

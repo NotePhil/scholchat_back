@@ -27,9 +27,16 @@ public class QuestionReponseEntity {
     @Column(nullable = false)
     private TypeQuestion typeQuestion;
 
+    @Column(name = "points")
+    private Integer points;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "exercise_id")
     private ExerciseEntity exercise;
 
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<RepondreEntity> reponsesUtilisateurs = new ArrayList<>();}
+    private List<RepondreEntity> reponsesUtilisateurs = new ArrayList<>();
+
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChoixReponseEntity> choixReponses = new ArrayList<>();
+}

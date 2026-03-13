@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -14,4 +16,6 @@ public class QuestionReponseRequestDTO {
     private String intitule;
     private String reponse;
     private TypeQuestion typeQuestion;
+    private Integer points;
+    private List<ChoixReponseDTO> choixReponses;
 }
