@@ -9,8 +9,12 @@ import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.EvenementEntity;
 import cmr.notep.ressourcesjpa.dao.MediaEntity;
 import cmr.notep.ressourcesjpa.dao.ProfesseursEntity;
+import cmr.notep.ressourcesjpa.dao.UtilisateursEntity;
 import cmr.notep.ressourcesjpa.repository.EvenementRepository;
 import cmr.notep.ressourcesjpa.repository.ProfesseursRepository;
+import cmr.notep.ressourcesjpa.repository.UtilisateursRepository;
+import cmr.notep.ressourcesjpa.repository.UserRoleRepository;
+import cmr.notep.ressourcesjpa.dao.UserRoleEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -62,11 +66,11 @@ public class EvenementBusiness {
                 }
             }
 
-            // Fetch and set the creator
-            ProfesseursEntity createur = daoAccessorService.getRepository(ProfesseursRepository.class)
+            // Fetch and set the creator (any user type can create events)
+            UtilisateursEntity createur = daoAccessorService.getRepository(UtilisateursRepository.class)
                     .findById(evenement.getCreateurId())
                     .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND,
-                            "Professeur introuvable avec l'ID: " + evenement.getCreateurId()));
+                            "Utilisateur introuvable avec l'ID: " + evenement.getCreateurId()));
             entity.setCreateur(createur);
 
             // Set participants if needed
@@ -160,6 +164,29 @@ public class EvenementBusiness {
             // Map back to DTO for response
             Evenement savedEvenement = dozerMapperBean.map(savedEntity, Evenement.class);
             savedEvenement.setCreateurId(savedEntity.getCreateur().getId());
+            savedEvenement.setCreateurNom(savedEntity.getCreateur().getNom());
+            savedEvenement.setCreateurPrenom(savedEntity.getCreateur().getPrenom());
+            // Determine role from user_roles table
+            String role = "Utilisateur";
+            try {
+                List<UserRoleEntity> userRoles = daoAccessorService
+                        .getRepository(UserRoleRepository.class)
+                        .findByUtilisateurIdAndIsActiveTrue(savedEntity.getCreateur().getId());
+                if (!userRoles.isEmpty()) {
+                    String primaryRole = userRoles.get(0).getRoleType();
+                    java.util.Map<String, String> roleMap = java.util.Map.of(
+                        "PROFESSOR", "Professeur", "PARENT", "Parent",
+                        "STUDENT", "Eleve", "ADMIN", "Admin",
+                        "GESTIONNAIRE", "Gestionnaire", "TUTOR", "Repetiteur"
+                    );
+                    role = roleMap.getOrDefault(primaryRole, primaryRole);
+                } else if (Boolean.TRUE.equals(savedEntity.getCreateur().getAdmin())) {
+                    role = "Admin";
+                }
+            } catch (Exception roleErr) {
+                if (Boolean.TRUE.equals(savedEntity.getCreateur().getAdmin())) role = "Admin";
+            }
+            savedEvenement.setCreateurRole(role);
             savedEvenement.setInteractions(interactionBusiness.getInteractionsByEvent(savedEntity.getId()));
 
             log.info("Event created successfully with ID: {}", savedEntity.getId());
@@ -267,13 +294,37 @@ public class EvenementBusiness {
                         try {
                             Evenement evenement = dozerMapperBean.map(e, Evenement.class);
                             if (e.getCreateur() != null) {
-                                evenement.setCreateurId(e.getCreateur().getId()); // Set creator ID properly
+                                evenement.setCreateurId(e.getCreateur().getId());
+                                evenement.setCreateurNom(e.getCreateur().getNom());
+                                evenement.setCreateurPrenom(e.getCreateur().getPrenom());
+                                // Determine role from user_roles table (reliable for multi-role users)
+                                String role = "Utilisateur";
+                                try {
+                                    List<UserRoleEntity> userRoles = daoAccessorService
+                                            .getRepository(UserRoleRepository.class)
+                                            .findByUtilisateurIdAndIsActiveTrue(e.getCreateur().getId());
+                                    if (!userRoles.isEmpty()) {
+                                        // Use primary role (first one, typically the original role)
+                                        String primaryRole = userRoles.get(0).getRoleType();
+                                        java.util.Map<String, String> roleMap = java.util.Map.of(
+                                            "PROFESSOR", "Professeur", "PARENT", "Parent",
+                                            "STUDENT", "Eleve", "ADMIN", "Admin",
+                                            "GESTIONNAIRE", "Gestionnaire", "TUTOR", "Repetiteur"
+                                        );
+                                        role = roleMap.getOrDefault(primaryRole, primaryRole);
+                                    } else if (Boolean.TRUE.equals(e.getCreateur().getAdmin())) {
+                                        role = "Admin";
+                                    }
+                                } catch (Exception roleErr) {
+                                    log.warn("Could not determine role: {}", roleErr.getMessage());
+                                    if (Boolean.TRUE.equals(e.getCreateur().getAdmin())) role = "Admin";
+                                }
+                                evenement.setCreateurRole(role);
                             }
                             evenement.setInteractions(interactionBusiness.getInteractionsByEvent(e.getId()));
                             return evenement;
                         } catch (Exception ex) {
                             log.error("Error mapping event with ID {}: {}", e.getId(), ex.getMessage());
-                            // Return a basic event object if mapping fails
                             Evenement fallbackEvent = new Evenement();
                             fallbackEvent.setId(e.getId());
                             fallbackEvent.setTitre(e.getTitre());
@@ -284,6 +335,8 @@ public class EvenementBusiness {
                             fallbackEvent.setHeureFin(e.getHeureFin());
                             if (e.getCreateur() != null) {
                                 fallbackEvent.setCreateurId(e.getCreateur().getId());
+                                fallbackEvent.setCreateurNom(e.getCreateur().getNom());
+                                fallbackEvent.setCreateurPrenom(e.getCreateur().getPrenom());
                             }
                             fallbackEvent.setInteractions(interactionBusiness.getInteractionsByEvent(e.getId()));
                             return fallbackEvent;

@@ -23,4 +23,5 @@ public class Etablissement implements Serializable {
     private String codeUnique;
     @JsonBackReference
     private Utilisateurs gestionnaire;
+    private String gestionnaireId; // Exposed for filtering
 }

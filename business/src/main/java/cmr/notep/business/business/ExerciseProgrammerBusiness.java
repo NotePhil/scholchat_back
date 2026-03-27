@@ -63,16 +63,31 @@ public class ExerciseProgrammerBusiness {
         // Programmer l'exercice d'abord
         ExerciseProgrammer exerciseProgramme = programmerExercise(exerciseProgrammer);
 
-        // Diffuser dans les classes spécifiées (si des IDs de classes sont fournis)
-        if (exerciseProgrammer.getClassesDiffusees() != null && !exerciseProgrammer.getClassesDiffusees().isEmpty()) {
-            List<String> classeIds = new ArrayList<>();
+        // Diffuser dans les classes spécifiées
+        // Support both classesDiffusees (list of Classes) and classeIds (list of String)
+        List<String> classeIdsToDistribute = new ArrayList<>();
+        if (exerciseProgrammer.getClasseIds() != null && !exerciseProgrammer.getClasseIds().isEmpty()) {
+            classeIdsToDistribute.addAll(exerciseProgrammer.getClasseIds());
+        } else if (exerciseProgrammer.getClassesDiffusees() != null && !exerciseProgrammer.getClassesDiffusees().isEmpty()) {
             for (Classes classe : exerciseProgrammer.getClassesDiffusees()) {
-                diffuserExerciseDansClasse(exerciseProgramme.getId(), classe.getId());
-                classeIds.add(classe.getId());
+                classeIdsToDistribute.add(classe.getId());
+            }
+        }
+
+        if (!classeIdsToDistribute.isEmpty()) {
+            List<String> classeIds = new ArrayList<>();
+            for (String classId : classeIdsToDistribute) {
+                diffuserExerciseDansClasse(exerciseProgramme.getId(), classId);
+                classeIds.add(classId);
             }
 
-            ExerciseEntity source = daoAccessorService.getRepository(ExerciseRepository.class)
-                    .findById(exerciseProgramme.getExerciseId()).orElse(null);
+            // Use original request's exerciseId (not the mapped one which may be null)
+            String sourceExerciseId = exerciseProgrammer.getExerciseId() != null
+                    ? exerciseProgrammer.getExerciseId()
+                    : exerciseProgramme.getExerciseId();
+            ExerciseEntity source = sourceExerciseId != null
+                    ? daoAccessorService.getRepository(ExerciseRepository.class).findById(sourceExerciseId).orElse(null)
+                    : null;
             if (source != null) {
                 source.setEtat(EtatExercise.PUBLIE);
                 daoAccessorService.getRepository(ExerciseRepository.class).save(source);

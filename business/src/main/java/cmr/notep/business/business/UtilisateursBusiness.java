@@ -27,6 +27,10 @@ import cmr.notep.ressourcesjpa.dao.MotifRejetEntity;
 import cmr.notep.ressourcesjpa.dao.ProfesseursEntity;
 import cmr.notep.ressourcesjpa.repository.MotifRejetRepository;
 import cmr.notep.ressourcesjpa.repository.ProfesseursRepository;
+import cmr.notep.ressourcesjpa.repository.ParentsRepository;
+import cmr.notep.ressourcesjpa.repository.ElevesRepository;
+import cmr.notep.ressourcesjpa.repository.UserRoleRepository;
+import java.util.Optional;
 
 
 import java.net.URI;
@@ -204,6 +208,56 @@ public class UtilisateursBusiness {
         log.info("Creating new user: {}", utilisateur.getEmail());
         // Validation des données
         userValidationService.validateUserData(utilisateur);
+
+        // Check if email already exists - if so, add the new role to existing user
+        Optional<UtilisateursEntity> existingUserOpt = daoAccessorService.getRepository(UtilisateursRepository.class)
+                .findByEmail(utilisateur.getEmail());
+        if (existingUserOpt.isPresent()) {
+            UtilisateursEntity existingEntity = existingUserOpt.get();
+            String newRoleType = mapTypeToRole(utilisateur);
+
+            // Check if this role already exists for this user
+            if (daoAccessorService.getRepository(UserRoleRepository.class)
+                    .existsByUtilisateurIdAndRoleType(existingEntity.getId(), newRoleType)) {
+                throw new SchoolException(SchoolErrorCode.DUPLICATE_RESOURCE,
+                        "Ce compte a deja ce role / This account already has this role: " + newRoleType);
+            }
+
+            // Add the new role to user_roles table
+            addRoleToUser(existingEntity.getId(), newRoleType);
+
+            // For parent role, insert directly into parents table via native SQL
+            // (JPA JOINED inheritance prevents using JPA save for a different subtype)
+            if ("PARENT".equals(newRoleType)) {
+                try {
+                    jakarta.persistence.EntityManager em = daoAccessorService.getRepository(UtilisateursRepository.class)
+                            .findById(existingEntity.getId()).map(e -> e).orElse(null) != null ?
+                            null : null; // dummy to get context
+                    // Use native query via repository
+                    daoAccessorService.getRepository(UtilisateursRepository.class)
+                            .insertParentRole(existingEntity.getId());
+                    log.info("Created parent entry for user {}", existingEntity.getId());
+                } catch (Exception e) {
+                    log.warn("Parent entry may already exist or could not be created: {}", e.getMessage());
+                }
+            }
+
+            // For student role, insert directly into eleves table
+            if ("STUDENT".equals(newRoleType)) {
+                try {
+                    String niveau = (utilisateur instanceof Eleves eleve) ? eleve.getNiveau() : "6eme";
+                    daoAccessorService.getRepository(UtilisateursRepository.class)
+                            .insertEleveRole(existingEntity.getId(), niveau != null ? niveau : "6eme");
+                    log.info("Created eleve entry for user {}", existingEntity.getId());
+                } catch (Exception e) {
+                    log.warn("Eleve entry may already exist or could not be created: {}", e.getMessage());
+                }
+            }
+
+            log.info("Added role {} to existing user {}", newRoleType, existingEntity.getEmail());
+            return mapUtilisateursEntityToModele(existingEntity);
+        }
+
         // Configuration par défaut
         utilisateur.setAdmin(false);
         utilisateur.setEtat(utilisateur instanceof Professeurs ?
@@ -223,6 +277,10 @@ public class UtilisateursBusiness {
         userEntity.setId(UUID.randomUUID().toString());
         UtilisateursEntity savedUserEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .save(userEntity);
+
+        // Add role to user_roles table
+        String roleType = mapTypeToRole(utilisateur);
+        addRoleToUser(savedUserEntity.getId(), roleType);
 
         try {
             if (savedUserEntity.getId() != null && !savedUserEntity.getId().equals("temp")) {
@@ -490,5 +548,74 @@ public class UtilisateursBusiness {
         rejectionEmailService.sendRejectionEmail(professeurEntity, motifEntity, motifSupplementaire);
 
         return dozerMapperBean.map(savedEntity, Utilisateurs.class);
+    }
+
+    /**
+     * Map user type to role string
+     */
+    private String mapTypeToRole(Utilisateurs utilisateur) {
+        if (utilisateur instanceof Professeurs) return "PROFESSOR";
+        if (utilisateur instanceof Eleves) return "STUDENT";
+        if (utilisateur instanceof Parents) return "PARENT";
+        if (utilisateur instanceof Repetiteurs) return "TUTOR";
+        if (utilisateur instanceof Gestionnaires) return "GESTIONNAIRE";
+        if (utilisateur.isAdmin()) return "ADMIN";
+        return "USER";
+    }
+
+    /**
+     * Get all active roles for a user from user_roles table
+     */
+    public List<String> getUserRoles(String userId) {
+        try {
+            UserRoleRepository roleRepo = daoAccessorService.getRepository(UserRoleRepository.class);
+            return roleRepo.findByUtilisateurIdAndIsActiveTrue(userId).stream()
+                    .map(UserRoleEntity::getRoleType)
+                    .collect(java.util.stream.Collectors.toList());
+        } catch (Exception e) {
+            log.warn("Could not fetch user roles for {}: {}", userId, e.getMessage());
+            return new java.util.ArrayList<>();
+        }
+    }
+
+    /**
+     * Add a role to an existing user
+     */
+    public void addRoleToUser(String userId, String roleType) {
+        UserRoleRepository roleRepo = daoAccessorService.getRepository(UserRoleRepository.class);
+        if (!roleRepo.existsByUtilisateurIdAndRoleType(userId, roleType)) {
+            UserRoleEntity role = new UserRoleEntity();
+            role.setId(UUID.randomUUID().toString());
+            role.setUtilisateurId(userId);
+            role.setRoleType(roleType);
+            role.setIsActive(true);
+            role.setDateAttribution(LocalDateTime.now());
+            roleRepo.save(role);
+            log.info("Added role {} to user {}", roleType, userId);
+        }
+    }
+
+    /**
+     * Get children for a parent from parent_eleve table
+     */
+    public List<AuthResponse.ChildInfo> getChildrenForParent(String parentId) {
+        try {
+            Optional<ParentsEntity> parentOpt = daoAccessorService.getRepository(ParentsRepository.class)
+                    .findById(parentId);
+            if (parentOpt.isEmpty() || parentOpt.get().getEnfants() == null) {
+                return new java.util.ArrayList<>();
+            }
+            return parentOpt.get().getEnfants().stream()
+                    .map(e -> AuthResponse.ChildInfo.builder()
+                            .id(e.getId())
+                            .nom(e.getNom())
+                            .prenom(e.getPrenom())
+                            .niveau(e.getNiveau())
+                            .build())
+                    .collect(java.util.stream.Collectors.toList());
+        } catch (Exception e) {
+            log.warn("Could not fetch children for parent {}: {}", parentId, e.getMessage());
+            return new java.util.ArrayList<>();
+        }
     }
 }

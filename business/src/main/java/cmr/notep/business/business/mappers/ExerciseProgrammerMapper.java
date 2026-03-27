@@ -32,6 +32,11 @@ public class ExerciseProgrammerMapper {
             exerciseProgrammer.setEtat(EtatExercise.BROUILLON); // Default value
         }
 
+        // Map classeIds to classeIds field on model
+        if (requestDTO.getClasseIds() != null && !requestDTO.getClasseIds().isEmpty()) {
+            exerciseProgrammer.setClasseIds(requestDTO.getClasseIds());
+        }
+
         return exerciseProgrammer;
     }
     private ParticipationExerciseResponseDTO mapParticipationToDTO(ParticiperExoEntity participation) {

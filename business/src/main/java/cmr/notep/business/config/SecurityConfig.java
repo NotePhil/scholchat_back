@@ -55,6 +55,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/auth/register", "/auth/register/",
                                 "/auth/login", "/auth/login/",
+                                "/auth/switch-role", "/auth/switch-role/",
                                 "/auth/activate", "/auth/activate/",
                                 "/auth/refresh", "/auth/refresh/",
                                 "/utilisateurs", "/utilisateurs/**",

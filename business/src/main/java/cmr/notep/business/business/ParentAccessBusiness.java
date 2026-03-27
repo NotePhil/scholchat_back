@@ -81,17 +81,44 @@ public class ParentAccessBusiness {
                 .findById(request.getClasseId())
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe non trouvée"));
 
-        ParentsEntity parent = daoAccessorService.getRepository(ParentsRepository.class)
+        // Find user - they may be a professor with parent role added via native SQL
+        UtilisateursEntity parentUser = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .findById(request.getParentId())
-                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Parent non trouvé"));
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur non trouvé"));
 
-        if (classe.isAccesMajeur()) {
-            traiterAccesMajeur(request, classe, parent);
-        } else {
-            traiterAccesMineur(request, classe, parent);
+        // Check parent row exists (might be added via native SQL for multi-role users)
+        ParentsEntity parent;
+        try {
+            parent = daoAccessorService.getRepository(ParentsRepository.class)
+                    .findById(request.getParentId()).orElse(null);
+        } catch (Exception e) {
+            parent = null;
         }
 
-        notifierModerateur(classe, parent,
+        // If no JPA parent entity found, create a wrapper that uses the user entity
+        // This handles the case where a professor added parent role via native SQL
+        if (parent == null) {
+            // Verify parent row exists in DB
+            try {
+                daoAccessorService.getRepository(UtilisateursRepository.class)
+                        .insertParentRole(request.getParentId());
+            } catch (Exception e) {
+                // Already exists, ignore
+            }
+            // Use the user entity directly - create demande with user ID
+        }
+
+        // If elevesIds are provided (parent selected their children), use majeur flow regardless
+        if (request.getElevesIds() != null && !request.getElevesIds().isEmpty()) {
+            traiterAccesMajeurWithUser(request, classe, parentUser);
+        } else if (request.getElevesNoms() != null && !request.getElevesNoms().isEmpty()) {
+            traiterAccesMineurWithUser(request, classe, parentUser);
+        } else {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
+                    "Veuillez sélectionner au moins un enfant");
+        }
+
+        notifierModerateurWithUser(classe, parentUser,
                 request.getElevesIds() != null ? request.getElevesIds() : Collections.emptyList(),
                 request.getElevesNoms() != null ? request.getElevesNoms() : Collections.emptyList());
     }
@@ -103,14 +130,15 @@ public class ParentAccessBusiness {
         }
 
         for (String eleveId : request.getElevesIds()) {
-            // Vérifier que l'élève a déjà accès à la classe
-            if (!daoAccessorService.getRepository(AccederRepository.class)
-                    .existsByUtilisateurIdAndClasseId(eleveId, classe.getId())) {
-                throw new SchoolException(SchoolErrorCode.INVALID_OPERATION,
-                        "L'élève " + eleveId + " n'a pas accès à cette classe");
+            // Create access request for the student too (if they don't already have access)
+            boolean studentHasAccess = daoAccessorService.getRepository(AccederRepository.class)
+                    .existsByUtilisateurIdAndClasseId(eleveId, classe.getId());
+            if (!studentHasAccess) {
+                // Create access request for the student
+                creerDemandeAcces(eleveId, classe.getId(), classe.getCodeActivation(), false, null);
             }
 
-            // Créer la demande pour le parent (avec référence à l'élève)
+            // Create the access request for the parent (linked to this student)
             creerDemandeAcces(parent.getId(), classe.getId(), classe.getCodeActivation(), true, eleveId);
         }
     }
@@ -142,6 +170,60 @@ public class ParentAccessBusiness {
             creerDemandeAcces(parent.getId(), classe.getId(), classe.getCodeActivation(), true, eleve.getId());
         }
     }
+    private void traiterAccesMajeurWithUser(ParentAccessRequestDto request, ClassesEntity classe, UtilisateursEntity parentUser) throws SchoolException {
+        if (request.getElevesIds() == null || request.getElevesIds().isEmpty()) {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
+                    "Au moins un élève doit être sélectionné");
+        }
+
+        for (String eleveId : request.getElevesIds()) {
+            boolean studentHasAccess = daoAccessorService.getRepository(AccederRepository.class)
+                    .existsByUtilisateurIdAndClasseId(eleveId, classe.getId());
+            if (!studentHasAccess) {
+                creerDemandeAcces(eleveId, classe.getId(), classe.getCodeActivation(), false, null);
+            }
+            creerDemandeAcces(parentUser.getId(), classe.getId(), classe.getCodeActivation(), true, eleveId);
+        }
+    }
+
+    private void traiterAccesMineurWithUser(ParentAccessRequestDto request, ClassesEntity classe, UtilisateursEntity parentUser) throws SchoolException {
+        if (request.getElevesNoms() == null || request.getElevesNoms().isEmpty()) {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
+                    "Au moins un élève doit être ajouté");
+        }
+
+        for (String eleveNom : request.getElevesNoms()) {
+            String[] nameParts = eleveNom.trim().split(" ", 2);
+            String nom = nameParts.length > 0 ? nameParts[0] : "";
+            String prenom = nameParts.length > 1 ? nameParts[1] : "";
+
+            ElevesEntity eleve = new ElevesEntity();
+            eleve.setId(UUID.randomUUID().toString());
+            eleve.setNom(nom);
+            eleve.setPrenom(prenom);
+            eleve.setNiveau(classe.getNiveau());
+            eleve.setEtat(EtatUtilisateur.PENDING);
+            eleve = daoAccessorService.getRepository(ElevesRepository.class).save(eleve);
+
+            creerDemandeAcces(eleve.getId(), classe.getId(), classe.getCodeActivation(), false, null);
+            creerDemandeAcces(parentUser.getId(), classe.getId(), classe.getCodeActivation(), true, eleve.getId());
+        }
+    }
+
+    private void notifierModerateurWithUser(ClassesEntity classe, UtilisateursEntity parentUser,
+                                            List<String> elevesIds, List<String> elevesNoms) {
+        try {
+            if (classe.getModerator() != null) {
+                String parentName = parentUser.getPrenom() + " " + parentUser.getNom();
+                String moderatorId = classe.getModerator().getId();
+                notificationService.createAccessRequestNotification(
+                        classe.getId(), classe.getNom(), moderatorId, parentName);
+            }
+        } catch (Exception e) {
+            log.error("Error notifying moderator: {}", e.getMessage());
+        }
+    }
+
     private void creerDemandeAcces(String utilisateurId, String classeId, String codeActivation,
                                    boolean estParent, String eleveAssocieId) {
         if (!daoAccessorService.getRepository(DemandeAccesRepository.class)

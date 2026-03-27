@@ -294,6 +294,14 @@ public class NotificationService {
         notificationRepository.deleteByUserId(userId);
     }
 
+    @Transactional
+    public void createMessageNotification(String recipientId, String senderId, String senderName, String messageSubject) {
+        saveNotification(recipientId, "MESSAGE_SENT", "Nouveau message",
+                senderName + " vous a envoye un message: " + (messageSubject != null ? messageSubject : "Sans objet"),
+                senderId, senderName, null, "MESSAGE");
+        log.info("Message notification sent to {} from {}", recipientId, senderName);
+    }
+
     private void saveNotification(String userId, String type, String title, String message,
                                   String actorId, String actorName, String relatedEntityId, String relatedEntityType) {
         try {

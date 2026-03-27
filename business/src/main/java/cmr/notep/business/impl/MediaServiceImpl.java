@@ -25,12 +25,14 @@ public class MediaServiceImpl {
     private final MediaBusiness mediaBusiness;
     private final MediaService mediaService;
     private final MediaRepository mediaRepository;
+    private final software.amazon.awssdk.services.s3.S3Client s3Client;
 
     @Autowired
-    public MediaServiceImpl(MediaBusiness mediaBusiness, MediaService mediaService, MediaRepository mediaRepository) {
+    public MediaServiceImpl(MediaBusiness mediaBusiness, MediaService mediaService, MediaRepository mediaRepository, software.amazon.awssdk.services.s3.S3Client s3Client) {
         this.mediaBusiness = mediaBusiness;
         this.mediaService = mediaService;
         this.mediaRepository = mediaRepository;
+        this.s3Client = s3Client;
     }
 
     @PostMapping("/presigned-url")
@@ -50,14 +52,18 @@ public class MediaServiceImpl {
                 throw new IllegalArgumentException("Owner ID is required");
             }
             
-            String sanitizedFileName = request.getFileName()
+            // Make filename unique by adding timestamp
+            String baseName = request.getFileName()
                     .replaceAll("\\s+", "_")
                     .replaceAll("[^a-zA-Z0-9._-]", "");
+            String ext = baseName.contains(".") ? baseName.substring(baseName.lastIndexOf(".")) : "";
+            String nameWithoutExt = baseName.contains(".") ? baseName.substring(0, baseName.lastIndexOf(".")) : baseName;
+            String sanitizedFileName = nameWithoutExt + "_" + System.currentTimeMillis() + ext;
 
-            log.info("Sanitized filename: {}", sanitizedFileName);
+            log.info("Sanitized unique filename: {}", sanitizedFileName);
 
-            // Clean up any existing duplicates before creating new upload
-            mediaBusiness.cleanupDuplicateMedia(sanitizedFileName);
+            // Clean up any existing duplicates
+            try { mediaBusiness.cleanupDuplicateMedia(baseName); } catch (Exception e) { /* ignore */ }
 
             String presignedUrl = mediaBusiness.generateUploadUrl(
                     sanitizedFileName,
@@ -245,6 +251,75 @@ public class MediaServiceImpl {
         dto.setContentType(entity.getContentType());
         dto.setBucketName(entity.getBucketName());
         return dto;
+    }
+
+    @GetMapping("/{mediaId}/content")
+    public ResponseEntity<byte[]> proxyDownload(@PathVariable("mediaId") String mediaId) {
+        try {
+            MediaEntity media = mediaBusiness.getMediaById(mediaId);
+            if (media == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            log.info("Proxy download for media: id={}, filePath={}, bucket={}",
+                    mediaId, media.getFilePath(), media.getBucketName());
+
+            // Download directly from S3/MinIO using the S3Client
+            software.amazon.awssdk.services.s3.model.GetObjectRequest getRequest =
+                software.amazon.awssdk.services.s3.model.GetObjectRequest.builder()
+                    .bucket(media.getBucketName() != null ? media.getBucketName() : "scholchat")
+                    .key(media.getFilePath())
+                    .build();
+
+            software.amazon.awssdk.core.ResponseBytes<software.amazon.awssdk.services.s3.model.GetObjectResponse> objectBytes =
+                s3Client.getObjectAsBytes(getRequest);
+
+            byte[] fileBytes = objectBytes.asByteArray();
+
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.set("Content-Type", media.getContentType() != null ? media.getContentType() : "application/octet-stream");
+            headers.set("Content-Disposition", "inline; filename=\"" + media.getFileName() + "\"");
+            headers.set("Cache-Control", "public, max-age=3600");
+
+            return new ResponseEntity<>(fileBytes, headers, org.springframework.http.HttpStatus.OK);
+        } catch (Exception e) {
+            log.error("Proxy download failed for mediaId {}: {}", mediaId, e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/proxy-upload")
+    public ResponseEntity<Map<String, String>> proxyUpload(
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+            @RequestParam("presignedUrl") String presignedUrl,
+            @RequestParam("contentType") String contentType) {
+        try {
+            log.info("=== PROXY UPLOAD START ===");
+            log.info("File: {}, Size: {}, ContentType: {}", file.getOriginalFilename(), file.getSize(), contentType);
+
+            // Upload to MinIO using the presigned URL via RestTemplate
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.set("Content-Type", contentType);
+
+            org.springframework.http.HttpEntity<byte[]> requestEntity =
+                    new org.springframework.http.HttpEntity<>(file.getBytes(), headers);
+
+            org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+            restTemplate.exchange(presignedUrl, org.springframework.http.HttpMethod.PUT, requestEntity, String.class);
+
+            log.info("=== PROXY UPLOAD SUCCESS ===");
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "message", "File uploaded successfully",
+                    "fileName", file.getOriginalFilename() != null ? file.getOriginalFilename() : "unknown"
+            ));
+        } catch (Exception e) {
+            log.error("Proxy upload failed: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "status", "error",
+                    "message", "Upload failed: " + e.getMessage()
+            ));
+        }
     }
 
     public static class PresignedUrlRequest {

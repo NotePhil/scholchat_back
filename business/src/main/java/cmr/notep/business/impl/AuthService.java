@@ -38,6 +38,13 @@ public class AuthService implements AuthApi {
     }
 
     @Override
+    public AuthResponse switchRole(@NonNull LoginDto switchRequest) {
+        log.info("Switching role for user: {} to {}", switchRequest.getEmail(), switchRequest.getSelectedRole());
+        // Re-authenticate and return token for new role
+        return authBusiness.loginUser(switchRequest);
+    }
+
+    @Override
     public Utilisateurs getUtilisateurByEmailWithToken(String email, String token) {
         log.info("Fetching user by email with token: {}", email);
         return authBusiness.getUtilisateurByEmailWithToken(email, token);

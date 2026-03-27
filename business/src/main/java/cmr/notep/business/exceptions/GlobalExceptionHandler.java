@@ -36,11 +36,30 @@ public class GlobalExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR
         );
     }
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<Object> handleDataIntegrityViolation(
+            org.springframework.dao.DataIntegrityViolationException ex, WebRequest request) {
+        String message = "Une erreur de donnees est survenue / A data error occurred";
+        String errorMsg = ex.getMessage() != null ? ex.getMessage().toLowerCase() : "";
+
+        if (errorMsg.contains("email") && errorMsg.contains("unique")) {
+            message = "Un compte avec cet email existe deja / An account with this email already exists";
+        } else if (errorMsg.contains("unique")) {
+            message = "Cette valeur existe deja / This value already exists";
+        }
+
+        return new ResponseEntity<>(
+                new ErrorResponse(SchoolErrorCode.DUPLICATE_RESOURCE, message),
+                HttpStatus.CONFLICT
+        );
+    }
+
     private HttpStatus mapSchoolExceptionToHttpStatus(SchoolErrorCode code) {
         return switch (code) {
             case NOT_FOUND -> HttpStatus.NOT_FOUND;
             case OPERATION_INTERDITE, INVALID_STATE, INACTIVE_USER -> HttpStatus.FORBIDDEN;
-            case INTERFACE_NON_RESPECTEE -> HttpStatus.BAD_REQUEST;
+            case INTERFACE_NON_RESPECTEE, INVALID_INPUT -> HttpStatus.BAD_REQUEST;
+            case DUPLICATE_RESOURCE -> HttpStatus.CONFLICT;
             default -> HttpStatus.INTERNAL_SERVER_ERROR;
         };
     }

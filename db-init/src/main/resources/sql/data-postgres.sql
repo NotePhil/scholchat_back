@@ -104,3 +104,13 @@ INSERT INTO acceder (utilisateur_id, classe_id, date_acces) VALUES
 ('550e8400-e29b-41d4-a716-446655440201', '550e8400-e29b-41d4-a716-446655440408', '2024-12-01 12:00:00'),
 ('550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440407', '2024-12-01 11:00:00'),
 ('550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440407', '2024-12-01 11:00:00');
+
+-- Add all class moderators to acceder so they appear as class members
+INSERT INTO acceder (utilisateur_id, classe_id)
+SELECT moderator_id, id FROM classes WHERE moderator_id IS NOT NULL
+ON CONFLICT DO NOTHING;
+
+-- Give admins access to ALL classes
+INSERT INTO acceder (utilisateur_id, classe_id)
+SELECT u.id, c.id FROM utilisateurs u CROSS JOIN classes c WHERE u.is_admin = true
+ON CONFLICT DO NOTHING;

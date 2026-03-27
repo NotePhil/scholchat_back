@@ -1,3 +1,5 @@
+SET search_path TO ressources;
+
 -- Add notifications table to schema
 CREATE TABLE IF NOT EXISTS notifications (
     id VARCHAR(255) PRIMARY KEY,

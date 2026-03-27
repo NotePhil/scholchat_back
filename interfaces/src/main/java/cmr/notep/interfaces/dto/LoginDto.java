@@ -8,4 +8,5 @@ import lombok.NoArgsConstructor;
 public class LoginDto {
     private String email;
     private String password;
+    private String selectedRole; // Optional: which role to login as
 }

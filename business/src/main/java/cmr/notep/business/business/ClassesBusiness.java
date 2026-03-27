@@ -135,10 +135,33 @@ public class ClassesBusiness {
             classeResponse.setModerator(moderatorDto);
         }
         
-        String message = moderator != null 
-            ? "Classe créée en attente de validation" 
+        // Add creator to acceder and droits_publication tables
+        if (moderator != null) {
+            try {
+                // Add to acceder (access to class)
+                AccederEntity acceder = new AccederEntity();
+                acceder.setUtilisateurId(moderator.getId());
+                acceder.setClasseId(savedEntity.getId());
+                daoAccessorService.getRepository(AccederRepository.class).save(acceder);
+
+                // Add to droits_publication (publication rights)
+                DroitPublicationEntity droit = new DroitPublicationEntity();
+                droit.setUtilisateurId(moderator.getId());
+                droit.setClasseId(savedEntity.getId());
+                droit.setPeutPublier(true);
+                droit.setPeutModerer(true);
+                droit.setDateAttribution(new java.util.Date());
+                daoAccessorService.getRepository(DroitPublicationRepository.class).save(droit);
+                log.info("Added access and publication rights for moderator {} to class {}", moderator.getId(), savedEntity.getId());
+            } catch (Exception e) {
+                log.warn("Could not add access/rights for moderator: {}", e.getMessage());
+            }
+        }
+
+        String message = moderator != null
+            ? "Classe créée en attente de validation"
             : "Classe créée et activée";
-        
+
         // Notify admins and gestionnaire about the new class
         try {
             String actorName = moderator != null

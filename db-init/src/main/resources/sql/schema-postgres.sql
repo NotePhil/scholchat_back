@@ -77,6 +77,15 @@ CREATE TABLE IF NOT EXISTS gestionnaires (
     PRIMARY KEY (gestionnaires_id)
 );
 
+CREATE TABLE IF NOT EXISTS user_roles (
+    id VARCHAR(255) PRIMARY KEY,
+    utilisateur_id VARCHAR(255) NOT NULL,
+    role_type VARCHAR(50) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    date_attribution TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_user_role UNIQUE (utilisateur_id, role_type)
+);
+
 CREATE TABLE IF NOT EXISTS matieres (
     id VARCHAR(255) PRIMARY KEY,
     nom VARCHAR(255) NOT NULL UNIQUE,
@@ -540,8 +549,12 @@ ALTER TABLE classe_matieres
     FOREIGN KEY (classe_id) REFERENCES classes(id);
 
 ALTER TABLE evenements
-    ADD CONSTRAINT fk_evenement_professeur
-    FOREIGN KEY (createur_id) REFERENCES professeurs(professeurs_id);
+    ADD CONSTRAINT fk_evenement_createur
+    FOREIGN KEY (createur_id) REFERENCES utilisateurs(id);
+
+ALTER TABLE user_roles
+    ADD CONSTRAINT fk_user_roles_utilisateur
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id);
 
 ALTER TABLE evenement_participants
     ADD CONSTRAINT fk_evenement_participants_evenement

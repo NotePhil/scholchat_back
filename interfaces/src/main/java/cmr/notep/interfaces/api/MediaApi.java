@@ -53,4 +53,15 @@ public interface MediaApi {
     )
     MediaDto transferMediaOwnership(@PathVariable String mediaId,
                                     @RequestParam String newOwnerId);
+
+    @PostMapping(
+            path = "/proxy-upload",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    Map<String, String> proxyUpload(
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+            @RequestParam("presignedUrl") String presignedUrl,
+            @RequestParam("contentType") String contentType
+    );
 }

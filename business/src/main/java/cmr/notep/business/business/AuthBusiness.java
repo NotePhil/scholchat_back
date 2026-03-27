@@ -144,9 +144,43 @@ public class AuthBusiness {
             throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Invalid email or password");
         }
 
-        // Génération du token avec les rôles
-        List<String> roles = roleService.determineUserRoles(existingUser);
-        String accessToken = jwtUtil.generateAccessToken(existingUser.getEmail(), roles);
+        // Get all roles: merge user_roles table + JPA type detection
+        List<String> dbRoles = utilisateursBusiness.getUserRoles(existingUser.getId());
+        List<String> jpaRoles = roleService.determineUserRoles(existingUser).stream()
+                .map(r -> r.replace("ROLE_", ""))
+                .filter(r -> !r.equals("USER"))
+                .collect(java.util.stream.Collectors.toList());
+
+        // Merge both sources (no duplicates)
+        java.util.Set<String> allRolesSet = new java.util.LinkedHashSet<>(dbRoles);
+        allRolesSet.addAll(jpaRoles);
+        List<String> availableRoles = new java.util.ArrayList<>(allRolesSet);
+
+        // Sync missing roles to user_roles table for next login
+        for (String role : availableRoles) {
+            utilisateursBusiness.addRoleToUser(existingUser.getId(), role);
+        }
+
+        // Determine selected role (from request or first available)
+        String selectedRole = loginRequest.getSelectedRole();
+        if (selectedRole == null || selectedRole.isEmpty()) {
+            selectedRole = availableRoles.isEmpty() ? "USER" : availableRoles.get(0);
+        }
+
+        // Generate token with all roles
+        List<String> tokenRoles = availableRoles.stream()
+                .map(r -> r.startsWith("ROLE_") ? r : "ROLE_" + r)
+                .collect(java.util.stream.Collectors.toList());
+        tokenRoles.add("ROLE_USER");
+        String accessToken = jwtUtil.generateAccessToken(existingUser.getEmail(), tokenRoles);
+
+        boolean isMultiRole = availableRoles.size() > 1;
+
+        // Get children for parents
+        List<AuthResponse.ChildInfo> children = null;
+        if (availableRoles.contains("PARENT")) {
+            children = utilisateursBusiness.getChildrenForParent(existingUser.getId());
+        }
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
@@ -155,8 +189,12 @@ public class AuthBusiness {
                 .userId(existingUser.getId())
                 .userEmail(existingUser.getEmail())
                 .username(existingUser.getNom() + " " + existingUser.getPrenom())
-                .userType(existingUser.getClass().getSimpleName().toLowerCase())
+                .userType(selectedRole.toLowerCase())
                 .userStatus(existingUser.getEtat())
+                .availableRoles(availableRoles)
+                .selectedRole(selectedRole)
+                .multiRole(isMultiRole)
+                .children(children)
                 .build();
     }
 

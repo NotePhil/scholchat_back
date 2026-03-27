@@ -45,6 +45,13 @@ public interface AuthApi {
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
     AuthResponse loginUser(@NonNull @RequestBody LoginDto utilisateur);
+
+    @PostMapping(
+            path = "/switch-role",
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    AuthResponse switchRole(@NonNull @RequestBody LoginDto switchRequest);
     @PostMapping(
             path = "/registerPassword",
             produces = MediaType.APPLICATION_JSON_VALUE,

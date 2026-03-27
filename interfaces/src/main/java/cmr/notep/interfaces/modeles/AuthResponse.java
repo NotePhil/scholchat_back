@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AuthResponse {
     private String accessToken;
-//    private String refreshToken;
     private String tokenType;
     private Long expiresIn;
     private String userId;
@@ -20,4 +19,21 @@ public class AuthResponse {
     private String username;
     private String userType;
     private EtatUtilisateur userStatus;
+    // Multi-role support
+    private java.util.List<String> availableRoles;
+    private String selectedRole;
+    private boolean multiRole;
+    // Parent-children info
+    private java.util.List<ChildInfo> children;
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ChildInfo {
+        private String id;
+        private String nom;
+        private String prenom;
+        private String niveau;
+    }
 }

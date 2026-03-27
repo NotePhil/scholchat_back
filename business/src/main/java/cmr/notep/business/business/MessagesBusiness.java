@@ -25,9 +25,11 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 @Transactional
 public class MessagesBusiness {
     private final DaoAccessorService daoAccessorService;
+    private final cmr.notep.business.services.NotificationService notificationService;
 
-    public MessagesBusiness(DaoAccessorService daoAccessorService) {
+    public MessagesBusiness(DaoAccessorService daoAccessorService, cmr.notep.business.services.NotificationService notificationService) {
         this.daoAccessorService = daoAccessorService;
+        this.notificationService = notificationService;
     }
 
     public Messages avoirMessage(String idMessage) {
@@ -59,6 +61,21 @@ public class MessagesBusiness {
         
         MessagesEntity savedEntity = daoAccessorService.getRepository(MessagesRepository.class).save(messageEntity);
         savedEntity.getDestinatairesEntities().size();
+
+        // Send notification to each recipient
+        try {
+            String senderName = savedEntity.getExpediteurEntity() != null
+                    ? savedEntity.getExpediteurEntity().getPrenom() + " " + savedEntity.getExpediteurEntity().getNom()
+                    : "Utilisateur";
+            String senderId = savedEntity.getExpediteurEntity() != null
+                    ? savedEntity.getExpediteurEntity().getId() : null;
+            for (UtilisateursEntity dest : savedEntity.getDestinatairesEntities()) {
+                notificationService.createMessageNotification(dest.getId(), senderId, senderName, savedEntity.getObjet());
+            }
+        } catch (Exception e) {
+            log.error("Failed to send message notifications: {}", e.getMessage());
+        }
+
         return mapMessageEntityToDto(savedEntity);
     }
     public Messages posterMessageGroupe(GroupMessageDto groupMessageDto) {

@@ -195,7 +195,32 @@ public class AccederBusiness {
             mettreAJourStatutEleve(eleveId, EtatUtilisateur.ACTIVE);
         }
 
-        // 4. Finaliser la demande
+        // 4. Auto-approve linked parent requests when student is approved
+        final String finalEleveId = eleveId;
+        final String classeId = demande.getClasse().getId();
+        if (!demande.isEstParent() && finalEleveId != null) {
+            try {
+                List<DemandeAccesEntity> linkedParentRequests = daoAccessorService
+                        .getRepository(DemandeAccesRepository.class).findAll().stream()
+                        .filter(d -> d.getEtat() == EtatDemandeAcces.EN_ATTENTE
+                                && d.isEstParent()
+                                && finalEleveId.equals(d.getEleveAssocieId())
+                                && classeId.equals(d.getClasse().getId()))
+                        .collect(Collectors.toList());
+
+                for (DemandeAccesEntity parentDemande : linkedParentRequests) {
+                    accorderAcces(parentDemande.getUtilisateur().getId(), parentDemande.getClasse().getId());
+                    creerRelationParentEleve(parentDemande.getUtilisateur().getId(), finalEleveId);
+                    finaliserDemande(parentDemande);
+                    log.info("Auto-approved parent access for {} linked to student {}",
+                            parentDemande.getUtilisateur().getId(), finalEleveId);
+                }
+            } catch (Exception e) {
+                log.warn("Could not auto-approve linked parent requests: {}", e.getMessage());
+            }
+        }
+
+        // 5. Finaliser la demande
         finaliserDemande(demande);
 
         // 5. Send approval notification to the student

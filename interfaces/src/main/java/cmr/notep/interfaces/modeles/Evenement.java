@@ -25,6 +25,9 @@ public class Evenement {
     private LocalDateTime heureFin;
     // Change from Utilisateurs to String for creator ID
     private String createurId;
+    private String createurNom;
+    private String createurPrenom;
+    private String createurRole;
 
     // Change from List<Utilisateurs> to List<String> for participant IDs
     private List<String> participantsIds;

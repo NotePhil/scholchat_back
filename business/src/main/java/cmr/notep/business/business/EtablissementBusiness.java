@@ -137,8 +137,9 @@ public class EtablissementBusiness {
             gestionnaire.setPrenom(entity.getGestionnaire().getPrenom());
             gestionnaire.setEmail(entity.getGestionnaire().getEmail());
             etablissement.setGestionnaire(gestionnaire);
+            etablissement.setGestionnaireId(entity.getGestionnaire().getId());
         }
-        
+
         return etablissement;
     }
     

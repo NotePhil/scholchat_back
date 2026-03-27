@@ -45,9 +45,9 @@ public class EvenementEntity {
     @Column(name = "utilisateur_id")
     private List<String> participantsIds;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "createur_id", nullable = false)  // Make sure nullable=false matches your DB constraint
-    private ProfesseursEntity createur;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "createur_id", nullable = false)
+    private UtilisateursEntity createur;
 
     @OneToMany(mappedBy = "evenement", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MediaEntity> medias;

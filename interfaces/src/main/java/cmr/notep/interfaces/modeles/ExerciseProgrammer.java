@@ -18,4 +18,5 @@ public class ExerciseProgrammer extends Exercise {
 
     private String programmeParId;
     private List<Classes> classesDiffusees;
+    private List<String> classeIds; // Frontend sends this
 }
