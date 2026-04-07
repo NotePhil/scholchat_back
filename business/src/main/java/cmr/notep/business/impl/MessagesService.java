@@ -2,6 +2,7 @@ package cmr.notep.business.impl;
 
 import cmr.notep.business.business.MessagesBusiness;
 import cmr.notep.interfaces.dto.GroupMessageDto;
+import cmr.notep.interfaces.dto.MessageStatutDTO;
 import cmr.notep.interfaces.api.MessagesApi;
 import cmr.notep.interfaces.modeles.MessageDto;
 import cmr.notep.interfaces.modeles.Messages;
@@ -65,6 +66,35 @@ public class MessagesService implements MessagesApi {
         return messagesBusiness.obtenirMessagesRecus(utilisateurId);
     }
     
+    @Override
+    public MessageStatutDTO marquerLu(String messageId, String utilisateurId, boolean lu) {
+        log.info("Marquer message {} comme {} pour {}", messageId, lu ? "lu" : "non lu", utilisateurId);
+        return messagesBusiness.marquerLu(utilisateurId, messageId, lu);
+    }
+
+    @Override
+    public MessageStatutDTO marquerFavori(String messageId, String utilisateurId, boolean favori) {
+        log.info("Marquer message {} comme {} pour {}", messageId, favori ? "favori" : "non favori", utilisateurId);
+        return messagesBusiness.marquerFavori(utilisateurId, messageId, favori);
+    }
+
+    @Override
+    public MessageStatutDTO obtenirStatut(String messageId, String utilisateurId) {
+        return messagesBusiness.obtenirStatut(utilisateurId, messageId);
+    }
+
+    @Override
+    public List<MessageStatutDTO> obtenirFavoris(String utilisateurId) {
+        log.info("Obtenir les favoris de l'utilisateur {}", utilisateurId);
+        return messagesBusiness.obtenirFavoris(utilisateurId);
+    }
+
+    @Override
+    public List<MessageStatutDTO> obtenirNonLus(String utilisateurId) {
+        log.info("Obtenir les messages non lus de l'utilisateur {}", utilisateurId);
+        return messagesBusiness.obtenirNonLus(utilisateurId);
+    }
+
     @Override
     public void supprimerMessage(String messageId) {
         log.info("Suppression du message avec ID: {}", messageId);

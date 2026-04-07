@@ -9,5 +9,4 @@ public enum EtatExercise {
     VALIDE,
     ACTIF,
     INACTIF
-
 }

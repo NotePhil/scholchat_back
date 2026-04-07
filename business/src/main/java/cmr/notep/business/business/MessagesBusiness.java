@@ -3,6 +3,7 @@ package cmr.notep.business.business;
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.interfaces.dto.GroupMessageDto;
+import cmr.notep.interfaces.dto.MessageStatutDTO;
 import cmr.notep.interfaces.modeles.*;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.*;
@@ -204,7 +205,7 @@ public class MessagesBusiness {
                 .findByExpediteurEntityId(utilisateurId);
 
         return sentMessages.stream()
-                .map(this::mapToMessageDto)
+                .map(m -> mapToMessageDto(m, utilisateurId))
                 .collect(Collectors.toList());
     }
 
@@ -219,7 +220,7 @@ public class MessagesBusiness {
                 .findByDestinatairesEntitiesId(utilisateurId);
 
         return receivedMessages.stream()
-                .map(this::mapToMessageDto)
+                .map(m -> mapToMessageDto(m, utilisateurId))
                 .collect(Collectors.toList());
     }
 
@@ -276,7 +277,7 @@ public class MessagesBusiness {
         return message;
     }
     
-    private MessageDto mapToMessageDto(MessagesEntity entity) {
+    private MessageDto mapToMessageDto(MessagesEntity entity, String utilisateurId) {
         MessageDto dto = new MessageDto();
         dto.setId(entity.getId());
         dto.setObjet(entity.getObjet());
@@ -295,7 +296,6 @@ public class MessagesBusiness {
                     .collect(Collectors.toList()));
         }
 
-        // Safely access lazy-loaded classes collection
         try {
             if (entity.getClasses() != null) {
                 dto.setClasseIds(entity.getClasses().stream()
@@ -303,11 +303,26 @@ public class MessagesBusiness {
                         .collect(Collectors.toList()));
             }
         } catch (Exception e) {
-            log.debug("Could not load classes for message {}: {}", entity.getId(), e.getMessage());
             dto.setClasseIds(new ArrayList<>());
         }
 
+        // peupler le statut lu/favori si utilisateurId fourni
+        if (utilisateurId != null) {
+            MessageStatutId statutId = new MessageStatutId(utilisateurId, entity.getId());
+            daoAccessorService.getRepository(MessageStatutRepository.class)
+                    .findById(statutId)
+                    .ifPresent(s -> {
+                        dto.setLu(s.isLu());
+                        dto.setFavori(s.isFavori());
+                        dto.setDateLecture(s.getDateLecture());
+                    });
+        }
+
         return dto;
+    }
+
+    private MessageDto mapToMessageDto(MessagesEntity entity) {
+        return mapToMessageDto(entity, null);
     }
     
     private UtilisateurSimpleDto mapToUtilisateurSimpleDto(UtilisateursEntity entity) {
@@ -379,6 +394,75 @@ public class MessagesBusiness {
         log.info("Message restauré avec succès");
     }
     
+    public MessageStatutDTO marquerLu(String utilisateurId, String messageId, boolean lu) {
+        MessageStatutEntity statut = getOrCreateStatut(utilisateurId, messageId);
+        statut.setLu(lu);
+        statut.setDateLecture(lu ? new Date() : null);
+        daoAccessorService.getRepository(MessageStatutRepository.class).save(statut);
+        return mapStatutToDto(statut);
+    }
+
+    public MessageStatutDTO marquerFavori(String utilisateurId, String messageId, boolean favori) {
+        MessageStatutEntity statut = getOrCreateStatut(utilisateurId, messageId);
+        statut.setFavori(favori);
+        daoAccessorService.getRepository(MessageStatutRepository.class).save(statut);
+        return mapStatutToDto(statut);
+    }
+
+    public MessageStatutDTO obtenirStatut(String utilisateurId, String messageId) {
+        MessageStatutId id = new MessageStatutId(utilisateurId, messageId);
+        return daoAccessorService.getRepository(MessageStatutRepository.class)
+                .findById(id)
+                .map(this::mapStatutToDto)
+                .orElse(MessageStatutDTO.builder()
+                        .messageId(messageId)
+                        .utilisateurId(utilisateurId)
+                        .lu(false)
+                        .favori(false)
+                        .build());
+    }
+
+    public List<MessageStatutDTO> obtenirFavoris(String utilisateurId) {
+        return daoAccessorService.getRepository(MessageStatutRepository.class)
+                .findByIdUtilisateurIdAndFavoriTrue(utilisateurId)
+                .stream().map(this::mapStatutToDto).collect(Collectors.toList());
+    }
+
+    public List<MessageStatutDTO> obtenirNonLus(String utilisateurId) {
+        return daoAccessorService.getRepository(MessageStatutRepository.class)
+                .findByIdUtilisateurIdAndLuFalse(utilisateurId)
+                .stream().map(this::mapStatutToDto).collect(Collectors.toList());
+    }
+
+    private MessageStatutEntity getOrCreateStatut(String utilisateurId, String messageId) {
+        MessageStatutId id = new MessageStatutId(utilisateurId, messageId);
+        return daoAccessorService.getRepository(MessageStatutRepository.class)
+                .findById(id)
+                .orElseGet(() -> {
+                    UtilisateursEntity utilisateur = daoAccessorService.getRepository(UtilisateursRepository.class)
+                            .findById(utilisateurId)
+                            .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable"));
+                    MessagesEntity message = daoAccessorService.getRepository(MessagesRepository.class)
+                            .findById(messageId)
+                            .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Message introuvable"));
+                    MessageStatutEntity s = new MessageStatutEntity();
+                    s.setId(id);
+                    s.setUtilisateur(utilisateur);
+                    s.setMessage(message);
+                    return s;
+                });
+    }
+
+    private MessageStatutDTO mapStatutToDto(MessageStatutEntity e) {
+        return MessageStatutDTO.builder()
+                .messageId(e.getId().getMessageId())
+                .utilisateurId(e.getId().getUtilisateurId())
+                .lu(e.isLu())
+                .favori(e.isFavori())
+                .dateLecture(e.getDateLecture())
+                .build();
+    }
+
     private Utilisateurs mapUtilisateursEntityToModele(UtilisateursEntity entity) {
         if (entity instanceof ProfesseursEntity) {
             return dozerMapperBean.map(entity, Professeurs.class);

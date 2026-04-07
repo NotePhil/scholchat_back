@@ -1,6 +1,7 @@
 package cmr.notep.interfaces.api;
 
 import cmr.notep.interfaces.dto.GroupMessageDto;
+import cmr.notep.interfaces.dto.MessageStatutDTO;
 import cmr.notep.interfaces.modeles.MessageDto;
 import cmr.notep.interfaces.modeles.Messages;
 import lombok.NonNull;
@@ -46,6 +47,41 @@ public interface MessagesApi {
     )
     List<MessageDto> obtenirMessagesRecus(@PathVariable String utilisateurId);
     
+    @PostMapping(
+            path = "/{messageId}/statut/{utilisateurId}/lu",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    MessageStatutDTO marquerLu(@PathVariable String messageId,
+                               @PathVariable String utilisateurId,
+                               @RequestParam boolean lu);
+
+    @PostMapping(
+            path = "/{messageId}/statut/{utilisateurId}/favori",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    MessageStatutDTO marquerFavori(@PathVariable String messageId,
+                                   @PathVariable String utilisateurId,
+                                   @RequestParam boolean favori);
+
+    @GetMapping(
+            path = "/{messageId}/statut/{utilisateurId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    MessageStatutDTO obtenirStatut(@PathVariable String messageId,
+                                   @PathVariable String utilisateurId);
+
+    @GetMapping(
+            path = "/utilisateur/{utilisateurId}/favoris",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    List<MessageStatutDTO> obtenirFavoris(@PathVariable String utilisateurId);
+
+    @GetMapping(
+            path = "/utilisateur/{utilisateurId}/non-lus",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    List<MessageStatutDTO> obtenirNonLus(@PathVariable String utilisateurId);
+
     @PostMapping(
             path = "/group",
             produces = MediaType.APPLICATION_JSON_VALUE,

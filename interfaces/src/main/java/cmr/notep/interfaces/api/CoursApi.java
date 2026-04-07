@@ -1,5 +1,6 @@
 package cmr.notep.interfaces.api;
 
+import cmr.notep.interfaces.dto.CoursProgressionDTO;
 import cmr.notep.interfaces.modeles.Cours;
 import cmr.notep.modele.EtatCours;
 import lombok.NonNull;
@@ -70,6 +71,23 @@ public interface CoursApi {
     )
     @ResponseStatus(HttpStatus.OK)
     Cours obtenirCoursParId(@NonNull @PathVariable String coursId);
+
+    @PostMapping(
+            path = "/{coursId}/chapitres/{chapitreId}/complete/{utilisateurId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    void marquerChapitreComplete(@NonNull @PathVariable String coursId,
+                                  @NonNull @PathVariable String chapitreId,
+                                  @NonNull @PathVariable String utilisateurId);
+
+    @GetMapping(
+            path = "/{coursId}/progression/{utilisateurId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    CoursProgressionDTO obtenirProgression(@NonNull @PathVariable String coursId,
+                                            @NonNull @PathVariable String utilisateurId);
 
     @GetMapping(
             path = "/restriction/{restriction}",

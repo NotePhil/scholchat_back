@@ -2,6 +2,7 @@ package cmr.notep.business.impl;
 
 import cmr.notep.business.business.CoursBusiness;
 import cmr.notep.interfaces.api.CoursApi;
+import cmr.notep.interfaces.dto.CoursProgressionDTO;
 import cmr.notep.interfaces.modeles.Cours;
 import cmr.notep.modele.EtatCours;
 import lombok.NonNull;
@@ -59,6 +60,18 @@ public class CoursService implements CoursApi {
     public Cours obtenirCoursParId(@NonNull String coursId) {
         log.info("Récupération du cours: {}", coursId);
         return coursBusiness.obtenirCoursParId(coursId);
+    }
+
+    @Override
+    public void marquerChapitreComplete(@NonNull String coursId, @NonNull String chapitreId, @NonNull String utilisateurId) {
+        log.info("Chapitre {} marqué complété par {}", chapitreId, utilisateurId);
+        coursBusiness.marquerChapitreComplete(utilisateurId, chapitreId);
+    }
+
+    @Override
+    public CoursProgressionDTO obtenirProgression(@NonNull String coursId, @NonNull String utilisateurId) {
+        log.info("Progression du cours {} pour l'utilisateur {}", coursId, utilisateurId);
+        return coursBusiness.obtenirProgression(utilisateurId, coursId);
     }
 
     @Override

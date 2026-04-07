@@ -86,8 +86,8 @@ public class CoursProgrammerBusiness {
         if (coursProgrammer.getDateCoursPrevue() != null) {
             validateCourseScheduleDates(coursProgrammer);
         }
-        if (coursProgrammer.getDateDebutEffectif() != null || coursProgrammer.getDateFinEffectif() != null) {
-            validateEffectiveDates(coursProgrammer);
+        if (coursProgrammer.getDateDebutEffectif() != null && coursProgrammer.getDateFinEffectif() != null) {
+            validateEffectiveDatesForUpdate(coursProgrammer);
         }
         // Update entity fields
         updateEntityFromDto(existingEntity, coursProgrammer);
@@ -342,6 +342,12 @@ public class CoursProgrammerBusiness {
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
+    private void validateEffectiveDatesForUpdate(CoursProgrammer coursProgrammer) {
+        if (coursProgrammer.getDateFinEffectif().isBefore(coursProgrammer.getDateDebutEffectif())) {
+            throw new IllegalArgumentException("La date de fin effective doit être après la date de début effective.");
+        }
+    }
+
     private void validateEffectiveDates(CoursProgrammer coursProgrammer) {
         // Only validate if both dates are provided
         if (coursProgrammer.getDateDebutEffectif() != null && coursProgrammer.getDateFinEffectif() != null) {

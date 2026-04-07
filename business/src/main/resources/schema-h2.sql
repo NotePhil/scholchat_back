@@ -635,3 +635,31 @@ CREATE INDEX IF NOT EXISTS idx_exercise_programmer_classes_classe ON ressources.
 CREATE INDEX IF NOT EXISTS idx_participer_exo_utilisateur ON ressources.participer_exo(utilisateur_id);
 CREATE INDEX IF NOT EXISTS idx_participer_exo_exercise ON ressources.participer_exo(exercise_programmer_id);
 CREATE INDEX IF NOT EXISTS idx_participer_exo_dates ON ressources.participer_exo(date_debut, date_fin);
+
+-- =============================================
+-- PROGRESSION CHAPITRE
+-- =============================================
+CREATE TABLE IF NOT EXISTS ressources.progression_chapitre (
+    utilisateur_id VARCHAR(255) NOT NULL REFERENCES ressources.utilisateurs(id) ON DELETE CASCADE,
+    chapitre_id    VARCHAR(255) NOT NULL REFERENCES ressources.chapitres(id) ON DELETE CASCADE,
+    date_completion TIMESTAMP NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (utilisateur_id, chapitre_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_progression_chapitre_user ON ressources.progression_chapitre(utilisateur_id);
+CREATE INDEX IF NOT EXISTS idx_progression_chapitre_chapitre ON ressources.progression_chapitre(chapitre_id);
+
+-- =============================================
+-- MESSAGE STATUT (lu / favori par utilisateur)
+-- =============================================
+CREATE TABLE IF NOT EXISTS ressources.message_statut (
+    utilisateur_id VARCHAR(255) NOT NULL REFERENCES ressources.utilisateurs(id) ON DELETE CASCADE,
+    message_id     VARCHAR(255) NOT NULL REFERENCES ressources.messages(id) ON DELETE CASCADE,
+    lu             BOOLEAN NOT NULL DEFAULT FALSE,
+    favori         BOOLEAN NOT NULL DEFAULT FALSE,
+    date_lecture   TIMESTAMP,
+    PRIMARY KEY (utilisateur_id, message_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_message_statut_user ON ressources.message_statut(utilisateur_id);
+CREATE INDEX IF NOT EXISTS idx_message_statut_favori ON ressources.message_statut(utilisateur_id, favori);

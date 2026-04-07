@@ -3,6 +3,7 @@ package cmr.notep.business.business;
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.NotificationService;
+import cmr.notep.interfaces.dto.CoursProgressionDTO;
 import cmr.notep.interfaces.modeles.Chapitre;
 import cmr.notep.interfaces.modeles.Cours;
 import cmr.notep.interfaces.modeles.Matiere;
@@ -351,6 +352,54 @@ public class CoursBusiness {
                     return cours;
                 })
                 .collect(Collectors.toList());
+    }
+
+    public void marquerChapitreComplete(String utilisateurId, String chapitreId) {
+        UtilisateursEntity utilisateur = daoAccessorService.getRepository(UtilisateursRepository.class)
+                .findById(utilisateurId)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable"));
+
+        ChapitreEntity chapitre = daoAccessorService.getRepository(ChapitreRepository.class)
+                .findById(chapitreId)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Chapitre introuvable"));
+
+        ProgressionChapitreId id = new ProgressionChapitreId(utilisateurId, chapitreId);
+        if (daoAccessorService.getRepository(ProgressionChapitreRepository.class).existsById(id)) {
+            return; // déjà complété
+        }
+
+        ProgressionChapitreEntity progression = new ProgressionChapitreEntity();
+        progression.setId(id);
+        progression.setUtilisateur(utilisateur);
+        progression.setChapitre(chapitre);
+        progression.setDateCompletion(new Date());
+        daoAccessorService.getRepository(ProgressionChapitreRepository.class).save(progression);
+        log.info("Chapitre {} marqué complété par {}", chapitreId, utilisateurId);
+    }
+
+    public CoursProgressionDTO obtenirProgression(String utilisateurId, String coursId) {
+        List<ChapitreEntity> tousChapitres = daoAccessorService.getRepository(ChapitreRepository.class)
+                .findByCoursIdOrderByOrdre(coursId);
+
+        List<ProgressionChapitreEntity> completions = daoAccessorService.getRepository(ProgressionChapitreRepository.class)
+                .findByUtilisateurIdAndCoursId(utilisateurId, coursId);
+
+        List<String> completesIds = completions.stream()
+                .map(p -> p.getId().getChapitreId())
+                .collect(Collectors.toList());
+
+        int total = tousChapitres.size();
+        int completes = completesIds.size();
+        int pourcentage = total == 0 ? 0 : (completes * 100) / total;
+
+        return CoursProgressionDTO.builder()
+                .coursId(coursId)
+                .utilisateurId(utilisateurId)
+                .totalChapitres(total)
+                .chapitresCompletes(completes)
+                .pourcentage(pourcentage)
+                .chapitresCompletesIds(completesIds)
+                .build();
     }
 
     public Cours obtenirCoursAvecChapitres(String coursId) {
