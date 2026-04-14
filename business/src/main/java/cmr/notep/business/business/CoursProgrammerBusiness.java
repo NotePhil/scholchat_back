@@ -30,7 +30,7 @@ public class CoursProgrammerBusiness {
     @Transactional
     public CoursProgrammer programmerCours(CoursProgrammer coursProgrammer) {
         // Validate input dates
-        validateCourseScheduleDates(coursProgrammer);
+        validateCourseScheduleDates(coursProgrammer, false);
         validateEffectiveDates(coursProgrammer);
         // Get the course and validate its status
         CoursEntity cours = daoAccessorService.getRepository(CoursRepository.class)
@@ -84,7 +84,7 @@ public class CoursProgrammerBusiness {
 
         // Only validate dates if they are being updated
         if (coursProgrammer.getDateCoursPrevue() != null) {
-            validateCourseScheduleDates(coursProgrammer);
+            validateCourseScheduleDates(coursProgrammer, true);
         }
         if (coursProgrammer.getDateDebutEffectif() != null && coursProgrammer.getDateFinEffectif() != null) {
             validateEffectiveDatesForUpdate(coursProgrammer);
@@ -188,12 +188,12 @@ public class CoursProgrammerBusiness {
     }
 
 
-    private void validateCourseScheduleDates(CoursProgrammer coursProgrammer) {
+    private void validateCourseScheduleDates(CoursProgrammer coursProgrammer, boolean isUpdate) {
         if (coursProgrammer.getDateCoursPrevue() == null) {
             throw new IllegalArgumentException("Scheduled date cannot be null");
         }
 
-        if (coursProgrammer.getDateCoursPrevue().isBefore(LocalDateTime.now())) {
+        if (!isUpdate && coursProgrammer.getDateCoursPrevue().isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("Cannot schedule a course in the past");
         }
 
