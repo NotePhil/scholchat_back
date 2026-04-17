@@ -123,6 +123,19 @@ public class ClassesBusiness {
         if (etablissement != null && moderator != null && etablissement.isOptionEnvoiMailNewClasse() && etablissement.getEmail() != null) {
             sendApprovalRequestEmail(savedEntity, etablissement);
         }
+
+        // Notify gestionnaire and professor when class is pending approval
+        if (etablissement != null && moderator != null && savedEntity.getEtat() == EtatClasse.EN_ATTENTE_APPROBATION) {
+            try {
+                String gestionnaireId = etablissement.getGestionnaire() != null ? etablissement.getGestionnaire().getId() : null;
+                notificationService.createClasseDemandeAdhesionNotification(
+                        savedEntity.getId(), savedEntity.getNom(),
+                        moderator.getId(), moderator.getNom() + " " + moderator.getPrenom(),
+                        etablissement.getNom(), gestionnaireId);
+            } catch (Exception e) {
+                log.warn("Could not send adhesion notification: {}", e.getMessage());
+            }
+        }
         
         Classes classeResponse = dozerMapperBean.map(savedEntity, Classes.class);
         classeResponse.setDateCreation(savedEntity.getDateCreation());
@@ -263,6 +276,19 @@ public class ClassesBusiness {
             handleClassCreationEmail(savedEntity, etablissement);
         } else {
             log.info("Class created without approval requirement");
+        }
+
+        // Notify gestionnaire and professor when class is pending approval
+        if (etablissement != null && moderator != null && savedEntity.getEtat() == EtatClasse.EN_ATTENTE_APPROBATION) {
+            try {
+                String gestionnaireId = etablissement.getGestionnaire() != null ? etablissement.getGestionnaire().getId() : null;
+                notificationService.createClasseDemandeAdhesionNotification(
+                        savedEntity.getId(), savedEntity.getNom(),
+                        moderator.getId(), moderator.getNom() + " " + moderator.getPrenom(),
+                        etablissement.getNom(), gestionnaireId);
+            } catch (Exception e) {
+                log.warn("Could not send adhesion notification: {}", e.getMessage());
+            }
         }
 
         // Notify admins and gestionnaire about the new class

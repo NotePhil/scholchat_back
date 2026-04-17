@@ -239,6 +239,27 @@ public class NotificationService {
     }
 
     @Transactional
+    public void createClasseDemandeAdhesionNotification(String classeId, String classeNom,
+                                                        String professorId, String professorNom,
+                                                        String etablissementNom, String gestionnaireId) {
+        // Notify the gestionnaire: new pending request
+        if (gestionnaireId != null) {
+            saveNotification(gestionnaireId, "CLASSE_ADHESION_DEMANDE",
+                    "Demande d'adhésion à votre établissement",
+                    professorNom + " demande que la classe '" + classeNom + "' rejoigne l'établissement '" + etablissementNom + "'",
+                    professorId, professorNom, classeId, "CLASS");
+        }
+        // Notify the professor: confirmation
+        if (professorId != null) {
+            saveNotification(professorId, "CLASSE_ADHESION_DEMANDE",
+                    "Demande d'adhésion envoyée",
+                    "Votre demande d'adhésion de la classe '" + classeNom + "' à l'établissement '" + etablissementNom + "' est en attente de validation.",
+                    null, null, classeId, "CLASS");
+        }
+        log.info("Adhesion demand notifications sent for class {} to etablissement {}", classeId, etablissementNom);
+    }
+
+    @Transactional
     public void createEtablissementCreatedNotification(String etablissementId, String etablissementNom, String gestionnaireId, String gestionnaireNom) {
         saveNotification(gestionnaireId, "ETABLISSEMENT_CREATED", "Vous êtes gestionnaire d'un établissement",
                 "Vous avez été ajouté comme gestionnaire de l'établissement '" + etablissementNom + "'",
