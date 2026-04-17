@@ -53,6 +53,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints - add both with and without trailing slash
                         .requestMatchers(
+                                "/ws/**",
+                                "/cours/*/session/active",
+                                "/cours/*/session/*/join",
+                                "/cours/*/session/*/leave",
+                                "/cours/*/progress"
+                        ).permitAll()
+                        .requestMatchers(
                                 "/auth/register", "/auth/register/",
                                 "/auth/login", "/auth/login/",
                                 "/auth/switch-role", "/auth/switch-role/",
@@ -87,6 +94,11 @@ public class SecurityConfig {
                                 "/utilisateurs/professeurs/{professorId}/rejet"
 
                         ).permitAll()
+                        .requestMatchers(
+                                "/cours/*/session/start",
+                                "/cours/*/session/*/end",
+                                "/cours/*/session/*/chapter"
+                        ).hasAnyRole("PROFESSOR", "ADMIN")
                         .requestMatchers(
                                 "/utilisateurs/professeurs/*/rejet",
                                 "/utilisateurs/validerProfesseur/**",
@@ -129,12 +141,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(frontEndpoint));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT","PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedOrigins(Arrays.asList(frontEndpoint, "https://scholchat-front-1.onrender.com"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With"));
         configuration.setExposedHeaders(Arrays.asList("Authorization"));
         configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L); // 1 hour
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

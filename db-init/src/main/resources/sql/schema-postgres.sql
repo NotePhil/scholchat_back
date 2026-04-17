@@ -659,3 +659,44 @@ CREATE TABLE IF NOT EXISTS message_statut (
 CREATE INDEX IF NOT EXISTS idx_message_statut_user ON message_statut(utilisateur_id);
 CREATE INDEX IF NOT EXISTS idx_message_statut_non_lu ON message_statut(utilisateur_id, lu) WHERE lu = FALSE;
 CREATE INDEX IF NOT EXISTS idx_message_statut_favori ON message_statut(utilisateur_id, favori) WHERE favori = TRUE;
+
+-- =============================================
+-- LIVE SESSIONS
+-- =============================================
+CREATE TABLE IF NOT EXISTS cours_sessions (
+    id                  VARCHAR(255) PRIMARY KEY,
+    cours_id            VARCHAR(255) NOT NULL,
+    room_name           VARCHAR(512) NOT NULL UNIQUE,
+    mode                VARCHAR(50)  NOT NULL,
+    status              VARCHAR(50)  NOT NULL,
+    started_at          TIMESTAMP,
+    ended_at            TIMESTAMP,
+    started_by_user_id  VARCHAR(255) NOT NULL,
+    current_chapitre_id VARCHAR(255),
+    FOREIGN KEY (cours_id) REFERENCES cours(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_cours_sessions_cours_status
+    ON cours_sessions(cours_id, status);
+
+CREATE TABLE IF NOT EXISTS cours_session_participants (
+    session_id VARCHAR(255) NOT NULL,
+    user_id    VARCHAR(255) NOT NULL,
+    PRIMARY KEY (session_id, user_id),
+    FOREIGN KEY (session_id) REFERENCES cours_sessions(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS chapitre_progress (
+    id           VARCHAR(255) PRIMARY KEY,
+    user_id      VARCHAR(255) NOT NULL,
+    chapitre_id  VARCHAR(255) NOT NULL,
+    cours_id     VARCHAR(255) NOT NULL,
+    completed    BOOLEAN      NOT NULL DEFAULT FALSE,
+    completed_at TIMESTAMP,
+    UNIQUE (user_id, chapitre_id),
+    FOREIGN KEY (user_id)  REFERENCES utilisateurs(id) ON DELETE CASCADE,
+    FOREIGN KEY (cours_id) REFERENCES cours(id)        ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_chapitre_progress_user_cours
+    ON chapitre_progress(user_id, cours_id);

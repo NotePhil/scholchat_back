@@ -20,3 +20,10 @@ databaseChangeLog:
         - sqlFile:
             path: classpath:sql/migration-add-notifications.sql
             relativeToChangelogFile: false
+  - changeSet:
+      id: 4-live-sessions
+      author: db-init
+      changes:
+        - sqlFile:
+            path: classpath:sql/migration-live-sessions.sql
+            relativeToChangelogFile: false
