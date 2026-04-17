@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Vous êtes gestionnaire d'un établissement</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; }
+        .header { text-align: center; color: #2980b9; margin-bottom: 30px; }
+        .content { line-height: 1.6; color: #333; }
+        .details { background-color: #eaf4fb; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #2980b9; }
+        .footer { margin-top: 30px; color: #666; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>🏫 Vous avez été ajouté comme gestionnaire</h2>
+        </div>
+        <div class="content">
+            <p>Bonjour <strong th:text="${gestionnaire.prenom + ' ' + gestionnaire.nom}"></strong>,</p>
+            <p>Vous avez été désigné comme gestionnaire de l'établissement suivant :</p>
+            <div class="details">
+                <ul>
+                    <li><strong>Nom :</strong> <span th:text="${etablissement.nom}"></span></li>
+                    <li><strong>Localisation :</strong> <span th:text="${etablissement.localisation}"></span></li>
+                    <li><strong>Pays :</strong> <span th:text="${etablissement.pays}"></span></li>
+                    <li><strong>Code unique :</strong> <span th:text="${etablissement.codeUnique}"></span></li>
+                    <li><strong>Envoi mail nouvelles classes :</strong>
+                        <span th:text="${etablissement.optionEnvoiMailNewClasse ? 'Activé' : 'Désactivé'}"></span>
+                    </li>
+                    <li><strong>Token général :</strong>
+                        <span th:text="${etablissement.optionTokenGeneral ? 'Activé' : 'Désactivé'}"></span>
+                    </li>
+                </ul>
+            </div>
+            <p>Vous pouvez dès à présent vous connecter à votre tableau de bord pour gérer cet établissement.</p>
+        </div>
+        <div class="footer">
+            <p>Cordialement,<br>L'équipe ScholChat</p>
+        </div>
+    </div>
+</body>
+</html>

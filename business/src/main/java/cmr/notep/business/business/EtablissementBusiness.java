@@ -2,6 +2,9 @@ package cmr.notep.business.business;
 
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
+import cmr.notep.business.services.EmailTemplateService;
+import cmr.notep.business.services.MailService;
+import cmr.notep.business.services.NotificationService;
 import cmr.notep.business.services.TokenService;
 import cmr.notep.interfaces.modeles.Etablissement;
 import cmr.notep.interfaces.modeles.Utilisateurs;
@@ -27,10 +30,18 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 public class EtablissementBusiness {
     private final DaoAccessorService daoAccessorService;
     private final TokenService tokenService;
+    private final MailService mailService;
+    private final EmailTemplateService emailTemplateService;
+    private final NotificationService notificationService;
 
-    public EtablissementBusiness(DaoAccessorService daoAccessorService, TokenService tokenService) {
+    public EtablissementBusiness(DaoAccessorService daoAccessorService, TokenService tokenService,
+                                  MailService mailService, EmailTemplateService emailTemplateService,
+                                  NotificationService notificationService) {
         this.daoAccessorService = daoAccessorService;
         this.tokenService = tokenService;
+        this.mailService = mailService;
+        this.emailTemplateService = emailTemplateService;
+        this.notificationService = notificationService;
     }
 
     public Etablissement creerEtablissement(Etablissement etablissement) {
@@ -50,7 +61,21 @@ public class EtablissementBusiness {
             entity.setCodeUnique(tokenService.generateUniqueCode());
             
             EtablissementEntity saved = daoAccessorService.getRepository(EtablissementRepository.class).save(entity);
-            return mapToEtablissement(saved);
+            Etablissement result = mapToEtablissement(saved);
+            if (result.getGestionnaire() != null && result.getGestionnaire().getEmail() != null) {
+                try {
+                    String html = emailTemplateService.generateGestionnaireAjoutEmail(result.getGestionnaire(), result);
+                    mailService.sendEmail(result.getGestionnaire().getEmail(),
+                            "Vous avez été ajouté comme gestionnaire - " + result.getNom(), html);
+                } catch (Exception e) {
+                    log.warn("Impossible d'envoyer l'email au gestionnaire: {}", e.getMessage());
+                }
+                notificationService.createEtablissementCreatedNotification(
+                        result.getId(), result.getNom(),
+                        result.getGestionnaire().getId(),
+                        result.getGestionnaire().getPrenom() + " " + result.getGestionnaire().getNom());
+            }
+            return result;
     }
 
     public Etablissement modifierEtablissement(String id, Etablissement etablissementModifie) {
@@ -84,23 +109,42 @@ public class EtablissementBusiness {
             }
             
             // Handle gestionnaire update
+            boolean gestionnaireChanged = false;
             if (etablissementModifie.getGestionnaire() != null) {
                 if (etablissementModifie.getGestionnaire().getId() != null) {
-                    // Update with new gestionnaire
-                    UtilisateursEntity gestionnaire = daoAccessorService
-                            .getRepository(UtilisateursRepository.class)
-                            .findById(etablissementModifie.getGestionnaire().getId())
-                            .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Gestionnaire introuvable"));
-                    existing.setGestionnaire(gestionnaire);
+                    String newGestionnaireId = etablissementModifie.getGestionnaire().getId();
+                    boolean alreadySame = existing.getGestionnaire() != null
+                            && existing.getGestionnaire().getId().equals(newGestionnaireId);
+                    if (!alreadySame) {
+                        UtilisateursEntity gestionnaire = daoAccessorService
+                                .getRepository(UtilisateursRepository.class)
+                                .findById(newGestionnaireId)
+                                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Gestionnaire introuvable"));
+                        existing.setGestionnaire(gestionnaire);
+                        gestionnaireChanged = true;
+                    }
                 } else {
-                    // Remove gestionnaire if id is null
                     existing.setGestionnaire(null);
                 }
             }
 
             EtablissementEntity updated = repo.save(existing);
             log.info("Etablissement modifié avec succès: {}", updated.getId());
-            return mapToEtablissement(updated);
+            Etablissement result = mapToEtablissement(updated);
+            if (gestionnaireChanged && result.getGestionnaire() != null && result.getGestionnaire().getEmail() != null) {
+                try {
+                    String html = emailTemplateService.generateGestionnaireAjoutEmail(result.getGestionnaire(), result);
+                    mailService.sendEmail(result.getGestionnaire().getEmail(),
+                            "Vous avez été ajouté comme gestionnaire - " + result.getNom(), html);
+                } catch (Exception e) {
+                    log.warn("Impossible d'envoyer l'email au gestionnaire: {}", e.getMessage());
+                }
+                notificationService.createEtablissementCreatedNotification(
+                        result.getId(), result.getNom(),
+                        result.getGestionnaire().getId(),
+                        result.getGestionnaire().getPrenom() + " " + result.getGestionnaire().getNom());
+            }
+            return result;
     }
 
     public void supprimerEtablissement(String id) {

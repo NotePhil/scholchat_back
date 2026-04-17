@@ -134,6 +134,13 @@ public class EmailTemplateService {
         return templateEngine.process("email/class-approval-request", context);
     }
 
+    public String generateGestionnaireAjoutEmail(Utilisateurs gestionnaire, Etablissement etablissement) {
+        Context context = new Context();
+        context.setVariable("gestionnaire", gestionnaire);
+        context.setVariable("etablissement", etablissement);
+        return templateEngine.process("email/gestionnaire-ajout-etablissement", context);
+    }
+
     public String generateClassApprovalNotificationEmail(Classes classe, Etablissement etablissement) {
         Context context = new Context();
         context.setVariable("classe", classe);

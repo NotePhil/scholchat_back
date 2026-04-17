@@ -239,6 +239,14 @@ public class NotificationService {
     }
 
     @Transactional
+    public void createEtablissementCreatedNotification(String etablissementId, String etablissementNom, String gestionnaireId, String gestionnaireNom) {
+        saveNotification(gestionnaireId, "ETABLISSEMENT_CREATED", "Vous êtes gestionnaire d'un établissement",
+                "Vous avez été ajouté comme gestionnaire de l'établissement '" + etablissementNom + "'",
+                null, null, etablissementId, "ETABLISSEMENT");
+        log.info("Etablissement created notification sent to gestionnaire {}", gestionnaireId);
+    }
+
+    @Transactional
     public void createProfessorCreatedNotification(String professorId, String professorName) {
         // Notify admins
         List<String> adminIds = utilisateursRepository.findAdminUserIds();
