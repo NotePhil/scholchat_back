@@ -14,6 +14,7 @@ public class SessionResponseDTO {
     private String sessionId;
     private String roomName;
     private String jitsiJwt;
+    private String jitsiDomain;
     private SessionMode mode;
     private SessionStatus status;
     private String coursId;

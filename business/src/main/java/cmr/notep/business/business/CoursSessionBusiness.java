@@ -36,6 +36,9 @@ public class CoursSessionBusiness {
     @Value("${jitsi.app.id}")
     private String appId;
 
+    @Value("${jitsi.domain}")
+    private String jitsiDomain;
+
     // ─── Session start ────────────────────────────────────────────────────────
 
     public SessionResponseDTO startSession(String coursId, SessionMode mode, String userId, String userRole) {
@@ -51,7 +54,7 @@ public class CoursSessionBusiness {
         CoursSessionEntity session = new CoursSessionEntity();
         session.setId(UUID.randomUUID().toString());
         session.setCoursId(coursId);
-        session.setRoomName(appId + "/scholchat-" + coursId + "-" + System.currentTimeMillis());
+        session.setRoomName("scholchat-" + coursId + "-" + System.currentTimeMillis());
         session.setMode(mode);
         session.setStatus(SessionStatus.ACTIVE);
         session.setStartedAt(LocalDateTime.now());
@@ -259,6 +262,7 @@ public class CoursSessionBusiness {
                 .sessionId(session.getId())
                 .roomName(session.getRoomName())
                 .jitsiJwt(jitsiJwt)
+                .jitsiDomain(jitsiDomain)
                 .mode(session.getMode())
                 .status(session.getStatus())
                 .coursId(session.getCoursId())
