@@ -56,9 +56,11 @@ public class EvenementEntity {
     @Column(name = "visibility")
     private String visibility; // PUBLIC ou PRIVATE
     
-    @ElementCollection
-    @CollectionTable(name = "evenement_classes", schema = "ressources",
-            joinColumns = @JoinColumn(name = "evenement_id"))
-    @Column(name = "classe_id")
-    private List<String> selectedClasses; // IDs des classes sélectionnées pour les événements privés
+    @ManyToMany
+    @JoinTable(
+            name = "evenement_classes", schema = "ressources",
+            joinColumns = @JoinColumn(name = "evenement_id"),
+            inverseJoinColumns = @JoinColumn(name = "classe_id")
+    )
+    private List<ClassesEntity> classes = new java.util.ArrayList<>();
 }

@@ -24,4 +24,5 @@ public class DemandeAccesDto {
     private Date dateDemande;
     private Date dateTraitement;
     private String motifRejet;
+    private String typeUtilisateur;
 }

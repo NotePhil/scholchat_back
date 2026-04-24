@@ -474,12 +474,21 @@ public class AccederBusiness {
     }
 
     private DemandeAccesDto convertToDto(DemandeAccesEntity entity) {
+        UtilisateursEntity u = entity.getUtilisateur();
+        String type;
+        if (u instanceof ProfesseursEntity) type = "PROFESSEUR";
+        else if (u instanceof ElevesEntity) type = "ELEVE";
+        else if (u instanceof RepetiteursEntity) type = "REPETITEUR";
+        else if (u instanceof ParentsEntity) type = "PARENT";
+        else type = "UTILISATEUR";
+
         return DemandeAccesDto.builder()
                 .id(entity.getId())
-                .utilisateurId(entity.getUtilisateur().getId())
-                .utilisateurNom(entity.getUtilisateur().getNom())
-                .utilisateurPrenom(entity.getUtilisateur().getPrenom())
-                .utilisateurEmail(entity.getUtilisateur().getEmail())
+                .utilisateurId(u.getId())
+                .utilisateurNom(u.getNom())
+                .utilisateurPrenom(u.getPrenom())
+                .utilisateurEmail(u.getEmail())
+                .typeUtilisateur(type)
                 .classeId(entity.getClasse().getId())
                 .classeNom(entity.getClasse().getNom())
                 .codeActivation(entity.getCodeActivation())
@@ -554,6 +563,11 @@ public class AccederBusiness {
         dto.setNom(entity.getNom());
         dto.setPrenom(entity.getPrenom());
         dto.setEmail(entity.getEmail());
+        if (entity instanceof ProfesseursEntity) dto.setTypeUtilisateur("PROFESSEUR");
+        else if (entity instanceof ElevesEntity) dto.setTypeUtilisateur("ELEVE");
+        else if (entity instanceof RepetiteursEntity) dto.setTypeUtilisateur("REPETITEUR");
+        else if (entity instanceof ParentsEntity) dto.setTypeUtilisateur("PARENT");
+        else dto.setTypeUtilisateur("UTILISATEUR");
         return dto;
     }
 }

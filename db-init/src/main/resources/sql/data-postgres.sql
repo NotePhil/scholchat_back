@@ -39,6 +39,8 @@ INSERT INTO parents (parents_id) VALUES
 ('550e8400-e29b-41d4-a716-446655440201');
 
 INSERT INTO eleves (eleves_id, niveau) VALUES
+('550e8400-e29b-41d4-a716-446655440002', 'Terminale'),
+('550e8400-e29b-41d4-a716-446655440003', 'Terminale'),
 ('550e8400-e29b-41d4-a716-446655440300', '6eme'),
 ('550e8400-e29b-41d4-a716-446655440301', '5eme'),
 ('550e8400-e29b-41d4-a716-446655440302', '3eme');
@@ -158,10 +160,10 @@ INSERT INTO message_classes (message_id, classe_id) VALUES
 ('msg-002', '550e8400-e29b-41d4-a716-446655440401'),
 ('msg-003', '550e8400-e29b-41d4-a716-446655440407');
 
-INSERT INTO evenements (id, titre, description, lieu, etat, heure_debut, heure_fin, createur_id) VALUES
-('cccccccc-0003-0003-0003-000000000001', 'Reunion parents-professeurs', 'Reunion trimestrielle', 'Salle A', 'PLANIFIE', '2025-01-15 17:00:00', '2025-01-15 19:00:00', '550e8400-e29b-41d4-a716-446655440007'),
-('cccccccc-0003-0003-0003-000000000002', 'Sortie scolaire', 'Visite du musee national', 'Musee National', 'PLANIFIE', '2025-02-10 08:00:00', '2025-02-10 17:00:00', '550e8400-e29b-41d4-a716-446655440008'),
-('cccccccc-0003-0003-0003-000000000003', 'Concours de maths', 'Competition inter-classes', 'Amphi', 'PASSE', '2024-12-05 09:00:00', '2024-12-05 12:00:00', '550e8400-e29b-41d4-a716-446655440007');
+INSERT INTO evenements (id, titre, description, lieu, etat, heure_debut, heure_fin, createur_id, visibility) VALUES
+('cccccccc-0003-0003-0003-000000000001', 'Reunion parents-professeurs', 'Reunion trimestrielle', 'Salle A', 'PLANIFIE', '2025-01-15 17:00:00', '2025-01-15 19:00:00', '550e8400-e29b-41d4-a716-446655440007', 'PRIVATE'),
+('cccccccc-0003-0003-0003-000000000002', 'Sortie scolaire', 'Visite du musee national', 'Musee National', 'PLANIFIE', '2025-02-10 08:00:00', '2025-02-10 17:00:00', '550e8400-e29b-41d4-a716-446655440008', 'PUBLIC'),
+('cccccccc-0003-0003-0003-000000000003', 'Concours de maths', 'Competition inter-classes', 'Amphi', 'PASSE', '2024-12-05 09:00:00', '2024-12-05 12:00:00', '550e8400-e29b-41d4-a716-446655440007', 'PRIVATE');
 
 INSERT INTO evenement_participants (evenement_id, utilisateur_id) VALUES
 ('cccccccc-0003-0003-0003-000000000001', '550e8400-e29b-41d4-a716-446655440200'),
@@ -171,6 +173,12 @@ INSERT INTO evenement_participants (evenement_id, utilisateur_id) VALUES
 ('cccccccc-0003-0003-0003-000000000002', '550e8400-e29b-41d4-a716-446655440301'),
 ('cccccccc-0003-0003-0003-000000000003', '550e8400-e29b-41d4-a716-446655440300'),
 ('cccccccc-0003-0003-0003-000000000003', '550e8400-e29b-41d4-a716-446655440302');
+
+-- Link events to classes
+INSERT INTO evenement_classes (evenement_id, classe_id) VALUES
+('cccccccc-0003-0003-0003-000000000001', '550e8400-e29b-41d4-a716-446655440407'),
+('cccccccc-0003-0003-0003-000000000001', '550e8400-e29b-41d4-a716-446655440408'),
+('cccccccc-0003-0003-0003-000000000003', '550e8400-e29b-41d4-a716-446655440407');
 
 INSERT INTO cours (id, titre, description, date_creation, etat, contenu, redacteur_id) VALUES
 ('dddddddd-0004-0004-0004-000000000001', 'Introduction aux equations', 'Bases des equations du 1er degre', '2024-12-01 08:00:00', 'PUBLIE', 'Une equation est une egalite comportant une inconnue.', '550e8400-e29b-41d4-a716-446655440007'),
@@ -410,9 +418,9 @@ INSERT INTO repondre (utilisateur_id, question_id, reponse_utilisateur, est_corr
 ('demo-eleve-0000-0000-000000000001', '11111111-0007-0007-0007-000000000008', '4', TRUE, '5'),
 ('demo-eleve-0000-0000-000000000001', '11111111-0007-0007-0007-000000000009', '3', TRUE, '5');
 
-INSERT INTO evenements (id, titre, description, lieu, etat, heure_debut, heure_fin, createur_id) VALUES
-('cccccccc-0003-0003-0003-000000000004', 'Seance revision trigo', 'Revision avant examen de trigonometrie', 'Salle 101', 'PLANIFIE', '2025-02-04 14:00:00', '2025-02-04 16:00:00', '550e8400-e29b-41d4-a716-446655440007'),
-('cccccccc-0003-0003-0003-000000000005', 'Examen blanc statistiques', 'Simulation examen statistiques', 'Salle 101', 'PLANIFIE', '2025-02-06 08:00:00', '2025-02-06 10:00:00', '550e8400-e29b-41d4-a716-446655440007');
+INSERT INTO evenements (id, titre, description, lieu, etat, heure_debut, heure_fin, createur_id, visibility) VALUES
+('cccccccc-0003-0003-0003-000000000004', 'Seance revision trigo', 'Revision avant examen de trigonometrie', 'Salle 101', 'PLANIFIE', '2025-02-04 14:00:00', '2025-02-04 16:00:00', '550e8400-e29b-41d4-a716-446655440007', 'PRIVATE'),
+('cccccccc-0003-0003-0003-000000000005', 'Examen blanc statistiques', 'Simulation examen statistiques', 'Salle 101', 'PLANIFIE', '2025-02-06 08:00:00', '2025-02-06 10:00:00', '550e8400-e29b-41d4-a716-446655440007', 'PRIVATE');
 
 INSERT INTO evenement_participants (evenement_id, utilisateur_id) VALUES
 ('cccccccc-0003-0003-0003-000000000004', 'demo-eleve-0000-0000-000000000001'),
@@ -421,6 +429,11 @@ INSERT INTO evenement_participants (evenement_id, utilisateur_id) VALUES
 ('cccccccc-0003-0003-0003-000000000005', 'demo-eleve-0000-0000-000000000001'),
 ('cccccccc-0003-0003-0003-000000000005', '550e8400-e29b-41d4-a716-446655440300'),
 ('cccccccc-0003-0003-0003-000000000005', '550e8400-e29b-41d4-a716-446655440007');
+
+-- Link demo events to classes
+INSERT INTO evenement_classes (evenement_id, classe_id) VALUES
+('cccccccc-0003-0003-0003-000000000004', '550e8400-e29b-41d4-a716-446655440407'),
+('cccccccc-0003-0003-0003-000000000005', '550e8400-e29b-41d4-a716-446655440407');
 
 INSERT INTO histo_activation (id, classe_id, utilisateur_id, date_activation, is_active, etat_classe) VALUES
 ('aaaabbbb-0008-0008-0008-000000000004', '550e8400-e29b-41d4-a716-446655440408', '550e8400-e29b-41d4-a716-446655440007', '2024-12-01 12:00:00', TRUE, 'ACTIF');

@@ -31,6 +31,7 @@ public class Classes implements Serializable {
     private boolean paymentRequired; // True when no establishment is provided
     private Professeurs moderator;
     private DroitPublication droitPublication;
+    private List<String> evenementsIds; // IDs des événements concernés par cette classe
     
     @JsonSetter("moderator")
     public void setModeratorFromJson(JsonNode node) {
