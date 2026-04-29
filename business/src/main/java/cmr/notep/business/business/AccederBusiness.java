@@ -1,5 +1,6 @@
 package cmr.notep.business.business;
 
+
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.AccessConfirmationEmailService;
@@ -579,3 +580,7 @@ public class AccederBusiness {
         return dto;
     }
 }
+
+
+
+
