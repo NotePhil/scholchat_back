@@ -146,6 +146,16 @@ public class MessagesBusiness {
         // Force loading of recipients
         savedEntity.getDestinatairesEntities().size();
 
+        // Notify each recipient
+        try {
+            String senderName = sender.getPrenom() + " " + sender.getNom();
+            for (UtilisateursEntity dest : savedEntity.getDestinatairesEntities()) {
+                notificationService.createMessageNotification(dest.getId(), sender.getId(), senderName, savedEntity.getObjet());
+            }
+        } catch (Exception e) {
+            log.error("Failed to send group message notifications: {}", e.getMessage());
+        }
+
         return mapMessageEntityToDto(savedEntity);
     }
 

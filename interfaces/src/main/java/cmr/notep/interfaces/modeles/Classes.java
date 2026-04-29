@@ -32,6 +32,7 @@ public class Classes implements Serializable {
     private boolean accesMajeur; // True = major class (access by email search, not direct add)
     private Professeurs moderator;
     private DroitPublication droitPublication;
+    private List<String> evenementsIds; // IDs des événements concernés par cette classe
     
     @JsonSetter("moderator")
     public void setModeratorFromJson(JsonNode node) {

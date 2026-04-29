@@ -6,15 +6,17 @@ import cmr.notep.business.services.NotificationService;
 import cmr.notep.interfaces.modeles.Evenement;
 import cmr.notep.interfaces.modeles.Media;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
+import cmr.notep.ressourcesjpa.dao.ClassesEntity;
 import cmr.notep.ressourcesjpa.dao.EvenementEntity;
 import cmr.notep.ressourcesjpa.dao.MediaEntity;
 import cmr.notep.ressourcesjpa.dao.ProfesseursEntity;
 import cmr.notep.ressourcesjpa.dao.UtilisateursEntity;
+import cmr.notep.ressourcesjpa.dao.UserRoleEntity;
+import cmr.notep.ressourcesjpa.repository.ClassesRepository;
 import cmr.notep.ressourcesjpa.repository.EvenementRepository;
 import cmr.notep.ressourcesjpa.repository.ProfesseursRepository;
 import cmr.notep.ressourcesjpa.repository.UtilisateursRepository;
 import cmr.notep.ressourcesjpa.repository.UserRoleRepository;
-import cmr.notep.ressourcesjpa.dao.UserRoleEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -78,10 +80,13 @@ public class EvenementBusiness {
                 entity.setParticipantsIds(evenement.getParticipantsIds());
             }
             
-            // Set visibility and selected classes for frontend compatibility
+            // Set visibility and classes
             entity.setVisibility(evenement.getVisibility());
-            if (evenement.getSelectedClasses() != null) {
-                entity.setSelectedClasses(evenement.getSelectedClasses());
+            if (evenement.getClassesIds() != null && !evenement.getClassesIds().isEmpty()) {
+                List<ClassesEntity> classesEntities = daoAccessorService
+                        .getRepository(ClassesRepository.class)
+                        .findAllById(evenement.getClassesIds());
+                entity.setClasses(classesEntities);
             }
             
             // Handle frontend sending PUBLIC/PRIVATE in etat field
@@ -188,17 +193,20 @@ public class EvenementBusiness {
             }
             savedEvenement.setCreateurRole(role);
             savedEvenement.setInteractions(interactionBusiness.getInteractionsByEvent(savedEntity.getId()));
+            savedEvenement.setClassesIds(savedEntity.getClasses().stream()
+                    .map(ClassesEntity::getId).collect(Collectors.toList()));
 
             log.info("Event created successfully with ID: {}", savedEntity.getId());
 
             // Send notifications to students in the selected classes
             try {
                 String creatorName = createur.getPrenom() + " " + createur.getNom();
-                List<String> selectedClasses = savedEntity.getSelectedClasses();
-                if (selectedClasses != null && !selectedClasses.isEmpty()) {
+                List<String> classesIds = savedEntity.getClasses().stream()
+                        .map(ClassesEntity::getId).collect(Collectors.toList());
+                if (!classesIds.isEmpty()) {
                     notificationService.createActivityNotification(
                             savedEntity.getId(), savedEntity.getTitre(),
-                            createur.getId(), creatorName, selectedClasses);
+                            createur.getId(), creatorName, classesIds);
                 }
             } catch (Exception ex) {
                 log.error("Error sending event notifications: {}", ex.getMessage());
@@ -230,10 +238,13 @@ public class EvenementBusiness {
             existing.setHeureDebut(evenement.getHeureDebut());
             existing.setHeureFin(evenement.getHeureFin());
             
-            // Update new fields
+            // Update visibility and classes
             existing.setVisibility(evenement.getVisibility());
-            if (evenement.getSelectedClasses() != null) {
-                existing.setSelectedClasses(evenement.getSelectedClasses());
+            if (evenement.getClassesIds() != null) {
+                List<ClassesEntity> classesEntities = daoAccessorService
+                        .getRepository(ClassesRepository.class)
+                        .findAllById(evenement.getClassesIds());
+                existing.setClasses(classesEntities);
             }
 
             EvenementEntity updated = repo.save(existing);
@@ -321,6 +332,8 @@ public class EvenementBusiness {
                                 }
                                 evenement.setCreateurRole(role);
                             }
+                            evenement.setClassesIds(e.getClasses().stream()
+                                    .map(ClassesEntity::getId).collect(Collectors.toList()));
                             evenement.setInteractions(interactionBusiness.getInteractionsByEvent(e.getId()));
                             return evenement;
                         } catch (Exception ex) {
@@ -377,6 +390,8 @@ public class EvenementBusiness {
             if (entity.getCreateur() != null) {
                 evenement.setCreateurId(entity.getCreateur().getId()); // Set creator ID properly
             }
+            evenement.setClassesIds(entity.getClasses().stream()
+                    .map(ClassesEntity::getId).collect(Collectors.toList()));
             evenement.setInteractions(interactionBusiness.getInteractionsByEvent(id));
             return evenement;
         } catch (SchoolException e) {
@@ -402,6 +417,8 @@ public class EvenementBusiness {
                             if (e.getCreateur() != null) {
                                 evenement.setCreateurId(e.getCreateur().getId()); // Set creator ID properly
                             }
+                            evenement.setClassesIds(e.getClasses().stream()
+                                    .map(ClassesEntity::getId).collect(Collectors.toList()));
                             evenement.setInteractions(interactionBusiness.getInteractionsByEvent(e.getId()));
                             return evenement;
                         } catch (Exception ex) {

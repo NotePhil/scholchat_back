@@ -74,4 +74,7 @@ public class ClassesEntity {
 
     @ManyToMany(mappedBy = "classesDiffusees")
     private List<ExerciseProgrammerEntity> exercisesProgrammes = new ArrayList<>();
+
+    @ManyToMany(mappedBy = "classes")
+    private List<EvenementEntity> evenements = new ArrayList<>();
 }

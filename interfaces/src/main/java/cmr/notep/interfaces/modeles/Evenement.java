@@ -38,5 +38,5 @@ public class Evenement {
     
     // Nouveaux champs pour supporter la logique du frontend
     private String visibility; // PUBLIC ou PRIVATE
-    private List<String> selectedClasses; // IDs des classes sélectionnées pour les événements privés
+    private List<String> classesIds; // IDs des classes concernées par l'événement
 }

@@ -77,7 +77,7 @@ public class EvenementService implements EvenementApi {
                         }
                         
                         List<String> userClasses = getUserClasses(userId);
-                        List<String> eventClasses = evenement.getSelectedClasses();
+                        List<String> eventClasses = evenement.getClassesIds();
                         
                         // If no classes selected for private event, show to everyone
                         if (eventClasses == null || eventClasses.isEmpty()) {

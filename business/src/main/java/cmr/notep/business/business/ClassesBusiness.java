@@ -593,6 +593,9 @@ public class ClassesBusiness {
             classe.setModerator(moderator);
         }
 
+        classe.setEvenementsIds(classeEntity.getEvenements().stream()
+                .map(cmr.notep.ressourcesjpa.dao.EvenementEntity::getId).collect(java.util.stream.Collectors.toList()));
+
         return classe;
     }
 

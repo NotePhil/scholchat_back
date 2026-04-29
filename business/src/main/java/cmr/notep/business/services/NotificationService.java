@@ -22,6 +22,7 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final AccederRepository accederRepository;
     private final UtilisateursRepository utilisateursRepository;
+    private final NotificationPublisher notificationPublisher;
 
     @Transactional
     public void createAccessRequestNotification(String classeId, String className, String studentId, String studentName) {
@@ -347,6 +348,7 @@ public class NotificationService {
             notification.setCreatedAt(LocalDateTime.now());
             notification.setRead(false);
             notificationRepository.save(notification);
+            notificationPublisher.push(notification);
         } catch (Exception e) {
             log.error("Failed to save notification for user {}: {}", userId, e.getMessage());
         }
