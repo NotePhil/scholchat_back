@@ -60,7 +60,7 @@ public class AccederBusiness {
         }
 
         // Bloquer les demandes d'accès standard pour les classes majeures
-        if (Boolean.TRUE.equals(classe.getAccesMajeur())) {
+        if (classe.isAccesMajeur()) {
             throw new SchoolException(SchoolErrorCode.INVALID_OPERATION,
                     "Cette classe est une classe majeure. L'accès se fait uniquement par invitation directe.");
         }
