@@ -45,8 +45,9 @@ public class AccederBusiness {
         this.notificationService = notificationService;
     }
 
-    public void demanderAcces(String utilisateurId, String classeId, String codeActivation) throws SchoolException {
-        log.info("Demande d'accès de l'utilisateur {} à la classe {}", utilisateurId, classeId);
+    public void demanderAcces(String utilisateurId, String classeId, String codeActivation, boolean estParent, String eleveAssocieId) throws SchoolException {
+        log.info("Demande d'accès de l'utilisateur {} à la classe {} (Parent: {}, Enfant: {})", 
+                utilisateurId, classeId, estParent, eleveAssocieId);
 
         // Check if class exists and is active
         ClassesEntity classe = daoAccessorService.getRepository(ClassesRepository.class)
@@ -56,6 +57,12 @@ public class AccederBusiness {
         if (classe.getEtat() != EtatClasse.ACTIF) {
             throw new SchoolException(SchoolErrorCode.INVALID_STATE,
                     "Seules les classes ACTIF peuvent être accessibles");
+        }
+
+        // Bloquer les demandes d'accès standard pour les classes majeures
+        if (Boolean.TRUE.equals(classe.getAccesMajeur())) {
+            throw new SchoolException(SchoolErrorCode.INVALID_OPERATION,
+                    "Cette classe est une classe majeure. L'accès se fait uniquement par invitation directe.");
         }
 
         // Check if activation code matches
@@ -99,6 +106,8 @@ public class AccederBusiness {
         demande.setCodeActivation(codeActivation);
         demande.setDateDemande(new Date());
         demande.setEtat(EtatDemandeAcces.EN_ATTENTE);
+        demande.setEstParent(estParent);
+        demande.setEleveAssocieId(eleveAssocieId);
 
         daoAccessorService.getRepository(DemandeAccesRepository.class).save(demande);
         log.info("Demande d'accès créée avec succès");
@@ -338,7 +347,6 @@ public class AccederBusiness {
         demande.setDateTraitement(new Date());
         daoAccessorService.getRepository(DemandeAccesRepository.class).save(demande);
     }
-
     public void retirerAcces(String utilisateurId, String classeId) throws SchoolException {
         log.info("Retirer l'accès de l'utilisateur {} à la classe {}", utilisateurId, classeId);
 

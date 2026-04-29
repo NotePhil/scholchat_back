@@ -15,6 +15,7 @@ public class ClasseCreationDto {
     private String etablissementId;
     private String codeUnique;
     private String moderatorId;
+    private boolean accesMajeur;
     private PaymentInfoDto paymentInfo;
     
     @Data

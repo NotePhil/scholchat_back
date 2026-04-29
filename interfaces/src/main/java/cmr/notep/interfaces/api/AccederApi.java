@@ -21,7 +21,9 @@ public interface AccederApi {
     void demanderAcces(
             @RequestParam String utilisateurId,
             @RequestParam String classeId,
-            @RequestParam String codeActivation
+            @RequestParam String codeActivation,
+            @RequestParam(required = false, defaultValue = "false") boolean estParent,
+            @RequestParam(required = false) String eleveAssocieId
     );
 
     @PostMapping(

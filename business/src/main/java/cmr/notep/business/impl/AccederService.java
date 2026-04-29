@@ -20,9 +20,10 @@ public class AccederService implements AccederApi {
     private final AccederBusiness accederBusiness;
 
     @Override
-    public void demanderAcces(String utilisateurId, String classeId, String codeActivation) {
-        log.info("API - Demande d'accès de l'utilisateur {} à la classe {}", utilisateurId, classeId);
-        accederBusiness.demanderAcces(utilisateurId, classeId, codeActivation);
+    public void demanderAcces(String utilisateurId, String classeId, String codeActivation, boolean estParent, String eleveAssocieId) {
+        log.info("API - Demande d'accès de l'utilisateur {} à la classe {} (Parent: {}, Enfant: {})", 
+                utilisateurId, classeId, estParent, eleveAssocieId);
+        accederBusiness.demanderAcces(utilisateurId, classeId, codeActivation, estParent, eleveAssocieId);
     }
 
     @Override

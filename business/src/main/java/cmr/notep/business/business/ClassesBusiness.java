@@ -58,6 +58,7 @@ public class ClassesBusiness {
         classesEntity.setNiveau(classeDto.getNiveau());
         classesEntity.setDateCreation(new java.util.Date());
         classesEntity.setCodeActivation(generateActivationCode());
+        classesEntity.setAccesMajeur(classeDto.isAccesMajeur());
         
         String token = null;
         EtablissementEntity etablissement = null;
@@ -351,6 +352,9 @@ public class ClassesBusiness {
         if (classeModifiee.getDroitPublication() != null) {
             classeExistante.setDroitPublication(classeModifiee.getDroitPublication());
         }
+        
+        // Update accesMajeur flag
+        classeExistante.setAccesMajeur(classeModifiee.isAccesMajeur());
 
         // Etablissement Update
         if (classeModifiee.getEtablissement() != null) {
