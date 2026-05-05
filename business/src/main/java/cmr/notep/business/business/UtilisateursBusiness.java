@@ -267,6 +267,17 @@ public class UtilisateursBusiness {
                 }
             }
 
+            // For gestionnaire role, insert directly into gestionnaires table
+            if ("GESTIONNAIRE".equals(newRoleType)) {
+                try {
+                    daoAccessorService.getRepository(UtilisateursRepository.class)
+                            .insertGestionnaireRole(existingEntity.getId());
+                    log.info("Created gestionnaire entry for user {}", existingEntity.getId());
+                } catch (Exception e) {
+                    log.warn("Gestionnaire entry may already exist or could not be created: {}", e.getMessage());
+                }
+            }
+
             log.info("Added role {} to existing user {}", newRoleType, existingEntity.getEmail());
             return mapUtilisateursEntityToModele(existingEntity);
         }

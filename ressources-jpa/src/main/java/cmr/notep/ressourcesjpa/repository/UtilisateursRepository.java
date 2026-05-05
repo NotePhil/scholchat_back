@@ -46,4 +46,9 @@ public interface UtilisateursRepository extends JpaRepository<UtilisateursEntity
     @Query(value = "INSERT INTO ressources.professeurs (professeurs_id, has_uploaded) VALUES (:userId, false) ON CONFLICT DO NOTHING", nativeQuery = true)
     void insertProfesseurRole(@Param("userId") String userId);
 
+    @Transactional
+    @Modifying
+    @Query(value = "INSERT INTO ressources.gestionnaires (gestionnaires_id) VALUES (:userId) ON CONFLICT DO NOTHING", nativeQuery = true)
+    void insertGestionnaireRole(@Param("userId") String userId);
+
 }
