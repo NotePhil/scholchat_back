@@ -93,6 +93,28 @@ INSERT INTO professeur_classes_moderees (professeur_id, classe_id) VALUES
 ('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440408');
 
 
+-- Default matieres (subjects)
+INSERT INTO matieres (id, nom, description, date_creation, etat) VALUES
+('mat-math-001', 'Mathematiques', 'Algebre, geometrie, arithmetique, analyse', NOW(), 'ACTIF'),
+('mat-fran-001', 'Francais', 'Grammaire, conjugaison, orthographe, litterature', NOW(), 'ACTIF'),
+('mat-angl-001', 'Anglais', 'English language and literature', NOW(), 'ACTIF'),
+('mat-phys-001', 'Physique', 'Mecanique, optique, electricite, thermodynamique', NOW(), 'ACTIF'),
+('mat-chim-001', 'Chimie', 'Chimie organique, inorganique, solutions', NOW(), 'ACTIF'),
+('mat-svt-001', 'SVT', 'Sciences de la Vie et de la Terre, biologie, geologie', NOW(), 'ACTIF'),
+('mat-hist-001', 'Histoire', 'Histoire du monde, histoire africaine, civilisations', NOW(), 'ACTIF'),
+('mat-geo-001', 'Geographie', 'Geographie physique et humaine, cartographie', NOW(), 'ACTIF'),
+('mat-phil-001', 'Philosophie', 'Logique, ethique, epistemologie, metaphysique', NOW(), 'ACTIF'),
+('mat-info-001', 'Informatique', 'Algorithmique, programmation, systemes', NOW(), 'ACTIF'),
+('mat-edc-001', 'Education Civique', 'Citoyennete, droits et devoirs', NOW(), 'ACTIF'),
+('mat-eps-001', 'EPS', 'Education Physique et Sportive', NOW(), 'ACTIF'),
+('mat-art-001', 'Arts Plastiques', 'Dessin, peinture, sculpture', NOW(), 'ACTIF'),
+('mat-mus-001', 'Musique', 'Theorie musicale, pratique instrumentale et vocale', NOW(), 'ACTIF'),
+('mat-esp-001', 'Espagnol', 'Langue et culture espagnole', NOW(), 'ACTIF'),
+('mat-all-001', 'Allemand', 'Langue et culture allemande', NOW(), 'ACTIF'),
+('mat-eco-001', 'Economie', 'Microeconomie, macroeconomie, comptabilite', NOW(), 'ACTIF'),
+('mat-drt-001', 'Droit', 'Droit civil, droit des affaires', NOW(), 'ACTIF')
+ON CONFLICT (id) DO NOTHING;
+
 INSERT INTO droit_publication (utilisateur_id, classe_id, date_attribution, peut_publier, peut_moderer) VALUES
 ('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440407', '2024-12-01 11:00:00', TRUE, TRUE),
 ('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440408', '2024-12-01 12:00:00', TRUE, TRUE);

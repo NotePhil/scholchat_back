@@ -146,9 +146,14 @@ public class AuthBusiness {
 
         // Get all roles: merge user_roles table + JPA type detection
         List<String> dbRoles = utilisateursBusiness.getUserRoles(existingUser.getId());
+        List<String> allDbRoleTypes = utilisateursBusiness.getAllUserRoleTypes(existingUser.getId());
+        
         List<String> jpaRoles = roleService.determineUserRoles(existingUser).stream()
                 .map(r -> r.replace("ROLE_", ""))
                 .filter(r -> !r.equals("USER"))
+                // Only add JPA role if it doesn't exist in DB at all (handles legacy data)
+                // If it exists in DB but is not in dbRoles, it's inactive (e.g. pending professor)
+                .filter(r -> !allDbRoleTypes.contains(r))
                 .collect(java.util.stream.Collectors.toList());
 
         // Merge both sources (no duplicates)

@@ -224,16 +224,18 @@ public class UtilisateursBusiness {
             }
 
             // Add the new role to user_roles table
-            addRoleToUser(existingEntity.getId(), newRoleType);
+            // For PROFESSOR role, set as INACTIVE until admin/establishment approves
+            if ("PROFESSOR".equals(newRoleType)) {
+                addRoleToUser(existingEntity.getId(), newRoleType, false);
+                log.info("Added PROFESSOR role as INACTIVE (pending approval) for user {}", existingEntity.getEmail());
+            } else {
+                addRoleToUser(existingEntity.getId(), newRoleType);
+            }
 
             // For parent role, insert directly into parents table via native SQL
             // (JPA JOINED inheritance prevents using JPA save for a different subtype)
             if ("PARENT".equals(newRoleType)) {
                 try {
-                    jakarta.persistence.EntityManager em = daoAccessorService.getRepository(UtilisateursRepository.class)
-                            .findById(existingEntity.getId()).map(e -> e).orElse(null) != null ?
-                            null : null; // dummy to get context
-                    // Use native query via repository
                     daoAccessorService.getRepository(UtilisateursRepository.class)
                             .insertParentRole(existingEntity.getId());
                     log.info("Created parent entry for user {}", existingEntity.getId());
@@ -251,6 +253,17 @@ public class UtilisateursBusiness {
                     log.info("Created eleve entry for user {}", existingEntity.getId());
                 } catch (Exception e) {
                     log.warn("Eleve entry may already exist or could not be created: {}", e.getMessage());
+                }
+            }
+
+            // For professor role, insert directly into professeurs table
+            if ("PROFESSOR".equals(newRoleType)) {
+                try {
+                    daoAccessorService.getRepository(UtilisateursRepository.class)
+                            .insertProfesseurRole(existingEntity.getId());
+                    log.info("Created professeur entry for user {}", existingEntity.getId());
+                } catch (Exception e) {
+                    log.warn("Professeur entry may already exist or could not be created: {}", e.getMessage());
                 }
             }
 
@@ -483,6 +496,9 @@ public class UtilisateursBusiness {
         userEntity = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .save(userEntity);
 
+        // Activate the PROFESSOR role in user_roles table
+        activateRoleForUser(professorId, "PROFESSOR");
+
         // Convert the entity to model and send activation email
         Utilisateurs utilisateur = mapUtilisateursEntityToModele(userEntity);
         activationEmailService.sendActivationEmail(utilisateur, activationToken);
@@ -551,6 +567,21 @@ public class UtilisateursBusiness {
     }
 
     /**
+     * Get all roles for a user from user_roles table (including inactive ones)
+     */
+    public List<String> getAllUserRoleTypes(String userId) {
+        try {
+            UserRoleRepository roleRepo = daoAccessorService.getRepository(UserRoleRepository.class);
+            return roleRepo.findByUtilisateurId(userId).stream()
+                    .map(UserRoleEntity::getRoleType)
+                    .collect(java.util.stream.Collectors.toList());
+        } catch (Exception e) {
+            log.warn("Could not fetch all user roles for {}: {}", userId, e.getMessage());
+            return new java.util.ArrayList<>();
+        }
+    }
+
+    /**
      * Map user type to role string
      */
     private String mapTypeToRole(Utilisateurs utilisateur) {
@@ -582,16 +613,41 @@ public class UtilisateursBusiness {
      * Add a role to an existing user
      */
     public void addRoleToUser(String userId, String roleType) {
+        addRoleToUser(userId, roleType, true);
+    }
+
+    /**
+     * Add a role to an existing user with specified active state.
+     * For PROFESSOR role added to existing users, active should be false (pending approval).
+     */
+    public void addRoleToUser(String userId, String roleType, boolean active) {
         UserRoleRepository roleRepo = daoAccessorService.getRepository(UserRoleRepository.class);
         if (!roleRepo.existsByUtilisateurIdAndRoleType(userId, roleType)) {
             UserRoleEntity role = new UserRoleEntity();
             role.setId(UUID.randomUUID().toString());
             role.setUtilisateurId(userId);
             role.setRoleType(roleType);
-            role.setIsActive(true);
+            role.setIsActive(active);
             role.setDateAttribution(LocalDateTime.now());
             roleRepo.save(role);
-            log.info("Added role {} to user {}", roleType, userId);
+            log.info("Added role {} to user {} (active={})", roleType, userId, active);
+        }
+    }
+
+    /**
+     * Activate a specific role for a user (e.g., after admin approval)
+     */
+    public void activateRoleForUser(String userId, String roleType) {
+        UserRoleRepository roleRepo = daoAccessorService.getRepository(UserRoleRepository.class);
+        Optional<UserRoleEntity> roleOpt = roleRepo.findByUtilisateurIdAndRoleType(userId, roleType);
+        if (roleOpt.isPresent()) {
+            UserRoleEntity role = roleOpt.get();
+            role.setIsActive(true);
+            roleRepo.save(role);
+            log.info("Activated role {} for user {}", roleType, userId);
+        } else {
+            // Role doesn't exist yet, create it as active
+            addRoleToUser(userId, roleType, true);
         }
     }
 
