@@ -94,14 +94,20 @@ INSERT INTO professeur_classes_moderees (professeur_id, classe_id) VALUES
 
 
 -- Default matieres (subjects)
+-- IDs canoniques utilises partout dans ce fichier :
+--   Mathematiques  -> aaaaaaaa-0001-0001-0001-000000000001
+--   Physique-Chimie-> aaaaaaaa-0001-0001-0001-000000000002
+--   Francais       -> aaaaaaaa-0001-0001-0001-000000000003
+--   Histoire-Geo   -> aaaaaaaa-0001-0001-0001-000000000004
+--   SVT            -> aaaaaaaa-0001-0001-0001-000000000005
 INSERT INTO matieres (id, nom, description, date_creation, etat) VALUES
-('mat-math-001', 'Mathematiques', 'Algebre, geometrie, arithmetique, analyse', NOW(), 'ACTIF'),
-('mat-fran-001', 'Francais', 'Grammaire, conjugaison, orthographe, litterature', NOW(), 'ACTIF'),
+('aaaaaaaa-0001-0001-0001-000000000001', 'Mathematiques', 'Algebre, geometrie, arithmetique, analyse', NOW(), 'ACTIF'),
+('aaaaaaaa-0001-0001-0001-000000000003', 'Francais', 'Grammaire, conjugaison, orthographe, litterature', NOW(), 'ACTIF'),
 ('mat-angl-001', 'Anglais', 'English language and literature', NOW(), 'ACTIF'),
 ('mat-phys-001', 'Physique', 'Mecanique, optique, electricite, thermodynamique', NOW(), 'ACTIF'),
 ('mat-chim-001', 'Chimie', 'Chimie organique, inorganique, solutions', NOW(), 'ACTIF'),
-('mat-svt-001', 'SVT', 'Sciences de la Vie et de la Terre, biologie, geologie', NOW(), 'ACTIF'),
-('mat-hist-001', 'Histoire', 'Histoire du monde, histoire africaine, civilisations', NOW(), 'ACTIF'),
+('aaaaaaaa-0001-0001-0001-000000000005', 'SVT', 'Sciences de la Vie et de la Terre, biologie, geologie', NOW(), 'ACTIF'),
+('aaaaaaaa-0001-0001-0001-000000000004', 'Histoire-Geographie', 'Histoire et geographie', NOW(), 'ACTIF'),
 ('mat-geo-001', 'Geographie', 'Geographie physique et humaine, cartographie', NOW(), 'ACTIF'),
 ('mat-phil-001', 'Philosophie', 'Logique, ethique, epistemologie, metaphysique', NOW(), 'ACTIF'),
 ('mat-info-001', 'Informatique', 'Algorithmique, programmation, systemes', NOW(), 'ACTIF'),
@@ -112,7 +118,8 @@ INSERT INTO matieres (id, nom, description, date_creation, etat) VALUES
 ('mat-esp-001', 'Espagnol', 'Langue et culture espagnole', NOW(), 'ACTIF'),
 ('mat-all-001', 'Allemand', 'Langue et culture allemande', NOW(), 'ACTIF'),
 ('mat-eco-001', 'Economie', 'Microeconomie, macroeconomie, comptabilite', NOW(), 'ACTIF'),
-('mat-drt-001', 'Droit', 'Droit civil, droit des affaires', NOW(), 'ACTIF')
+('mat-drt-001', 'Droit', 'Droit civil, droit des affaires', NOW(), 'ACTIF'),
+('aaaaaaaa-0001-0001-0001-000000000002', 'Physique-Chimie', 'Sciences physiques et chimiques', NOW(), 'ACTIF')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO droit_publication (utilisateur_id, classe_id, date_attribution, peut_publier, peut_moderer) VALUES
@@ -144,12 +151,7 @@ ON CONFLICT DO NOTHING;
 -- SYNCED FROM data-h2.sql
 -- =============================================
 
-INSERT INTO matieres (id, nom, description, etat) VALUES
-('aaaaaaaa-0001-0001-0001-000000000001', 'Mathematiques', 'Algebre, geometrie et analyse', 'ACTIF'),
-('aaaaaaaa-0001-0001-0001-000000000002', 'Physique-Chimie', 'Sciences physiques et chimiques', 'ACTIF'),
-('aaaaaaaa-0001-0001-0001-000000000003', 'Francais', 'Langue et litterature francaise', 'ACTIF'),
-('aaaaaaaa-0001-0001-0001-000000000004', 'Histoire-Geographie', 'Histoire et geographie', 'ACTIF'),
-('aaaaaaaa-0001-0001-0001-000000000005', 'SVT', 'Sciences de la vie et de la terre', 'ACTIF');
+-- matieres deja inserees ci-dessus avec les IDs canoniques aaaaaaaa-*
 
 INSERT INTO classe_matieres (matiere_id, classe_id) VALUES
 ('aaaaaaaa-0001-0001-0001-000000000001', '550e8400-e29b-41d4-a716-446655440400'),
