@@ -4,68 +4,68 @@ databaseChangeLog:
       author: db-init
       changes:
         - sqlFile:
-            path: classpath:sql/schema-postgres.sql
+            path: sql/schema-postgres.sql
             relativeToChangelogFile: false
   - changeSet:
       id: 2-data
       author: db-init
       changes:
         - sqlFile:
-            path: classpath:sql/data-postgres.sql
+            path: sql/data-postgres.sql
             relativeToChangelogFile: false
   - changeSet:
       id: 3-add-notifications
       author: db-init
       changes:
         - sqlFile:
-            path: classpath:sql/migration-add-notifications.sql
+            path: sql/migration-add-notifications.sql
             relativeToChangelogFile: false
   - changeSet:
       id: 4-live-sessions
       author: db-init
       changes:
         - sqlFile:
-            path: classpath:sql/migration-live-sessions.sql
+            path: sql/migration-live-sessions.sql
             relativeToChangelogFile: false
   - changeSet:
       id: 5-add-gestionnaires
       author: db-init
       changes:
         - sqlFile:
-            path: classpath:sql/migration-add-gestionnaires.sql
+            path: sql/migration-add-gestionnaires.sql
             relativeToChangelogFile: false
   - changeSet:
       id: 6-add-visibility
       author: db-init
       changes:
         - sqlFile:
-            path: classpath:sql/migration-add-visibility.sql
+            path: sql/migration-add-visibility.sql
             relativeToChangelogFile: false
   - changeSet:
       id: 7-multi-roles
       author: db-init
       changes:
         - sqlFile:
-            path: classpath:sql/migration-multi-roles.sql
+            path: sql/migration-multi-roles.sql
             relativeToChangelogFile: false
   - changeSet:
       id: 8-questions
       author: db-init
       changes:
         - sqlFile:
-            path: classpath:sql/migration-questions.sql
+            path: sql/migration-questions.sql
             relativeToChangelogFile: false
   - changeSet:
       id: 9-sample-courses
       author: db-init
       changes:
         - sqlFile:
-            path: classpath:sql/migration-sample-courses.sql
+            path: sql/migration-sample-courses.sql
             relativeToChangelogFile: false
   - changeSet:
       id: 10-session-attendance
       author: db-init
       changes:
         - sqlFile:
-            path: classpath:sql/migration-session-attendance.sql
+            path: sql/migration-session-attendance.sql
             relativeToChangelogFile: false
