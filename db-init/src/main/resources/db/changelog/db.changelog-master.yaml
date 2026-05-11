@@ -27,3 +27,45 @@ databaseChangeLog:
         - sqlFile:
             path: classpath:sql/migration-live-sessions.sql
             relativeToChangelogFile: false
+  - changeSet:
+      id: 5-add-gestionnaires
+      author: db-init
+      changes:
+        - sqlFile:
+            path: classpath:sql/migration-add-gestionnaires.sql
+            relativeToChangelogFile: false
+  - changeSet:
+      id: 6-add-visibility
+      author: db-init
+      changes:
+        - sqlFile:
+            path: classpath:sql/migration-add-visibility.sql
+            relativeToChangelogFile: false
+  - changeSet:
+      id: 7-multi-roles
+      author: db-init
+      changes:
+        - sqlFile:
+            path: classpath:sql/migration-multi-roles.sql
+            relativeToChangelogFile: false
+  - changeSet:
+      id: 8-questions
+      author: db-init
+      changes:
+        - sqlFile:
+            path: classpath:sql/migration-questions.sql
+            relativeToChangelogFile: false
+  - changeSet:
+      id: 9-sample-courses
+      author: db-init
+      changes:
+        - sqlFile:
+            path: classpath:sql/migration-sample-courses.sql
+            relativeToChangelogFile: false
+  - changeSet:
+      id: 10-session-attendance
+      author: db-init
+      changes:
+        - sqlFile:
+            path: classpath:sql/migration-session-attendance.sql
+            relativeToChangelogFile: false

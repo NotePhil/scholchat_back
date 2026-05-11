@@ -93,6 +93,25 @@ public class CoursSessionController {
         return sessionBusiness.getProgress(coursId, getCurrentUserId());
     }
 
+    @GetMapping("/{coursId}/sessions")
+    public List<SessionResponseDTO> getCourseSessions(@PathVariable String coursId) {
+        return sessionBusiness.getCourseSessionHistory(coursId);
+    }
+
+    @GetMapping("/{coursId}/session/{sessionId}/attendance")
+    public Map<String, Object> getSessionAttendance(
+            @PathVariable String coursId, 
+            @PathVariable String sessionId) {
+        return sessionBusiness.getSessionAttendance(sessionId, coursId);
+    }
+
+    @GetMapping("/{coursId}/session/{sessionId}/participants")
+    public Map<String, Object> getCurrentSessionParticipants(
+            @PathVariable String coursId, 
+            @PathVariable String sessionId) {
+        return sessionBusiness.getCurrentSessionParticipants(coursId, sessionId);
+    }
+
     // ─── WebSocket message handlers ───────────────────────────────────────────
 
     @MessageMapping("/cours/{coursId}/session/ping")

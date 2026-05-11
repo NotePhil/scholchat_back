@@ -27,7 +27,20 @@ export function useLiveSession(coursId, userRole) {
     if (wsRef.current) wsRef.current.disconnect();
 
     wsRef.current = new SessionWebSocket(coursId, {
-      onConnected: () => setWsConnected(true),
+      onConnected: () => {
+        setWsConnected(true);
+        // Refresh participants when WebSocket connects
+        if (sid) {
+          setTimeout(() => {
+            liveSessionService.getCurrentSessionParticipants(coursId, sid)
+              .then(data => {
+                setParticipants(data.participants || []);
+                console.log('Auto-refreshed participants on WS connect:', data.participants);
+              })
+              .catch(e => console.error('Failed to auto-refresh participants:', e));
+          }, 1000);
+        }
+      },
       onDisconnected: () => setWsConnected(false),
 
       SESSION_STARTED: (payload) => {
@@ -42,13 +55,27 @@ export function useLiveSession(coursId, userRole) {
         setCurrentChapitreId(payload.chapitreId);
       },
       PARTICIPANT_JOINED: (payload) => {
-        setParticipants((prev) => {
-          const exists = prev.some((p) => p.userId === payload.userId);
-          return exists ? prev : [...prev, { userId: payload.userId, userName: payload.userName }];
-        });
+        console.log('PARTICIPANT_JOINED event received:', payload);
+        // Update participants list with the full list from server if available
+        if (payload.participants) {
+          setParticipants(payload.participants);
+        } else {
+          // Fallback to adding individual participant
+          setParticipants((prev) => {
+            const exists = prev.some((p) => p.userId === payload.userId);
+            return exists ? prev : [...prev, { userId: payload.userId, userName: payload.userName }];
+          });
+        }
       },
       PARTICIPANT_LEFT: (payload) => {
-        setParticipants((prev) => prev.filter((p) => p.userId !== payload.userId));
+        console.log('PARTICIPANT_LEFT event received:', payload);
+        // Update participants list with the full list from server if available
+        if (payload.participants) {
+          setParticipants(payload.participants);
+        } else {
+          // Fallback to removing individual participant
+          setParticipants((prev) => prev.filter((p) => p.userId !== payload.userId));
+        }
       },
       HAND_RAISED: (payload) => {
         setHandRaises((prev) => [...prev.slice(-19), payload]); // keep last 20
@@ -158,6 +185,17 @@ export function useLiveSession(coursId, userRole) {
     }
   }, [coursId]);
 
+  const refreshParticipants = useCallback(async () => {
+    if (!session?.sessionId) return;
+    try {
+      const data = await liveSessionService.getCurrentSessionParticipants(coursId, session.sessionId);
+      setParticipants(data.participants || []);
+      console.log('Refreshed participants:', data.participants);
+    } catch (e) {
+      console.error('Failed to refresh participants:', e);
+    }
+  }, [coursId, session?.sessionId]);
+
   // ─── Leave on unmount ────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -188,5 +226,6 @@ export function useLiveSession(coursId, userRole) {
     raiseHand,
     markChapterDone,
     loadProgress,
+    refreshParticipants,
   };
 }

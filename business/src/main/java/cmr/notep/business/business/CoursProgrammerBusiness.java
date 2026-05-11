@@ -11,9 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -117,9 +115,17 @@ public class CoursProgrammerBusiness {
 
     @Transactional
     public void supprimerCoursProgramme(String id) {
-        if (!daoAccessorService.getRepository(CoursProgrammerRepository.class).existsById(id)) {
-            throw new RuntimeException("Scheduled course not found with ID: " + id);
+        CoursProgrammerEntity entity = daoAccessorService.getRepository(CoursProgrammerRepository.class)
+                .findById(id)
+                .orElseThrow(() -> new RuntimeException("Scheduled course not found with ID: " + id));
+
+        if (entity.getEtatCoursProgramme() != EtatCoursProgramme.ANNULE
+                && entity.getEtatCoursProgramme() != EtatCoursProgramme.TERMINE) {
+            throw new IllegalStateException(
+                "Seuls les cours avec l'état ANNULE ou TERMINE peuvent être supprimés. État actuel: "
+                + entity.getEtatCoursProgramme());
         }
+
         daoAccessorService.getRepository(CoursProgrammerRepository.class).deleteById(id);
     }
 
@@ -250,6 +256,12 @@ public class CoursProgrammerBusiness {
         return entity;
     }
     private List<UtilisateursEntity> validateAndGetParticipants(List<String> participantIds, List<String> classIds) {
+        if (participantIds == null || participantIds.isEmpty()) {
+            // If no specific participants are selected, return empty list
+            // This allows all class members to join the session
+            return new ArrayList<>();
+        }
+        
         return participantIds.stream()
                 .map(participantId -> {
                     UtilisateursEntity participant = daoAccessorService.getRepository(UtilisateursRepository.class)
@@ -259,11 +271,11 @@ public class CoursProgrammerBusiness {
                     // Vérifier que l'utilisateur a accès aux classes spécifiées
                     if (classIds != null && !classIds.isEmpty()) {
                         boolean hasAccess = classIds.stream()
-                                .allMatch(classId -> daoAccessorService.getRepository(AccederRepository.class)
+                                .anyMatch(classId -> daoAccessorService.getRepository(AccederRepository.class)
                                         .existsByUtilisateurIdAndClasseId(participantId, classId));
 
                         if (!hasAccess) {
-                            throw new RuntimeException("User " + participantId + " doesn't have access to all specified classes");
+                            throw new RuntimeException("User " + participantId + " doesn't have access to the specified classes");
                         }
                     }
 
@@ -341,6 +353,46 @@ public class CoursProgrammerBusiness {
                 .stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
+    }
+    
+    public Map<String, Object> obtenirStatistiquesParticipation(String coursProgrammeId) {
+        CoursProgrammerEntity entity = daoAccessorService.getRepository(CoursProgrammerRepository.class)
+                .findById(coursProgrammeId)
+                .orElseThrow(() -> new RuntimeException("Scheduled course not found with ID: " + coursProgrammeId));
+        
+        Map<String, Object> stats = new HashMap<>();
+        
+        // Calculate expected participants
+        Set<String> expectedParticipants = new HashSet<>();
+        
+        if (entity.getParticipants() != null && !entity.getParticipants().isEmpty()) {
+            // Specific participants were selected
+            expectedParticipants = entity.getParticipants().stream()
+                    .map(UtilisateursEntity::getId)
+                    .collect(Collectors.toSet());
+            stats.put("participationType", "SPECIFIC");
+        } else if (entity.getClasses() != null && !entity.getClasses().isEmpty()) {
+            // All students from the classes
+            for (ClassesEntity classe : entity.getClasses()) {
+                List<AccederEntity> classAccess = daoAccessorService.getRepository(AccederRepository.class)
+                        .findByClasseId(classe.getId());
+                Set<String> classStudents = classAccess.stream()
+                        .map(AccederEntity::getUtilisateurId)
+                        .filter(userId -> {
+                            // Check if user is a student
+                            return daoAccessorService.getRepository(ElevesRepository.class)
+                                    .existsById(userId);
+                        })
+                        .collect(Collectors.toSet());
+                expectedParticipants.addAll(classStudents);
+            }
+            stats.put("participationType", "ALL_CLASS_STUDENTS");
+        }
+        
+        stats.put("expectedParticipantsCount", expectedParticipants.size());
+        stats.put("expectedParticipantIds", expectedParticipants);
+        
+        return stats;
     }
     private void validateEffectiveDatesForUpdate(CoursProgrammer coursProgrammer) {
         if (coursProgrammer.getDateFinEffectif().isBefore(coursProgrammer.getDateDebutEffectif())) {

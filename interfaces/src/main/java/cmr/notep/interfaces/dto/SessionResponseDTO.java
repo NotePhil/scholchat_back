@@ -23,6 +23,7 @@ public class SessionResponseDTO {
     private List<ChapitreDTO> chapitres;
     private List<ParticipantDTO> participants;
     private LocalDateTime startedAt;
+    private LocalDateTime endedAt;
 
     @Data
     @Builder

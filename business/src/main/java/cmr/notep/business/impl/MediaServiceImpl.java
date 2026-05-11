@@ -52,18 +52,14 @@ public class MediaServiceImpl {
                 throw new IllegalArgumentException("Owner ID is required");
             }
             
-            // Make filename unique by adding timestamp
-            String baseName = request.getFileName()
+            String sanitizedFileName = request.getFileName()
                     .replaceAll("\\s+", "_")
                     .replaceAll("[^a-zA-Z0-9._-]", "");
-            String ext = baseName.contains(".") ? baseName.substring(baseName.lastIndexOf(".")) : "";
-            String nameWithoutExt = baseName.contains(".") ? baseName.substring(0, baseName.lastIndexOf(".")) : baseName;
-            String sanitizedFileName = nameWithoutExt + "_" + System.currentTimeMillis() + ext;
 
-            log.info("Sanitized unique filename: {}", sanitizedFileName);
+            log.info("Sanitized filename: {}", sanitizedFileName);
 
             // Clean up any existing duplicates
-            try { mediaBusiness.cleanupDuplicateMedia(baseName); } catch (Exception e) { /* ignore */ }
+            try { mediaBusiness.cleanupDuplicateMedia(sanitizedFileName); } catch (Exception e) { /* ignore */ }
 
             String presignedUrl = mediaBusiness.generateUploadUrl(
                     sanitizedFileName,
@@ -297,15 +293,30 @@ public class MediaServiceImpl {
             log.info("=== PROXY UPLOAD START ===");
             log.info("File: {}, Size: {}, ContentType: {}", file.getOriginalFilename(), file.getSize(), contentType);
 
-            // Upload to MinIO using the presigned URL via RestTemplate
+            // Re-generate a trusted presigned URL server-side using the same path
+            // to prevent the frontend from sending a URL pointing to the wrong port/host
+            java.net.URI uri = java.net.URI.create(presignedUrl);
+            String path = uri.getPath();
+            String bucketPrefix = "/" + mediaService.getDefaultBucketName() + "/";
+            String filePath = path.startsWith(bucketPrefix)
+                    ? path.substring(bucketPrefix.length())
+                    : path.replaceFirst("^/", "");
+
+            // Remove any query string appended to the path
+            if (filePath.contains("?")) {
+                filePath = filePath.substring(0, filePath.indexOf("?"));
+            }
+
+            String trustedUrl = mediaService.generateUploadPresignedUrl(filePath, contentType);
+            log.info("Re-generated trusted presigned URL for path: {}", filePath);
+
             org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
             headers.set("Content-Type", contentType);
-
             org.springframework.http.HttpEntity<byte[]> requestEntity =
                     new org.springframework.http.HttpEntity<>(file.getBytes(), headers);
 
             org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
-            restTemplate.exchange(presignedUrl, org.springframework.http.HttpMethod.PUT, requestEntity, String.class);
+            restTemplate.exchange(trustedUrl, org.springframework.http.HttpMethod.PUT, requestEntity, String.class);
 
             log.info("=== PROXY UPLOAD SUCCESS ===");
             return ResponseEntity.ok(Map.of(

@@ -11,15 +11,15 @@ ON CONFLICT (id) DO NOTHING;
 -- Link courses to matieres
 INSERT INTO cours_matiere (cours_id, matiere_id)
 VALUES
-  ('course-demo-001', '550e8400-e29b-41d4-a716-446655440501'),
-  ('course-demo-002', '550e8400-e29b-41d4-a716-446655440502')
+  ('course-demo-001', 'aaaaaaaa-0001-0001-0001-000000000001'),
+  ('course-demo-002', 'aaaaaaaa-0001-0001-0001-000000000003')
 ON CONFLICT DO NOTHING;
 
 -- Schedule courses to Demo Class 1
-INSERT INTO cours_programmer (id, source_exercise_id, date_exo_prevue, date_debut_exo_effectif, date_fin_exo_effectif, etat_exercise_programmer, programme_par_id)
+INSERT INTO cours_programmer (id, cours_id, date_cours_prevue, etat_cours_programme, classe_id, lieu, description, date_creation, professeur_id)
 VALUES
-  ('sched-course-001', 'course-demo-001', NOW() + INTERVAL '7 days', NULL, NULL, 'PLANIFIE', '550e8400-e29b-41d4-a716-446655440007'),
-  ('sched-course-002', 'course-demo-002', NOW() + INTERVAL '14 days', NULL, NULL, 'PLANIFIE', '550e8400-e29b-41d4-a716-446655440007')
+  ('sched-course-001', 'course-demo-001', NOW() + INTERVAL '7 days', 'PLANIFIE', '550e8400-e29b-41d4-a716-446655440401', 'Salle 101', 'Cours de mathématiques', NOW(), '550e8400-e29b-41d4-a716-446655440007'),
+  ('sched-course-002', 'course-demo-002', NOW() + INTERVAL '14 days', 'PLANIFIE', '550e8400-e29b-41d4-a716-446655440401', 'Salle 102', 'Cours de français', NOW(), '550e8400-e29b-41d4-a716-446655440007')
 ON CONFLICT (id) DO NOTHING;
 
 -- Link scheduled courses to class
