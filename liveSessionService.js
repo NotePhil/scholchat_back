@@ -65,6 +65,21 @@ class LiveSessionService {
     const res = await sessionApi.get(`/cours/${coursId}/progress`);
     return res.data;
   }
+
+  async getSessionAttendance(coursId, sessionId) {
+    const res = await sessionApi.get(`/cours/${coursId}/session/${sessionId}/attendance`);
+    return res.data;
+  }
+
+  async getCourseSessionHistory(coursId) {
+    const res = await sessionApi.get(`/cours/${coursId}/sessions`);
+    return res.data;
+  }
+
+  async getCurrentSessionParticipants(coursId, sessionId) {
+    const res = await sessionApi.get(`/cours/${coursId}/session/${sessionId}/participants`);
+    return res.data;
+  }
 }
 
 // ─── WebSocket ────────────────────────────────────────────────────────────────

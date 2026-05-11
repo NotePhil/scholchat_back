@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLiveSession } from "./useLiveSession";
 import { liveSessionService } from "./liveSessionService";
+import AttendanceModal from "../components/AttendanceModal";
+import SessionHistoryModal from "../components/SessionHistoryModal";
 
 /**
  * LiveSessionPage
@@ -16,11 +18,14 @@ const LiveSessionPage = ({ coursId, userRole, sessionId: initialSessionId }) => 
     currentChapitreId, progress, loading, error, wsConnected,
     isProfessor, startSession, joinSession, endSession,
     changeChapter, sendChat, raiseHand, markChapterDone, loadProgress,
+    refreshParticipants,
   } = useLiveSession(coursId, userRole);
 
   const [mode, setMode] = useState("VIDEO");
   const [chatInput, setChatInput] = useState("");
   const [jitsiReady, setJitsiReady] = useState(false);
+  const [showAttendance, setShowAttendance] = useState(false);
+  const [showSessionHistory, setShowSessionHistory] = useState(false);
   const jitsiContainerRef = useRef(null);
   const jitsiApiRef = useRef(null);
   const chatEndRef = useRef(null);
@@ -167,6 +172,31 @@ const LiveSessionPage = ({ coursId, userRole, sessionId: initialSessionId }) => 
           <span className="text-gray-400 text-sm">
             👥 {participants.length} participant{participants.length !== 1 ? "s" : ""}
           </span>
+          {isProfessor && (
+            <>
+              <button
+                onClick={refreshParticipants}
+                className="px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded transition-colors"
+                title="Actualiser la liste des participants"
+              >
+                🔄
+              </button>
+              <button
+                onClick={() => setShowAttendance(true)}
+                className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
+                title="Voir la présence"
+              >
+                📊 Présence
+              </button>
+              <button
+                onClick={() => setShowSessionHistory(true)}
+                className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                title="Historique des sessions"
+              >
+                📋 Historique
+              </button>
+            </>
+          )}
           {!isProfessor && (
             <button
               onClick={raiseHand}
@@ -339,6 +369,23 @@ const LiveSessionPage = ({ coursId, userRole, sessionId: initialSessionId }) => 
           </div>
         </div>
       </div>
+
+      {/* Attendance Modal */}
+      <AttendanceModal
+        isOpen={showAttendance}
+        onClose={() => setShowAttendance(false)}
+        coursId={coursId}
+        sessionId={session?.sessionId}
+        sessionTitle={session?.coursTitle}
+      />
+
+      {/* Session History Modal */}
+      <SessionHistoryModal
+        isOpen={showSessionHistory}
+        onClose={() => setShowSessionHistory(false)}
+        coursId={coursId}
+        coursTitle={session?.coursTitle}
+      />
     </div>
   );
 };
