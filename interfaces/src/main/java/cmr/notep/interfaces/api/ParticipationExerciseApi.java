@@ -39,6 +39,20 @@ public interface ParticipationExerciseApi {
     @ResponseStatus(HttpStatus.OK)
     List<ParticipationExerciseResponseDTO> obtenirParticipationsParExercise(@PathVariable String exerciseProgrammerId);
 
+    @GetMapping(
+            path = "/exercise/{exerciseProgrammerId}/en-attente-correction",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    List<ParticipationExerciseResponseDTO> obtenirParticipationsEnAttenteCorrection(@PathVariable String exerciseProgrammerId);
+
+    @GetMapping(
+            path = "/professeur/{professeurId}/a-corriger",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    List<ParticipationExerciseResponseDTO> obtenirToutesParticipationsACorriger(@PathVariable String professeurId);
+
     @DeleteMapping(
             path = "/utilisateur/{utilisateurId}/exercise/{exerciseProgrammerId}",
             produces = MediaType.APPLICATION_JSON_VALUE

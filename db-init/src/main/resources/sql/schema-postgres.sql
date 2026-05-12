@@ -421,6 +421,7 @@ CREATE TABLE IF NOT EXISTS repondre (
 CREATE TABLE IF NOT EXISTS exercises_programmer (
     id VARCHAR(255) PRIMARY KEY,
     source_exercise_id VARCHAR(255) NOT NULL,
+    type_assignation VARCHAR(50) NOT NULL DEFAULT 'EXERCICE',
     date_exo_prevue TIMESTAMP NOT NULL,
     date_debut_exo_effectif TIMESTAMP NOT NULL,
     date_fin_exo_effectif TIMESTAMP NOT NULL,
@@ -442,6 +443,7 @@ CREATE TABLE IF NOT EXISTS exercise_programmer_classes (
 CREATE TABLE IF NOT EXISTS participer_exo (
     utilisateur_id VARCHAR(255) NOT NULL,
     exercise_programmer_id VARCHAR(255) NOT NULL,
+    etat_soumission VARCHAR(50) NOT NULL DEFAULT 'EN_COURS',
     note VARCHAR(50),
     appreciation VARCHAR(255),
     date_debut TIMESTAMP NOT NULL,
@@ -621,9 +623,11 @@ CREATE INDEX IF NOT EXISTS idx_repondre_date ON repondre(date_reponse);
 CREATE INDEX IF NOT EXISTS idx_exercise_programmer_prof ON exercises_programmer(programme_par_id);
 CREATE INDEX IF NOT EXISTS idx_exercise_programmer_date_prevue ON exercises_programmer(date_exo_prevue);
 CREATE INDEX IF NOT EXISTS idx_exercise_programmer_etat ON exercises_programmer(etat_exercise_programmer);
+CREATE INDEX IF NOT EXISTS idx_exercise_programmer_type ON exercises_programmer(type_assignation);
 CREATE INDEX IF NOT EXISTS idx_exercise_programmer_classes_classe ON exercise_programmer_classes(classe_id);
 CREATE INDEX IF NOT EXISTS idx_participer_exo_utilisateur ON participer_exo(utilisateur_id);
 CREATE INDEX IF NOT EXISTS idx_participer_exo_exercise ON participer_exo(exercise_programmer_id);
+CREATE INDEX IF NOT EXISTS idx_participer_exo_etat ON participer_exo(etat_soumission);
 CREATE INDEX IF NOT EXISTS idx_participer_exo_dates ON participer_exo(date_debut, date_fin);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);

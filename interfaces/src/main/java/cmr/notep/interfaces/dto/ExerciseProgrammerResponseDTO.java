@@ -2,6 +2,7 @@ package cmr.notep.interfaces.dto;
 
 import cmr.notep.modele.EtatExercise;
 import cmr.notep.modele.ListeNiveau;
+import cmr.notep.modele.TypeAssignation;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,6 +27,7 @@ public class ExerciseProgrammerResponseDTO {
     private String programmeParId;
     private String programmeParNom;
     private String programmeParPrenom;
+    private TypeAssignation typeAssignation;
     private Date dateExoPrevue;
     private Date dateDebutExoEffectif;
     private Date dateFinExoEffectif;

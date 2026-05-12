@@ -2,6 +2,7 @@ package cmr.notep.business.business;
 
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
+import cmr.notep.business.services.NotificationService;
 import cmr.notep.interfaces.modeles.Repondre;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.QuestionReponseEntity;
@@ -16,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
@@ -27,6 +27,7 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 public class RepondreBusiness {
 
     private final DaoAccessorService daoAccessorService;
+    private final NotificationService notificationService;
 
     public Repondre repondreQuestion(Repondre repondre) {
         log.info("Enregistrement de la réponse pour l'utilisateur {} à la question {}",
@@ -89,6 +90,35 @@ public class RepondreBusiness {
         }
 
         RepondreEntity updatedEntity = daoAccessorService.getRepository(RepondreRepository.class).save(existingEntity);
+
+        // Notify student when professor sets a note (correction returned)
+        if (repondre.getNote() != null) {
+            try {
+                QuestionReponseEntity question = updatedEntity.getQuestion();
+                String exerciseName = question.getExercise().getNom();
+                String studentId = updatedEntity.getUtilisateur().getId();
+
+                // Find the professor via the exercise programmer
+                question.getExercise().getExercisesProgrammes().stream()
+                    .filter(prog -> prog.getProgrammePar() != null)
+                    .findFirst()
+                    .ifPresent(prog -> {
+                        String professorId = prog.getProgrammePar().getId();
+                        String professorName = prog.getProgrammePar().getPrenom()
+                                + " " + prog.getProgrammePar().getNom();
+                        try {
+                            notificationService.createCorrectionDisponibleNotification(
+                                    prog.getId(), exerciseName,
+                                    studentId, professorId, professorName,
+                                    repondre.getNote());
+                        } catch (Exception e) {
+                            log.error("Failed to send correction disponible notification: {}", e.getMessage());
+                        }
+                    });
+            } catch (Exception e) {
+                log.error("Failed to resolve exercise for correction notification: {}", e.getMessage());
+            }
+        }
 
         log.info("Réponse mise à jour avec succès");
         return dozerMapperBean.map(updatedEntity, Repondre.class);

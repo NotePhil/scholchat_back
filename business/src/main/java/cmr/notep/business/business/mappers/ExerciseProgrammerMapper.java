@@ -19,24 +19,21 @@ public class ExerciseProgrammerMapper {
 
     public ExerciseProgrammer toModel(ExerciseProgrammerRequestDTO requestDTO) {
         ExerciseProgrammer exerciseProgrammer = new ExerciseProgrammer();
-        exerciseProgrammer.setExerciseId(requestDTO.getExerciseId()); // Stocker l'ID de l'exercice source
+        exerciseProgrammer.setExerciseId(requestDTO.getExerciseId());
         exerciseProgrammer.setProgrammeParId(requestDTO.getProgrammeParId());
+        exerciseProgrammer.setTypeAssignation(requestDTO.getTypeAssignation() != null
+            ? requestDTO.getTypeAssignation()
+            : cmr.notep.modele.TypeAssignation.EXERCICE);
         exerciseProgrammer.setDateExoPrevue(requestDTO.getDateExoPrevue());
         exerciseProgrammer.setDateDebutExoEffectif(requestDTO.getDateDebutExoEffectif());
         exerciseProgrammer.setDateFinExoEffectif(requestDTO.getDateFinExoEffectif());
-
-        // Ensure etat is never null
-        if (requestDTO.getEtat() != null) {
-            exerciseProgrammer.setEtat(requestDTO.getEtat());
-        } else {
-            exerciseProgrammer.setEtat(EtatExercise.BROUILLON); // Default value
-        }
-
-        // Map classeIds to classeIds field on model
+        exerciseProgrammer.setEtat(requestDTO.getEtat() != null ? requestDTO.getEtat() : EtatExercise.BROUILLON);
         if (requestDTO.getClasseIds() != null && !requestDTO.getClasseIds().isEmpty()) {
             exerciseProgrammer.setClasseIds(requestDTO.getClasseIds());
         }
-
+        if (requestDTO.getCoursIds() != null && !requestDTO.getCoursIds().isEmpty()) {
+            exerciseProgrammer.setCoursIds(requestDTO.getCoursIds());
+        }
         return exerciseProgrammer;
     }
     private ParticipationExerciseResponseDTO mapParticipationToDTO(ParticiperExoEntity participation) {
@@ -46,6 +43,7 @@ public class ExerciseProgrammerMapper {
                 .utilisateurPrenom(participation.getUtilisateur().getPrenom())
                 .exerciseProgrammerId(participation.getExerciseProgrammer().getId())
                 .exerciseProgrammerNom(participation.getExerciseProgrammer().getExercise().getNom())
+                .etatSoumission(participation.getEtatSoumission())
                 .note(participation.getNote())
                 .appreciation(participation.getAppreciation())
                 .dateDebut(participation.getDateDebut())
@@ -68,6 +66,7 @@ public class ExerciseProgrammerMapper {
                 .programmeParId(entity.getProgrammePar().getId())
                 .programmeParNom(entity.getProgrammePar().getNom())
                 .programmeParPrenom(entity.getProgrammePar().getPrenom())
+                .typeAssignation(entity.getTypeAssignation())
                 .dateExoPrevue(entity.getDateExoPrevue())
                 .dateDebutExoEffectif(entity.getDateDebutExoEffectif())
                 .dateFinExoEffectif(entity.getDateFinExoEffectif())

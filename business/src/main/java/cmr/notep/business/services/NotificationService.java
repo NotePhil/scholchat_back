@@ -227,6 +227,34 @@ public class NotificationService {
     }
 
     @Transactional
+    public void createDevoirSoumisNotification(String exerciseProgrammerId, String exerciseName,
+                                               String studentId, String studentName, String professorId) {
+        // Notify the professor that a student submitted a devoir awaiting correction
+        saveNotification(professorId, "DEVOIR_SOUMIS", "Devoir soumis à corriger",
+                studentName + " a soumis le devoir \"" + exerciseName + "\" et attend votre correction.",
+                studentId, studentName, exerciseProgrammerId, "EXERCISE");
+        // Confirm to the student
+        saveNotification(studentId, "DEVOIR_SOUMIS", "Devoir soumis avec succès",
+                "Votre devoir \"" + exerciseName + "\" a été soumis. Vous recevrez une notification dès que le professeur l'aura corrigé.",
+                professorId, null, exerciseProgrammerId, "EXERCISE");
+        log.info("Devoir soumis notifications sent: student={}, professor={}", studentId, professorId);
+    }
+
+    @Transactional
+    public void createCorrectionDisponibleNotification(String exerciseProgrammerId, String exerciseName,
+                                                       String studentId, String professorId, String professorName,
+                                                       String note) {
+        // Notify the student that their devoir has been corrected
+        String message = professorName + " a corrigé votre devoir \"" + exerciseName + "\"";
+        if (note != null && !note.isBlank()) {
+            message += ". Note obtenue : " + note;
+        }
+        saveNotification(studentId, "CORRECTION_DISPONIBLE", "Correction disponible",
+                message, professorId, professorName, exerciseProgrammerId, "EXERCISE");
+        log.info("Correction disponible notification sent to student {}", studentId);
+    }
+
+    @Transactional
     public void createClassMemberNotification(String classeId, String className, String actionType, String title, String message, String actorId, String actorName) {
         // Notify all members of the class
         List<String> userIds = accederRepository.findUserIdsByClasseId(classeId);

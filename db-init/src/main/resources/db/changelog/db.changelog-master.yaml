@@ -69,3 +69,10 @@ databaseChangeLog:
         - sqlFile:
             path: sql/migration-session-attendance.sql
             relativeToChangelogFile: false
+  - changeSet:
+      id: 11-type-assignation-etat-soumission
+      author: db-init
+      changes:
+        - sqlFile:
+            path: sql/migration-type-assignation-etat-soumission.sql
+            relativeToChangelogFile: false

@@ -261,9 +261,9 @@ INSERT INTO cours_programmer_participants (cours_programmer_id, utilisateur_id) 
 ('cp-002', '550e8400-e29b-41d4-a716-446655440300'),
 ('cp-003', '550e8400-e29b-41d4-a716-446655440301');
 
-INSERT INTO exercises_programmer (id, source_exercise_id, date_exo_prevue, date_debut_exo_effectif, date_fin_exo_effectif, etat_exercise_programmer, programme_par_id) VALUES
-('ffffffff-0006-0006-0006-000000000001', 'ffffffff-0006-0006-0006-000000000001', '2025-01-15 08:00:00', '2025-01-15 08:00:00', '2025-01-15 09:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007'),
-('ffffffff-0006-0006-0006-000000000002', 'ffffffff-0006-0006-0006-000000000002', '2025-01-17 10:00:00', '2025-01-17 10:00:00', '2025-01-17 11:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007');
+INSERT INTO exercises_programmer (id, source_exercise_id, type_assignation, date_exo_prevue, date_debut_exo_effectif, date_fin_exo_effectif, etat_exercise_programmer, programme_par_id) VALUES
+('ffffffff-0006-0006-0006-000000000001', 'ffffffff-0006-0006-0006-000000000001', 'EXERCICE', '2025-01-15 08:00:00', '2025-01-15 08:00:00', '2025-01-15 09:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007'),
+('ffffffff-0006-0006-0006-000000000002', 'ffffffff-0006-0006-0006-000000000002', 'EXERCICE', '2025-01-17 10:00:00', '2025-01-17 10:00:00', '2025-01-17 11:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007');
 
 INSERT INTO exercise_programmer_classes (exercise_programmer_id, classe_id) VALUES
 ('ffffffff-0006-0006-0006-000000000001', '550e8400-e29b-41d4-a716-446655440407'),
@@ -281,8 +281,8 @@ INSERT INTO questions_reponses (id, intitule, reponse, type_question, exercise_i
 ('11111111-0007-0007-0007-000000000011', 'Qui etait roi de France en 1789 ?', 'Louis XVI', 'QCM', 'ffffffff-0006-0006-0006-000000000006'),
 ('11111111-0007-0007-0007-000000000012', 'Quel document a ete adopte en 1789 ?', 'La Declaration des droits de l homme', 'QCM', 'ffffffff-0006-0006-0006-000000000006');
 
-INSERT INTO exercises_programmer (id, source_exercise_id, date_exo_prevue, date_debut_exo_effectif, date_fin_exo_effectif, etat_exercise_programmer, programme_par_id) VALUES
-('ffffffff-0006-0006-0006-000000000006', 'ffffffff-0006-0006-0006-000000000006', '2025-04-10 09:00:00', '2025-04-10 09:00:00', '2025-04-10 10:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007');
+INSERT INTO exercises_programmer (id, source_exercise_id, type_assignation, date_exo_prevue, date_debut_exo_effectif, date_fin_exo_effectif, etat_exercise_programmer, programme_par_id) VALUES
+('ffffffff-0006-0006-0006-000000000006', 'ffffffff-0006-0006-0006-000000000006', 'EXERCICE', '2025-04-10 09:00:00', '2025-04-10 09:00:00', '2025-04-10 10:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007');
 
 INSERT INTO exercise_programmer_classes (exercise_programmer_id, classe_id) VALUES
 ('ffffffff-0006-0006-0006-000000000006', '550e8400-e29b-41d4-a716-446655440407');
@@ -348,8 +348,8 @@ INSERT INTO cours_programmer_participants (cours_programmer_id, utilisateur_id) 
 ('cp-001', 'demo-eleve-0000-0000-000000000001'),
 ('cp-002', 'demo-eleve-0000-0000-000000000001');
 
-INSERT INTO participer_exo (utilisateur_id, exercise_programmer_id, note, appreciation, date_debut, date_fin) VALUES
-('demo-eleve-0000-0000-000000000001', 'ffffffff-0006-0006-0006-000000000001', '18', 'Excellent', '2025-01-15 08:02:00', '2025-01-15 08:45:00');
+INSERT INTO participer_exo (utilisateur_id, exercise_programmer_id, etat_soumission, note, appreciation, date_debut, date_fin) VALUES
+('demo-eleve-0000-0000-000000000001', 'ffffffff-0006-0006-0006-000000000001', 'CORRIGE', '18', 'Excellent', '2025-01-15 08:02:00', '2025-01-15 08:45:00');
 
 INSERT INTO repondre (utilisateur_id, question_id, reponse_utilisateur, est_correcte, note) VALUES
 ('demo-eleve-0000-0000-000000000001', '11111111-0007-0007-0007-000000000001', 'x = 2', TRUE, '5'),
@@ -424,17 +424,17 @@ INSERT INTO questions_reponses (id, intitule, reponse, type_question, exercise_i
 ('11111111-0007-0007-0007-000000000008', 'Quelle est la moyenne de 2, 4, 6 ?', '4', 'REPONSE_COURTE', 'ffffffff-0006-0006-0006-000000000005'),
 ('11111111-0007-0007-0007-000000000009', 'Quelle est la mediane de 1, 3, 5 ?', '3', 'QCM', 'ffffffff-0006-0006-0006-000000000005');
 
-INSERT INTO exercises_programmer (id, source_exercise_id, date_exo_prevue, date_debut_exo_effectif, date_fin_exo_effectif, etat_exercise_programmer, programme_par_id) VALUES
-('ffffffff-0006-0006-0006-000000000004', 'ffffffff-0006-0006-0006-000000000004', '2025-02-05 09:00:00', '2025-02-05 09:00:00', '2025-02-05 10:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007'),
-('ffffffff-0006-0006-0006-000000000005', 'ffffffff-0006-0006-0006-000000000005', '2025-02-07 09:00:00', '2025-02-07 09:00:00', '2025-02-07 10:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007');
+INSERT INTO exercises_programmer (id, source_exercise_id, type_assignation, date_exo_prevue, date_debut_exo_effectif, date_fin_exo_effectif, etat_exercise_programmer, programme_par_id) VALUES
+('ffffffff-0006-0006-0006-000000000004', 'ffffffff-0006-0006-0006-000000000004', 'DEVOIR',   '2025-02-05 09:00:00', '2025-02-05 09:00:00', '2025-02-05 10:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007'),
+('ffffffff-0006-0006-0006-000000000005', 'ffffffff-0006-0006-0006-000000000005', 'EXERCICE', '2025-02-07 09:00:00', '2025-02-07 09:00:00', '2025-02-07 10:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007');
 
 INSERT INTO exercise_programmer_classes (exercise_programmer_id, classe_id) VALUES
 ('ffffffff-0006-0006-0006-000000000004', '550e8400-e29b-41d4-a716-446655440407'),
 ('ffffffff-0006-0006-0006-000000000005', '550e8400-e29b-41d4-a716-446655440407');
 
-INSERT INTO participer_exo (utilisateur_id, exercise_programmer_id, note, appreciation, date_debut, date_fin) VALUES
-('demo-eleve-0000-0000-000000000001', 'ffffffff-0006-0006-0006-000000000004', '16', 'Bien', '2025-02-05 09:05:00', '2025-02-05 09:50:00'),
-('demo-eleve-0000-0000-000000000001', 'ffffffff-0006-0006-0006-000000000005', '19', 'Excellent', '2025-02-07 09:05:00', '2025-02-07 09:45:00');
+INSERT INTO participer_exo (utilisateur_id, exercise_programmer_id, etat_soumission, note, appreciation, date_debut, date_fin) VALUES
+('demo-eleve-0000-0000-000000000001', 'ffffffff-0006-0006-0006-000000000004', 'EN_ATTENTE_CORRECTION', NULL, NULL,  '2025-02-05 09:05:00', '2025-02-05 09:50:00'),
+('demo-eleve-0000-0000-000000000001', 'ffffffff-0006-0006-0006-000000000005', 'CORRIGE',               '19', 'Excellent', '2025-02-07 09:05:00', '2025-02-07 09:45:00');
 
 INSERT INTO repondre (utilisateur_id, question_id, reponse_utilisateur, est_correcte, note) VALUES
 ('demo-eleve-0000-0000-000000000001', '11111111-0007-0007-0007-000000000006', '0.5', TRUE, '5'),

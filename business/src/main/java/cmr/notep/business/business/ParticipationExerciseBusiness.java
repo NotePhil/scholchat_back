@@ -2,8 +2,11 @@ package cmr.notep.business.business;
 
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
+import cmr.notep.business.services.NotificationService;
 import cmr.notep.interfaces.dto.ParticipationExerciseRequestDTO;
 import cmr.notep.interfaces.dto.ParticipationExerciseResponseDTO;
+import cmr.notep.modele.EtatSoumission;
+import cmr.notep.modele.TypeAssignation;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.ExerciseProgrammerEntity;
 import cmr.notep.ressourcesjpa.dao.ParticiperExoEntity;
@@ -18,7 +21,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Component
@@ -27,6 +29,7 @@ import java.util.stream.Collectors;
 public class ParticipationExerciseBusiness {
 
     private final DaoAccessorService daoAccessorService;
+    private final NotificationService notificationService;
 
     public ParticipationExerciseResponseDTO participerAExercise(ParticipationExerciseRequestDTO requestDTO) {
         log.info("Participation de l'utilisateur {} à l'exercice programmé {}",
@@ -59,6 +62,9 @@ public class ParticipationExerciseBusiness {
         participation.setDateFin(requestDTO.getDateFin());
         participation.setNote(requestDTO.getNote());
         participation.setAppreciation(requestDTO.getAppreciation());
+        participation.setEtatSoumission(requestDTO.getEtatSoumission() != null 
+            ? requestDTO.getEtatSoumission() 
+            : cmr.notep.modele.EtatSoumission.EN_COURS);
         participation.setDateSoumission(new Date());
 
         ParticiperExoEntity savedParticipation = repository.save(participation);
@@ -90,8 +96,30 @@ public class ParticipationExerciseBusiness {
         if (requestDTO.getAppreciation() != null) {
             participation.setAppreciation(requestDTO.getAppreciation());
         }
+        if (requestDTO.getEtatSoumission() != null) {
+            participation.setEtatSoumission(requestDTO.getEtatSoumission());
+        }
 
         ParticiperExoEntity updatedParticipation = repository.save(participation);
+
+        // Notify professor when student submits a DEVOIR (EN_ATTENTE_CORRECTION)
+        if (EtatSoumission.EN_ATTENTE_CORRECTION.equals(requestDTO.getEtatSoumission())) {
+            try {
+                ExerciseProgrammerEntity prog = updatedParticipation.getExerciseProgrammer();
+                if (TypeAssignation.DEVOIR.equals(prog.getTypeAssignation())) {
+                    String studentName = updatedParticipation.getUtilisateur().getPrenom()
+                            + " " + updatedParticipation.getUtilisateur().getNom();
+                    notificationService.createDevoirSoumisNotification(
+                            prog.getId(),
+                            prog.getExercise().getNom(),
+                            updatedParticipation.getUtilisateur().getId(),
+                            studentName,
+                            prog.getProgrammePar().getId());
+                }
+            } catch (Exception e) {
+                log.error("Failed to send devoir soumis notification: {}", e.getMessage());
+            }
+        }
 
         log.info("Participation mise à jour avec succès");
         return mapToResponseDTO(updatedParticipation);
@@ -109,10 +137,28 @@ public class ParticipationExerciseBusiness {
 
     public List<ParticipationExerciseResponseDTO> obtenirParticipationsParExercise(String exerciseProgrammerId) {
         log.info("Récupération des participations à l'exercice programmé: {}", exerciseProgrammerId);
+        return daoAccessorService.getRepository(ParticiperExoRepository.class)
+                .findByExerciseProgrammerId(exerciseProgrammerId)
+                .stream().map(this::mapToResponseDTO).collect(Collectors.toList());
+    }
 
-        ParticiperExoRepository repository = daoAccessorService.getRepository(ParticiperExoRepository.class);
-        return repository.findByExerciseProgrammerId(exerciseProgrammerId)
+    public List<ParticipationExerciseResponseDTO> obtenirParticipationsEnAttenteCorrection(String exerciseProgrammerId) {
+        log.info("Récupération des participations EN_ATTENTE_CORRECTION pour l'exercice: {}", exerciseProgrammerId);
+        return daoAccessorService.getRepository(ParticiperExoRepository.class)
+                .findByExerciseProgrammerId(exerciseProgrammerId)
                 .stream()
+                .filter(p -> cmr.notep.modele.EtatSoumission.EN_ATTENTE_CORRECTION.equals(p.getEtatSoumission()))
+                .map(this::mapToResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<ParticipationExerciseResponseDTO> obtenirToutesParticipationsACorriger(String professeurId) {
+        log.info("Récupération de toutes les participations à corriger pour le professeur: {}", professeurId);
+        return daoAccessorService.getRepository(ParticiperExoRepository.class)
+                .findAll()
+                .stream()
+                .filter(p -> cmr.notep.modele.EtatSoumission.EN_ATTENTE_CORRECTION.equals(p.getEtatSoumission())
+                    && p.getExerciseProgrammer().getProgrammePar().getId().equals(professeurId))
                 .map(this::mapToResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -137,6 +183,7 @@ public class ParticipationExerciseBusiness {
                 .utilisateurPrenom(participation.getUtilisateur().getPrenom())
                 .exerciseProgrammerId(participation.getExerciseProgrammer().getId())
                 .exerciseProgrammerNom(participation.getExerciseProgrammer().getExercise().getNom())
+                .etatSoumission(participation.getEtatSoumission())
                 .note(participation.getNote())
                 .appreciation(participation.getAppreciation())
                 .dateDebut(participation.getDateDebut())

@@ -1,5 +1,6 @@
 package cmr.notep.ressourcesjpa.dao;
 
+import cmr.notep.modele.EtatSoumission;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -30,6 +31,10 @@ public class ParticiperExoEntity {
 
     @Column(name = "appreciation")
     private String appreciation;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "etat_soumission", nullable = false)
+    private EtatSoumission etatSoumission = EtatSoumission.EN_COURS;
 
     @Column(name = "date_debut", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)

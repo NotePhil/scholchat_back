@@ -42,6 +42,18 @@ public class ParticipationExerciseService implements ParticipationExerciseApi {
     }
 
     @Override
+    public List<ParticipationExerciseResponseDTO> obtenirParticipationsEnAttenteCorrection(String exerciseProgrammerId) {
+        log.info("Récupération des participations EN_ATTENTE_CORRECTION pour l'exercice: {}", exerciseProgrammerId);
+        return participationExerciseBusiness.obtenirParticipationsEnAttenteCorrection(exerciseProgrammerId);
+    }
+
+    @Override
+    public List<ParticipationExerciseResponseDTO> obtenirToutesParticipationsACorriger(String professeurId) {
+        log.info("Récupération de toutes les participations à corriger pour le professeur: {}", professeurId);
+        return participationExerciseBusiness.obtenirToutesParticipationsACorriger(professeurId);
+    }
+
+    @Override
     public void supprimerParticipation(String utilisateurId, String exerciseProgrammerId) {
         log.info("Suppression de la participation de l'utilisateur {} à l'exercice {}",
                 utilisateurId, exerciseProgrammerId);

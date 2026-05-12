@@ -1,6 +1,7 @@
 package cmr.notep.ressourcesjpa.dao;
 
 import cmr.notep.modele.EtatExercise;
+import cmr.notep.modele.TypeAssignation;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,6 +26,10 @@ public class ExerciseProgrammerEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "etat_exercise_programmer")
     private EtatExercise etat;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type_assignation", nullable = false)
+    private TypeAssignation typeAssignation;
 
     @Column(name = "date_exo_prevue", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)

@@ -9,6 +9,7 @@ import cmr.notep.modele.EtatExercise;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.*;
 import cmr.notep.ressourcesjpa.repository.*;
+import cmr.notep.modele.TypeAssignation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -44,6 +45,9 @@ public class ExerciseProgrammerBusiness {
         entity.setId(UUID.randomUUID().toString());
         entity.setExercise(exerciseSource);
         entity.setProgrammePar(professeur);
+        entity.setTypeAssignation(exerciseProgrammer.getTypeAssignation() != null 
+            ? exerciseProgrammer.getTypeAssignation() 
+            : cmr.notep.modele.TypeAssignation.EXERCICE); // Default to EXERCICE
         entity.setDateExoPrevue(exerciseProgrammer.getDateExoPrevue());
         entity.setDateDebutExoEffectif(exerciseProgrammer.getDateDebutExoEffectif());
         entity.setDateFinExoEffectif(exerciseProgrammer.getDateFinExoEffectif());
@@ -53,18 +57,37 @@ public class ExerciseProgrammerBusiness {
         daoAccessorService.getRepository(ExerciseRepository.class).save(exerciseSource);
 
         ExerciseProgrammerEntity savedEntity = daoAccessorService.getRepository(ExerciseProgrammerRepository.class).save(entity);
-        log.info("Exercice programmé avec ID: {} à partir de l'exercice source: {}", savedEntity.getId(), exerciseProgrammer.getExerciseId());
+        log.info("Exercice programmé avec ID: {} à partir de l'exercice source: {} (Type: {})", 
+            savedEntity.getId(), exerciseProgrammer.getExerciseId(), entity.getTypeAssignation());
 
         return dozerMapperBean.map(savedEntity, ExerciseProgrammer.class);
     }
 
     // Les autres méthodes restent inchangées...
     public ExerciseProgrammer programmerEtDiffuserExercise(ExerciseProgrammer exerciseProgrammer) {
-        // Programmer l'exercice d'abord
         ExerciseProgrammer exerciseProgramme = programmerExercise(exerciseProgrammer);
 
-        // Diffuser dans les classes spécifiées
-        // Support both classesDiffusees (list of Classes) and classeIds (list of String)
+        // Link to specific courses if provided
+        if (exerciseProgrammer.getCoursIds() != null && !exerciseProgrammer.getCoursIds().isEmpty()) {
+            for (String coursId : exerciseProgrammer.getCoursIds()) {
+                try {
+                    daoAccessorService.getRepository(ExerciseRepository.class)
+                        .findById(exerciseProgrammer.getExerciseId()).ifPresent(ex -> {
+                            cmr.notep.ressourcesjpa.dao.CoursEntity cours = daoAccessorService
+                                .getRepository(cmr.notep.ressourcesjpa.repository.CoursRepository.class)
+                                .findById(coursId).orElse(null);
+                            if (cours != null && !ex.getCoursLies().contains(cours)) {
+                                ex.getCoursLies().add(cours);
+                                daoAccessorService.getRepository(ExerciseRepository.class).save(ex);
+                            }
+                        });
+                } catch (Exception e) {
+                    log.warn("Could not link exercise to cours {}: {}", coursId, e.getMessage());
+                }
+            }
+        }
+
+        // Diffuse to classes
         List<String> classeIdsToDistribute = new ArrayList<>();
         if (exerciseProgrammer.getClasseIds() != null && !exerciseProgrammer.getClasseIds().isEmpty()) {
             classeIdsToDistribute.addAll(exerciseProgrammer.getClasseIds());
@@ -81,7 +104,6 @@ public class ExerciseProgrammerBusiness {
                 classeIds.add(classId);
             }
 
-            // Use original request's exerciseId (not the mapped one which may be null)
             String sourceExerciseId = exerciseProgrammer.getExerciseId() != null
                     ? exerciseProgrammer.getExerciseId()
                     : exerciseProgramme.getExerciseId();
@@ -93,7 +115,6 @@ public class ExerciseProgrammerBusiness {
                 daoAccessorService.getRepository(ExerciseRepository.class).save(source);
             }
 
-            // Send notifications to students in the classes
             try {
                 ProfesseursEntity prof = daoAccessorService.getRepository(ProfesseursRepository.class)
                         .findById(exerciseProgrammer.getProgrammeParId()).orElse(null);
