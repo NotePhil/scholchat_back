@@ -245,6 +245,17 @@ INSERT INTO questions_reponses (id, intitule, reponse, type_question, exercise_i
 ('11111111-0007-0007-0007-000000000004', 'L inertie est decrite par quelle loi ?', 'La premiere loi de Newton', 'QCM', 'ffffffff-0006-0006-0006-000000000002'),
 ('11111111-0007-0007-0007-000000000005', 'Quel est le theme principal du texte ?', NULL, 'REPONSE_LONGUE', 'ffffffff-0006-0006-0006-000000000003');
 
+-- choix_reponses : QCM Forces (questions 0003 et 0004)
+INSERT INTO choix_reponses (id, texte, est_correct, ordre_affichage, question_id) VALUES
+('cr-q3-a', 'La premiere loi de Newton',  FALSE, 1, '11111111-0007-0007-0007-000000000003'),
+('cr-q3-b', 'La deuxieme loi de Newton',  TRUE,  2, '11111111-0007-0007-0007-000000000003'),
+('cr-q3-c', 'La troisieme loi de Newton', FALSE, 3, '11111111-0007-0007-0007-000000000003'),
+('cr-q3-d', 'La loi de Hooke',            FALSE, 4, '11111111-0007-0007-0007-000000000003'),
+('cr-q4-a', 'La premiere loi de Newton',  TRUE,  1, '11111111-0007-0007-0007-000000000004'),
+('cr-q4-b', 'La deuxieme loi de Newton',  FALSE, 2, '11111111-0007-0007-0007-000000000004'),
+('cr-q4-c', 'La troisieme loi de Newton', FALSE, 3, '11111111-0007-0007-0007-000000000004'),
+('cr-q4-d', 'La loi de gravitation',      FALSE, 4, '11111111-0007-0007-0007-000000000004');
+
 INSERT INTO cours_programmer (id, cours_id, date_cours_prevue, etat_cours_programme, classe_id, lieu, description, date_creation, professeur_id) VALUES
 ('cp-001', 'dddddddd-0004-0004-0004-000000000001', '2025-01-10 08:00:00', 'PLANIFIE', '550e8400-e29b-41d4-a716-446655440407', 'Salle 101', 'Seance 1 equations', '2024-12-10 08:00:00', '550e8400-e29b-41d4-a716-446655440007'),
 ('cp-002', 'dddddddd-0004-0004-0004-000000000002', '2025-01-12 10:00:00', 'PLANIFIE', '550e8400-e29b-41d4-a716-446655440407', 'Labo Physique', 'Seance forces', '2024-12-10 09:00:00', '550e8400-e29b-41d4-a716-446655440007'),
@@ -281,6 +292,21 @@ INSERT INTO questions_reponses (id, intitule, reponse, type_question, exercise_i
 ('11111111-0007-0007-0007-000000000011', 'Qui etait roi de France en 1789 ?', 'Louis XVI', 'QCM', 'ffffffff-0006-0006-0006-000000000006'),
 ('11111111-0007-0007-0007-000000000012', 'Quel document a ete adopte en 1789 ?', 'La Declaration des droits de l homme', 'QCM', 'ffffffff-0006-0006-0006-000000000006');
 
+-- choix_reponses : QCM Histoire Revolution (questions 0010, 0011, 0012)
+INSERT INTO choix_reponses (id, texte, est_correct, ordre_affichage, question_id) VALUES
+('cr-q10-a', '1789', TRUE,  1, '11111111-0007-0007-0007-000000000010'),
+('cr-q10-b', '1799', FALSE, 2, '11111111-0007-0007-0007-000000000010'),
+('cr-q10-c', '1815', FALSE, 3, '11111111-0007-0007-0007-000000000010'),
+('cr-q10-d', '1848', FALSE, 4, '11111111-0007-0007-0007-000000000010'),
+('cr-q11-a', 'Louis XIV',  FALSE, 1, '11111111-0007-0007-0007-000000000011'),
+('cr-q11-b', 'Louis XV',   FALSE, 2, '11111111-0007-0007-0007-000000000011'),
+('cr-q11-c', 'Louis XVI',  TRUE,  3, '11111111-0007-0007-0007-000000000011'),
+('cr-q11-d', 'Napoleon',   FALSE, 4, '11111111-0007-0007-0007-000000000011'),
+('cr-q12-a', 'Le Code civil',                        FALSE, 1, '11111111-0007-0007-0007-000000000012'),
+('cr-q12-b', 'La Declaration des droits de l homme', TRUE,  2, '11111111-0007-0007-0007-000000000012'),
+('cr-q12-c', 'La Constitution de 1793',              FALSE, 3, '11111111-0007-0007-0007-000000000012'),
+('cr-q12-d', 'Le Traite de Versailles',              FALSE, 4, '11111111-0007-0007-0007-000000000012');
+
 INSERT INTO exercises_programmer (id, source_exercise_id, type_assignation, date_exo_prevue, date_debut_exo_effectif, date_fin_exo_effectif, etat_exercise_programmer, programme_par_id) VALUES
 ('ffffffff-0006-0006-0006-000000000006', 'ffffffff-0006-0006-0006-000000000006', 'EXERCICE', '2025-04-10 09:00:00', '2025-04-10 09:00:00', '2025-04-10 10:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007');
 
@@ -288,6 +314,59 @@ INSERT INTO exercise_programmer_classes (exercise_programmer_id, classe_id) VALU
 ('ffffffff-0006-0006-0006-000000000006', '550e8400-e29b-41d4-a716-446655440407');
 
 -- demo eleve inscrit mais n a pas encore repondu (pas de participer_exo ni repondre)
+
+-- ── Devoir demo : Dissertation Francais (DEVOIR, EN_ATTENTE_CORRECTION) ──────
+INSERT INTO exercises (id, nom, description, date_creation, etat, restriction, niveau, redacteur_id) VALUES
+('ffffffff-0006-0006-0006-000000000007', 'Dissertation : La liberte', 'Rediger une dissertation philosophique sur la liberte', '2025-03-10 08:00:00', 'PUBLIE', 'PRIVE', 'LYCEE', '550e8400-e29b-41d4-a716-446655440007');
+
+INSERT INTO exercise_matieres (exercise_id, matiere_id) VALUES
+('ffffffff-0006-0006-0006-000000000007', 'mat-phil-001');
+
+INSERT INTO questions_reponses (id, intitule, reponse, type_question, exercise_id) VALUES
+('11111111-0007-0007-0007-000000000013', 'Definissez la notion de liberte en philosophie.', NULL, 'REPONSE_LONGUE', 'ffffffff-0006-0006-0006-000000000007'),
+('11111111-0007-0007-0007-000000000014', 'Donnez un exemple concret de liberte dans la vie quotidienne.', NULL, 'REPONSE_LONGUE', 'ffffffff-0006-0006-0006-000000000007');
+
+INSERT INTO exercises_programmer (id, source_exercise_id, type_assignation, date_exo_prevue, date_debut_exo_effectif, date_fin_exo_effectif, etat_exercise_programmer, programme_par_id) VALUES
+('ffffffff-0006-0006-0006-000000000007', 'ffffffff-0006-0006-0006-000000000007', 'DEVOIR', '2025-04-01 08:00:00', '2025-04-01 08:00:00', '2025-04-15 23:59:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007');
+
+INSERT INTO exercise_programmer_classes (exercise_programmer_id, classe_id) VALUES
+('ffffffff-0006-0006-0006-000000000007', '550e8400-e29b-41d4-a716-446655440407');
+
+-- demo eleve a rendu ce devoir (EN_ATTENTE_CORRECTION)
+INSERT INTO participer_exo (utilisateur_id, exercise_programmer_id, etat_soumission, note, appreciation, date_debut, date_fin) VALUES
+('demo-eleve-0000-0000-000000000001', 'ffffffff-0006-0006-0006-000000000007', 'EN_ATTENTE_CORRECTION', NULL, NULL, '2025-04-02 10:00:00', '2025-04-02 11:30:00');
+
+INSERT INTO repondre (utilisateur_id, question_id, reponse_utilisateur, est_correcte, note) VALUES
+('demo-eleve-0000-0000-000000000001', '11111111-0007-0007-0007-000000000013', 'La liberte est la capacite d agir selon sa propre volonte sans contrainte exterieure.', NULL, NULL),
+('demo-eleve-0000-0000-000000000001', '11111111-0007-0007-0007-000000000014', 'Choisir ses etudes ou son metier est un exemple de liberte individuelle.', NULL, NULL);
+
+-- ── Devoir demo : QCM Mathematiques (DEVOIR, a rendre) ───────────────────────
+INSERT INTO exercises (id, nom, description, date_creation, etat, restriction, niveau, redacteur_id) VALUES
+('ffffffff-0006-0006-0006-000000000008', 'Devoir : Equations du 2nd degre', 'Resoudre des equations du second degre', '2025-04-05 08:00:00', 'PUBLIE', 'PRIVE', 'LYCEE', '550e8400-e29b-41d4-a716-446655440007');
+
+INSERT INTO exercise_matieres (exercise_id, matiere_id) VALUES
+('ffffffff-0006-0006-0006-000000000008', 'aaaaaaaa-0001-0001-0001-000000000001');
+
+INSERT INTO questions_reponses (id, intitule, reponse, type_question, exercise_id) VALUES
+('11111111-0007-0007-0007-000000000015', 'Quelle est la formule du discriminant ?', 'b2 - 4ac', 'QCM', 'ffffffff-0006-0006-0006-000000000008'),
+('11111111-0007-0007-0007-000000000016', 'Si le discriminant est negatif, combien de solutions reelles ?', '0', 'QCM', 'ffffffff-0006-0006-0006-000000000008');
+
+INSERT INTO choix_reponses (id, texte, est_correct, ordre_affichage, question_id) VALUES
+('cr-q15-a', 'b + 4ac',  FALSE, 1, '11111111-0007-0007-0007-000000000015'),
+('cr-q15-b', 'b2 - 4ac', TRUE,  2, '11111111-0007-0007-0007-000000000015'),
+('cr-q15-c', 'b2 + 4ac', FALSE, 3, '11111111-0007-0007-0007-000000000015'),
+('cr-q15-d', '2b - ac',  FALSE, 4, '11111111-0007-0007-0007-000000000015'),
+('cr-q16-a', '0',        TRUE,  1, '11111111-0007-0007-0007-000000000016'),
+('cr-q16-b', '1',        FALSE, 2, '11111111-0007-0007-0007-000000000016'),
+('cr-q16-c', '2',        FALSE, 3, '11111111-0007-0007-0007-000000000016'),
+('cr-q16-d', '3',        FALSE, 4, '11111111-0007-0007-0007-000000000016');
+
+INSERT INTO exercises_programmer (id, source_exercise_id, type_assignation, date_exo_prevue, date_debut_exo_effectif, date_fin_exo_effectif, etat_exercise_programmer, programme_par_id) VALUES
+('ffffffff-0006-0006-0006-000000000008', 'ffffffff-0006-0006-0006-000000000008', 'DEVOIR', '2025-05-01 08:00:00', '2025-05-01 08:00:00', '2025-05-15 23:59:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007');
+
+INSERT INTO exercise_programmer_classes (exercise_programmer_id, classe_id) VALUES
+('ffffffff-0006-0006-0006-000000000008', '550e8400-e29b-41d4-a716-446655440407');
+-- pas de participer_exo : devoir a rendre
 
 INSERT INTO motifs_rejet (id, code, descriptif, date_creation) VALUES
 ('mrej-001', 'DOCS_INVALIDES', 'Documents invalides ou illisibles', '2024-01-01 00:00:00'),
@@ -348,14 +427,21 @@ INSERT INTO cours_programmer_participants (cours_programmer_id, utilisateur_id) 
 ('cp-001', 'demo-eleve-0000-0000-000000000001'),
 ('cp-002', 'demo-eleve-0000-0000-000000000001');
 
+-- exercise 0001 (Equations) : CORRIGE, note 18/20
 INSERT INTO participer_exo (utilisateur_id, exercise_programmer_id, etat_soumission, note, appreciation, date_debut, date_fin) VALUES
-('demo-eleve-0000-0000-000000000001', 'ffffffff-0006-0006-0006-000000000001', 'CORRIGE', '18', 'Excellent', '2025-01-15 08:02:00', '2025-01-15 08:45:00');
+('demo-eleve-0000-0000-000000000001', 'ffffffff-0006-0006-0006-000000000001', 'CORRIGE', '18/20', 'Tres bon travail', '2025-01-15 08:02:00', '2025-01-15 08:45:00');
 
 INSERT INTO repondre (utilisateur_id, question_id, reponse_utilisateur, est_correcte, note) VALUES
-('demo-eleve-0000-0000-000000000001', '11111111-0007-0007-0007-000000000001', 'x = 2', TRUE, '5'),
-('demo-eleve-0000-0000-000000000001', '11111111-0007-0007-0007-000000000002', 'x = 2', TRUE, '5'),
-('demo-eleve-0000-0000-000000000001', '11111111-0007-0007-0007-000000000003', 'La deuxieme loi de Newton', TRUE, '5'),
-('demo-eleve-0000-0000-000000000001', '11111111-0007-0007-0007-000000000004', 'La premiere loi de Newton', TRUE, '5');
+('demo-eleve-0000-0000-000000000001', '11111111-0007-0007-0007-000000000001', 'x = 2', TRUE,  '9'),
+('demo-eleve-0000-0000-000000000001', '11111111-0007-0007-0007-000000000002', 'x = 2', TRUE,  '9');
+
+-- exercise 0002 (QCM Forces) : CORRIGE directement (auto-correction QCM), note 2/2
+INSERT INTO participer_exo (utilisateur_id, exercise_programmer_id, etat_soumission, note, appreciation, date_debut, date_fin) VALUES
+('demo-eleve-0000-0000-000000000001', 'ffffffff-0006-0006-0006-000000000002', 'CORRIGE', '2/2', 'Parfait', '2025-01-17 10:05:00', '2025-01-17 10:25:00');
+
+INSERT INTO repondre (utilisateur_id, question_id, reponse_utilisateur, est_correcte, note) VALUES
+('demo-eleve-0000-0000-000000000001', '11111111-0007-0007-0007-000000000003', 'La deuxieme loi de Newton', TRUE,  '1'),
+('demo-eleve-0000-0000-000000000001', '11111111-0007-0007-0007-000000000004', 'La premiere loi de Newton', TRUE,  '1');
 
 INSERT INTO evenement_participants (evenement_id, utilisateur_id) VALUES
 ('cccccccc-0003-0003-0003-000000000001', 'demo-eleve-0000-0000-000000000001'),
@@ -423,6 +509,13 @@ INSERT INTO questions_reponses (id, intitule, reponse, type_question, exercise_i
 ('11111111-0007-0007-0007-000000000007', 'Calculer cos(0)', '1', 'REPONSE_COURTE', 'ffffffff-0006-0006-0006-000000000004'),
 ('11111111-0007-0007-0007-000000000008', 'Quelle est la moyenne de 2, 4, 6 ?', '4', 'REPONSE_COURTE', 'ffffffff-0006-0006-0006-000000000005'),
 ('11111111-0007-0007-0007-000000000009', 'Quelle est la mediane de 1, 3, 5 ?', '3', 'QCM', 'ffffffff-0006-0006-0006-000000000005');
+
+-- choix_reponses : QCM Stats mediane (question 0009)
+INSERT INTO choix_reponses (id, texte, est_correct, ordre_affichage, question_id) VALUES
+('cr-q9-a', '1', FALSE, 1, '11111111-0007-0007-0007-000000000009'),
+('cr-q9-b', '2', FALSE, 2, '11111111-0007-0007-0007-000000000009'),
+('cr-q9-c', '3', TRUE,  3, '11111111-0007-0007-0007-000000000009'),
+('cr-q9-d', '5', FALSE, 4, '11111111-0007-0007-0007-000000000009');
 
 INSERT INTO exercises_programmer (id, source_exercise_id, type_assignation, date_exo_prevue, date_debut_exo_effectif, date_fin_exo_effectif, etat_exercise_programmer, programme_par_id) VALUES
 ('ffffffff-0006-0006-0006-000000000004', 'ffffffff-0006-0006-0006-000000000004', 'DEVOIR',   '2025-02-05 09:00:00', '2025-02-05 09:00:00', '2025-02-05 10:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007'),
