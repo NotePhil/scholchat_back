@@ -2,6 +2,7 @@ package cmr.notep.business.business;
 
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
+import cmr.notep.interfaces.dto.ParentSummaryDto;
 import cmr.notep.interfaces.modeles.Eleves;
 import cmr.notep.interfaces.modeles.Parents;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
@@ -52,6 +53,23 @@ public class ParentsBusiness {
         return daoAccessorService.getRepository(ParentsRepository.class).findAll()
                 .stream()
                 .map(parent -> dozerMapperBean.map(parent, Parents.class))
+                .collect(Collectors.toList());
+    }
+
+    public List<ParentSummaryDto> avoirToutParentsSummary() {
+        return daoAccessorService.getRepository(ParentsRepository.class).findAll()
+                .stream()
+                .map(p -> ParentSummaryDto.builder()
+                        .id(p.getId())
+                        .nom(p.getNom())
+                        .prenom(p.getPrenom())
+                        .email(p.getEmail())
+                        .telephone(p.getTelephone())
+                        .adresse(p.getAdresse())
+                        .etat(p.getEtat())
+                        .creationDate(p.getCreationDate())
+                        .admin(p.getAdmin() != null && p.getAdmin())
+                        .build())
                 .collect(Collectors.toList());
     }
 

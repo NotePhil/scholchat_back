@@ -2,6 +2,7 @@ package cmr.notep.business.impl;
 
 import cmr.notep.business.business.ParentsBusiness;
 import cmr.notep.interfaces.api.ParentsApi;
+import cmr.notep.interfaces.dto.ParentSummaryDto;
 import cmr.notep.interfaces.modeles.Eleves;
 import cmr.notep.interfaces.modeles.Parents;
 import lombok.NonNull;
@@ -27,6 +28,11 @@ public class ParentsService implements ParentsApi {
     @Override
     public List<Parents> avoirToutParents() {
         return parentsBusiness.avoirToutParents();
+    }
+
+    @Override
+    public List<ParentSummaryDto> avoirToutParentsSummary() {
+        return parentsBusiness.avoirToutParentsSummary();
     }
 
     @Override

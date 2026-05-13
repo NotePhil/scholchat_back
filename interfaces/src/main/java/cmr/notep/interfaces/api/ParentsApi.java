@@ -1,5 +1,6 @@
 package cmr.notep.interfaces.api;
 
+import cmr.notep.interfaces.dto.ParentSummaryDto;
 import cmr.notep.interfaces.modeles.Eleves;
 import cmr.notep.interfaces.modeles.Parents;
 import lombok.NonNull;
@@ -21,6 +22,12 @@ public interface ParentsApi {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     List<Parents> avoirToutParents();
+
+    @GetMapping(
+            path = "/summary",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    List<ParentSummaryDto> avoirToutParentsSummary();
 
     @PostMapping(
             produces = MediaType.APPLICATION_JSON_VALUE,

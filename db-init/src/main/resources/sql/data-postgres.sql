@@ -408,11 +408,23 @@ INSERT INTO parents (parents_id) VALUES
 ('demo-parent-0000-0000-000000000001');
 
 INSERT INTO parent_eleve (parent_id, eleve_id) VALUES
-('demo-parent-0000-0000-000000000001', 'demo-eleve-0000-0000-000000000001');
+('demo-parent-0000-0000-000000000001', 'demo-eleve-0000-0000-000000000001'),
+-- Parent A -> Eleve A (Jean) and Eleve C (Paul)
+('550e8400-e29b-41d4-a716-446655440200', '550e8400-e29b-41d4-a716-446655440300'),
+('550e8400-e29b-41d4-a716-446655440200', '550e8400-e29b-41d4-a716-446655440302'),
+-- Parent B -> Eleve B (Marie)
+('550e8400-e29b-41d4-a716-446655440201', '550e8400-e29b-41d4-a716-446655440301');
 
 INSERT INTO acceder (utilisateur_id, classe_id, date_acces) VALUES
 ('demo-eleve-0000-0000-000000000001', '550e8400-e29b-41d4-a716-446655440407', '2024-12-02 08:00:00'),
-('demo-eleve-0000-0000-000000000001', '550e8400-e29b-41d4-a716-446655440408', '2024-12-02 08:00:00');
+('demo-eleve-0000-0000-000000000001', '550e8400-e29b-41d4-a716-446655440408', '2024-12-02 08:00:00'),
+-- demo-parent gets access to the same classes as their child
+('demo-parent-0000-0000-000000000001', '550e8400-e29b-41d4-a716-446655440407', '2024-12-02 08:00:00'),
+('demo-parent-0000-0000-000000000001', '550e8400-e29b-41d4-a716-446655440408', '2024-12-02 08:00:00'),
+-- Parent A also has access to Classe A (where their children are enrolled)
+('550e8400-e29b-41d4-a716-446655440200', '550e8400-e29b-41d4-a716-446655440400', '2024-12-01 08:00:00'),
+-- Parent B also has access to Classe B (where their child is enrolled)
+('550e8400-e29b-41d4-a716-446655440201', '550e8400-e29b-41d4-a716-446655440401', '2024-12-01 08:00:00');
 
 -- demo eleve a rendu le devoir dissertation (EN_ATTENTE_CORRECTION)
 INSERT INTO participer_exo (utilisateur_id, exercise_programmer_id, etat_soumission, note, appreciation, date_debut, date_fin) VALUES
