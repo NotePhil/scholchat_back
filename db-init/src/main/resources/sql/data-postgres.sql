@@ -333,12 +333,7 @@ INSERT INTO exercise_programmer_classes (exercise_programmer_id, classe_id) VALU
 ('ffffffff-0006-0006-0006-000000000007', '550e8400-e29b-41d4-a716-446655440407');
 
 -- demo eleve a rendu ce devoir (EN_ATTENTE_CORRECTION)
-INSERT INTO participer_exo (utilisateur_id, exercise_programmer_id, etat_soumission, note, appreciation, date_debut, date_fin) VALUES
-('demo-eleve-0000-0000-000000000001', 'ffffffff-0006-0006-0006-000000000007', 'EN_ATTENTE_CORRECTION', NULL, NULL, '2025-04-02 10:00:00', '2025-04-02 11:30:00');
-
-INSERT INTO repondre (utilisateur_id, question_id, reponse_utilisateur, est_correcte, note) VALUES
-('demo-eleve-0000-0000-000000000001', '11111111-0007-0007-0007-000000000013', 'La liberte est la capacite d agir selon sa propre volonte sans contrainte exterieure.', NULL, NULL),
-('demo-eleve-0000-0000-000000000001', '11111111-0007-0007-0007-000000000014', 'Choisir ses etudes ou son metier est un exemple de liberte individuelle.', NULL, NULL);
+-- NOTE: participer_exo inserts for demo-eleve are done after utilisateurs insert below
 
 -- ── Devoir demo : QCM Mathematiques (DEVOIR, a rendre) ───────────────────────
 INSERT INTO exercises (id, nom, description, date_creation, etat, restriction, niveau, redacteur_id) VALUES
@@ -418,6 +413,14 @@ INSERT INTO parent_eleve (parent_id, eleve_id) VALUES
 INSERT INTO acceder (utilisateur_id, classe_id, date_acces) VALUES
 ('demo-eleve-0000-0000-000000000001', '550e8400-e29b-41d4-a716-446655440407', '2024-12-02 08:00:00'),
 ('demo-eleve-0000-0000-000000000001', '550e8400-e29b-41d4-a716-446655440408', '2024-12-02 08:00:00');
+
+-- demo eleve a rendu le devoir dissertation (EN_ATTENTE_CORRECTION)
+INSERT INTO participer_exo (utilisateur_id, exercise_programmer_id, etat_soumission, note, appreciation, date_debut, date_fin) VALUES
+('demo-eleve-0000-0000-000000000001', 'ffffffff-0006-0006-0006-000000000007', 'EN_ATTENTE_CORRECTION', NULL, NULL, '2025-04-02 10:00:00', '2025-04-02 11:30:00');
+
+INSERT INTO repondre (utilisateur_id, question_id, reponse_utilisateur, est_correcte, note) VALUES
+('demo-eleve-0000-0000-000000000001', '11111111-0007-0007-0007-000000000013', 'La liberte est la capacite d agir selon sa propre volonte sans contrainte exterieure.', NULL, NULL),
+('demo-eleve-0000-0000-000000000001', '11111111-0007-0007-0007-000000000014', 'Choisir ses etudes ou son metier est un exemple de liberte individuelle.', NULL, NULL);
 
 INSERT INTO recevoir (message_id, utilisateur_id) VALUES
 ('msg-001', 'demo-eleve-0000-0000-000000000001'),
