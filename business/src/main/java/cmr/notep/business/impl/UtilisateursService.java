@@ -34,6 +34,12 @@ public class UtilisateursService implements UtilisateursApi {
         return utilisateursBusiness.patcherUtilisateur(idUtilisateur, partialUpdate);
     }
     @Override
+    public List<Utilisateurs> avoirToutAdmins() {
+        log.info("Récupération de tous les administrateurs");
+        return utilisateursBusiness.avoirToutAdmins();
+    }
+
+    @Override
     public List<Utilisateurs> avoirToutUtilisateurs() {
         log.info("Récupération de tous les utilisateurs");
         return utilisateursBusiness.avoirToutUtilisateurs();

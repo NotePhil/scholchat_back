@@ -3,6 +3,8 @@ SET search_path TO ressources;
 INSERT INTO utilisateurs (id, nom, prenom, email, passeaccess, telephone, adresse, activation_token, etat, is_admin) VALUES
 
 ('550e8400-e29b-41d4-a716-446655440999', 'Admin', 'Super', 'admin@example.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0123456777', 'Admin Office', 'pepe', 'ACTIVE', TRUE),
+('admin-0000-0000-0000-000000000002', 'Nguyen', 'Alice', 'alice.nguyen@scholchat.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '+237690000010', 'Yaoundé, Cameroun', 'token-admin-alice', 'ACTIVE', TRUE),
+('admin-0000-0000-0000-000000000003', 'Mbarga', 'Eric', 'eric.mbarga@scholchat.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '+237690000011', 'Douala, Cameroun', 'token-admin-eric', 'ACTIVE', TRUE),
 
 ('550e8400-e29b-41d4-a716-446655440000', 'Dupont', 'Jean', 'kemogneprince05@gmail.com', 'password123', '0123456789', '123 Rue de Paris', 'abc123activationcode1', 'ACTIVE', FALSE),
 ('550e8400-e29b-41d4-a716-446655440001', 'Martin', 'Marie', 'marie.martin@example.com', 'password123', '0123456788', '456 Avenue de Lyon', 'abc123activationcode2', 'ACTIVE', FALSE),

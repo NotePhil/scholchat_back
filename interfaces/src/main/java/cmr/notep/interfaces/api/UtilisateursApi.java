@@ -11,6 +11,12 @@ import java.util.List;
 @RequestMapping("/utilisateurs")
 public interface UtilisateursApi {
     @GetMapping(
+            path = "/admins",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    List<Utilisateurs> avoirToutAdmins();
+
+    @GetMapping(
             path = "/{idUtilisateur}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )

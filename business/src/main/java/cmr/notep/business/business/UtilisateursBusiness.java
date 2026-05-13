@@ -349,6 +349,13 @@ public class UtilisateursBusiness {
     }
 
 
+    public List<Utilisateurs> avoirToutAdmins() {
+        log.info("Récupération de tous les administrateurs");
+        return daoAccessorService.getRepository(UtilisateursRepository.class).findByAdminTrue()
+                .stream().map(UtilisateursBusiness::mapUtilisateursEntityToModele)
+                .collect(Collectors.toList());
+    }
+
     public List<Utilisateurs> avoirToutUtilisateurs() {
         log.info("Récupération de tous les utilisateurs");
         return daoAccessorService.getRepository(UtilisateursRepository.class).findAll()
