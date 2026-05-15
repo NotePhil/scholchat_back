@@ -330,9 +330,6 @@ INSERT INTO utilisateurs (id, nom, prenom, email, passeaccess, telephone, adress
 INSERT INTO parents (parents_id) VALUES
 ('demo-parent-0000-0000-000000000001');
 
-INSERT INTO parent_eleve (parent_id, eleve_id) VALUES
-('demo-parent-0000-0000-000000000001', 'demo-eleve-0000-0000-000000000001');
-
 -- ── Devoir demo : Dissertation Francais (DEVOIR, EN_ATTENTE_CORRECTION) ──────
 INSERT INTO exercises (id, nom, description, date_creation, etat, restriction, niveau, redacteur_id) VALUES
 ('ffffffff-0006-0006-0006-000000000007', 'Dissertation : La liberte', 'Rediger une dissertation philosophique sur la liberte', '2025-03-10 08:00:00', 'PUBLIE', 'PRIVE', 'LYCEE', '550e8400-e29b-41d4-a716-446655440007');
