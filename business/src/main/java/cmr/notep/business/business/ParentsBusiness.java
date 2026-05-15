@@ -142,6 +142,24 @@ public class ParentsBusiness {
         }
     }
 
+    public List<ParentSummaryDto> avoirParentsPourProfesseur(String professeurId) {
+        return daoAccessorService.getRepository(ParentsRepository.class)
+                .findParentsByProfesseurId(professeurId)
+                .stream()
+                .map(p -> ParentSummaryDto.builder()
+                        .id(p.getId())
+                        .nom(p.getNom())
+                        .prenom(p.getPrenom())
+                        .email(p.getEmail())
+                        .telephone(p.getTelephone())
+                        .adresse(p.getAdresse())
+                        .etat(p.getEtat())
+                        .creationDate(p.getCreationDate())
+                        .admin(p.getAdmin() != null && p.getAdmin())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
     public List<Eleves> obtenirEnfants(String parentId) throws SchoolException {
         ParentsEntity parent = daoAccessorService.getRepository(ParentsRepository.class)
                 .findById(parentId)

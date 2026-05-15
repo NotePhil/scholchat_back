@@ -56,6 +56,11 @@ public class ParentsService implements ParentsApi {
     }
 
     @Override
+    public List<ParentSummaryDto> avoirParentsPourProfesseur(String professeurId) {
+        return parentsBusiness.avoirParentsPourProfesseur(professeurId);
+    }
+
+    @Override
     public List<Eleves> obtenirEnfants(String parentId) {
         return parentsBusiness.obtenirEnfants(parentId);
     }

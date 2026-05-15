@@ -42,4 +42,14 @@ public class ProfesseursService implements ProfesseursApi {
     public Professeurs avoirProfesseurParMatricule(@NonNull String matriculeProfesseur) {
         return professeursBusiness.avoirProfesseurParMatricule(matriculeProfesseur);
     }
+
+    @Override
+    public List<Professeurs> avoirProfesseursParClasse(@NonNull String classeId) {
+        return professeursBusiness.avoirProfesseursParClasse(classeId);
+    }
+
+    @Override
+    public List<Professeurs> avoirCollaborateursProfesseur(@NonNull String moderateurId) {
+        return professeursBusiness.avoirCollaborateursProfesseur(moderateurId);
+    }
 }

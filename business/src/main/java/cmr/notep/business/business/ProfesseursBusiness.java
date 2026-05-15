@@ -8,6 +8,7 @@ import cmr.notep.interfaces.modeles.Classes;
 import cmr.notep.interfaces.modeles.Professeurs;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.ProfesseursEntity;
+import cmr.notep.ressourcesjpa.repository.DroitPublicationRepository;
 import cmr.notep.ressourcesjpa.repository.ProfesseursRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -160,5 +161,55 @@ public class ProfesseursBusiness {
                         .findByMatriculeProfesseur(matriculeProfesseur),
                 Professeurs.class
         );
+    }
+
+    /** Professors who have droit_publication on a given class */
+    public List<Professeurs> avoirProfesseursParClasse(String classeId) {
+        return daoAccessorService.getRepository(DroitPublicationRepository.class)
+                .findAllUsersByClassId(classeId)
+                .stream()
+                .map(d -> d.getUtilisateur())
+                .filter(u -> u instanceof ProfesseursEntity)
+                .map(u -> dozerMapperBean.map(u, Professeurs.class))
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns all professors who have droit_publication on any class
+     * moderated by the given professor — excluding the moderator himself.
+     */
+    public List<Professeurs> avoirCollaborateursProfesseur(String moderateurId) {
+        ProfesseursEntity moderateur = daoAccessorService.getRepository(ProfesseursRepository.class)
+                .findById(moderateurId)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Professeur introuvable"));
+
+        if (moderateur.getModeratedClasses() == null || moderateur.getModeratedClasses().isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+
+        return moderateur.getModeratedClasses().stream()
+                .flatMap(classe -> daoAccessorService.getRepository(DroitPublicationRepository.class)
+                        .findAllUsersByClassId(classe.getId()).stream()
+                        .map(d -> d.getUtilisateur())
+                        .filter(u -> u instanceof ProfesseursEntity && !u.getId().equals(moderateurId))
+                        .map(u -> (ProfesseursEntity) u))
+                .distinct()
+                .map(ProfesseursBusiness::toShallowProfesseur)
+                .collect(Collectors.toList());
+    }
+
+    private static Professeurs toShallowProfesseur(ProfesseursEntity e) {
+        Professeurs p = new Professeurs();
+        p.setId(e.getId());
+        p.setNom(e.getNom());
+        p.setPrenom(e.getPrenom());
+        p.setEmail(e.getEmail());
+        p.setTelephone(e.getTelephone());
+        p.setAdresse(e.getAdresse());
+        p.setEtat(e.getEtat());
+        p.setMatriculeProfesseur(e.getMatriculeProfesseur());
+        p.setHasUploaded(Boolean.TRUE.equals(e.getHasUploaded()));
+        return p;
     }
 }

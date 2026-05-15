@@ -12,4 +12,17 @@ import java.util.List;
 public interface ElevesRepository extends JpaRepository<ElevesEntity, String> {
     @Query("SELECT e FROM ElevesEntity e JOIN e.parents p WHERE p.id = :parentId")
     List<ElevesEntity> findByParentId(@Param("parentId") String parentId);
+
+    @Query("""
+            SELECT DISTINCT e FROM ElevesEntity e
+            JOIN AccederEntity ae ON ae.utilisateurId = e.id
+            WHERE ae.classeId IN (
+                SELECT d.classeId FROM DroitPublicationEntity d WHERE d.utilisateurId = :professeurId
+                UNION
+                SELECT a.classeId FROM AccederEntity a WHERE a.utilisateurId = :professeurId
+                UNION
+                SELECT c.id FROM ClassesEntity c WHERE c.moderator.id = :professeurId
+            )
+            """)
+    List<ElevesEntity> findElevesByProfesseurId(@Param("professeurId") String professeurId);
 }

@@ -94,6 +94,14 @@ public class ElevesBusiness {
     }
 
 
+    public List<Eleves> avoirElevesPourProfesseur(String professeurId) {
+        return daoAccessorService.getRepository(ElevesRepository.class)
+                .findElevesByProfesseurId(professeurId)
+                .stream()
+                .map(entity -> dozerMapperBean.map(entity, Eleves.class))
+                .collect(Collectors.toList());
+    }
+
     public List<Parents> obtenirParents(String eleveId) throws SchoolException {
         ElevesEntity eleve = daoAccessorService.getRepository(ElevesRepository.class)
                 .findById(eleveId)

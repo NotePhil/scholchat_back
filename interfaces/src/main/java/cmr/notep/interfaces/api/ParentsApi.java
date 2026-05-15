@@ -57,6 +57,9 @@ public interface ParentsApi {
             @PathVariable String parentId,
             @PathVariable String eleveId);
 
+    @GetMapping("/professeur/{professeurId}")
+    List<ParentSummaryDto> avoirParentsPourProfesseur(@PathVariable String professeurId);
+
     @GetMapping("/{parentId}/enfants")
     @ResponseStatus(HttpStatus.OK)
     List<Eleves> obtenirEnfants(@PathVariable String parentId);

@@ -40,4 +40,16 @@ public interface ProfesseursApi {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     Professeurs avoirProfesseurParMatricule(@NonNull @PathVariable String matriculeProfesseur);
+
+    @GetMapping(
+            path = "/classe/{classeId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    List<Professeurs> avoirProfesseursParClasse(@NonNull @PathVariable String classeId);
+
+    @GetMapping(
+            path = "/moderateur/{moderateurId}/collaborateurs",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    List<Professeurs> avoirCollaborateursProfesseur(@NonNull @PathVariable String moderateurId);
 }

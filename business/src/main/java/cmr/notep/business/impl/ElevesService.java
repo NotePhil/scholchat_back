@@ -39,6 +39,11 @@ public class ElevesService implements ElevesApi {
         return elevesBusiness.modifierElevePartiellement(idEleve, partialEleve);
     }
     @Override
+    public List<Eleves> avoirElevesPourProfesseur(String professeurId) {
+        return elevesBusiness.avoirElevesPourProfesseur(professeurId);
+    }
+
+    @Override
     public List<Parents> obtenirParents(String eleveId) {
         return elevesBusiness.obtenirParents(eleveId);
     }

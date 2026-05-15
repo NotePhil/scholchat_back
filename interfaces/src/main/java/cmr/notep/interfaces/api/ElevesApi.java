@@ -38,6 +38,9 @@ public interface ElevesApi {
             @NonNull @PathVariable String idEleve,
             @NonNull @RequestBody Eleves partialEleve);
 
+    @GetMapping("/professeur/{professeurId}")
+    List<Eleves> avoirElevesPourProfesseur(@PathVariable String professeurId);
+
     @GetMapping("/{eleveId}/parents")
     @ResponseStatus(HttpStatus.OK)
     List<Parents> obtenirParents(@PathVariable String eleveId);
