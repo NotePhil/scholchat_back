@@ -1,5 +1,6 @@
 package cmr.notep.interfaces.api;
 
+import cmr.notep.interfaces.dto.ClasseAvecDroitDto;
 import cmr.notep.interfaces.modeles.Classes;
 import cmr.notep.interfaces.modeles.Utilisateurs;
 import org.springframework.http.HttpStatus;
@@ -61,6 +62,21 @@ public interface DroitPublicationApi {
     )
     @ResponseStatus(HttpStatus.OK)
     List<Classes> obtenirClassesAvecDroitPublication(
+            @PathVariable String utilisateurId
+    );
+
+    /**
+     * Returns classes where the user has publication rights,
+     * each enriched with peutPublier and peutModerer flags.
+     * peutModerer=true  → user created/moderates the class
+     * peutModerer=false → rights were granted by someone else
+     */
+    @GetMapping(
+            path = "/utilisateurs/{utilisateurId}/classes-avec-droits",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    List<ClasseAvecDroitDto> obtenirClassesAvecDroitsDetail(
             @PathVariable String utilisateurId
     );
 }

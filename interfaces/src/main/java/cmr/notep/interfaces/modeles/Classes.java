@@ -29,8 +29,9 @@ public class Classes implements Serializable {
     private Etablissement etablissement;
     private String etablissementToken; // For token validation during creation
     private boolean paymentRequired; // True when no establishment is provided
-    private boolean accesMajeur; // True = major class (access by email search, not direct add)
+    private boolean accesMajeur;
     private Professeurs moderator;
+    private String creatorId;
     private DroitPublication droitPublication;
     private List<String> evenementsIds; // IDs des événements concernés par cette classe
     

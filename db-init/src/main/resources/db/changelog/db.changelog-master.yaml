@@ -76,3 +76,17 @@ databaseChangeLog:
         - sqlFile:
             path: sql/migration-type-assignation-etat-soumission.sql
             relativeToChangelogFile: false
+  - changeSet:
+      id: 12-fix-moderator-droits
+      author: db-init
+      changes:
+        - sqlFile:
+            path: sql/migration-fix-moderator-droits.sql
+            relativeToChangelogFile: false
+  - changeSet:
+      id: 13-add-creator-id
+      author: db-init
+      changes:
+        - sqlFile:
+            path: sql/migration-add-creator-id.sql
+            relativeToChangelogFile: false

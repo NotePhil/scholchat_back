@@ -54,6 +54,9 @@ public class ClassesEntity {
     @Mapping("moderator")
     private ProfesseursEntity moderator;
 
+    @Column(name = "creator_id")
+    private String creatorId;
+
     @ManyToMany(mappedBy = "classes")
     private List<MessagesEntity> messages;
 

@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS classes (
     etat VARCHAR(50),
     etablissement_id VARCHAR(255),
     moderator_id VARCHAR(255),
+    creator_id VARCHAR(255),
     droit_publication VARCHAR(50),
     acces_majeur BOOLEAN DEFAULT FALSE,
     payment_required BOOLEAN DEFAULT FALSE
@@ -501,6 +502,10 @@ ALTER TABLE etablissements
 ALTER TABLE classes
     ADD CONSTRAINT fk_classes_moderator
     FOREIGN KEY (moderator_id) REFERENCES professeurs(professeurs_id);
+
+ALTER TABLE classes
+    ADD CONSTRAINT fk_classes_creator
+    FOREIGN KEY (creator_id) REFERENCES utilisateurs(id);
 
 ALTER TABLE professeur_classes_moderees
     ADD CONSTRAINT fk_prof_moderateur

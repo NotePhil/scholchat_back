@@ -2,6 +2,7 @@ package cmr.notep.business.business;
 
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
+import cmr.notep.interfaces.dto.ClasseAvecDroitDto;
 import cmr.notep.interfaces.modeles.Classes;
 import cmr.notep.interfaces.modeles.Utilisateurs;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
@@ -211,9 +212,66 @@ public class DroitPublicationBusiness {
 
     private Classes mapClassWithMinimalData(ClassesEntity classe) {
         Classes mapped = dozerMapperBean.map(classe, Classes.class);
-        // Simplify response by removing nested objects
         mapped.setEtablissement(null);
-        mapped.setModerator(null);
+        // Keep minimal moderator info (id + name) for frontend display
+        if (classe.getModerator() != null && mapped.getModerator() != null) {
+            mapped.getModerator().setPasseAccess(null);
+            mapped.getModerator().setActivationToken(null);
+            mapped.getModerator().setResetPasswordToken(null);
+        }
         return mapped;
+    }
+
+    /**
+     * Returns classes where the user has publication rights,
+     * each wrapped with peutPublier and peutModerer flags.
+     * This lets the frontend distinguish:
+     *   - peutModerer=true  → user created/moderates the class
+     *   - peutModerer=false → rights were granted by someone else
+     */
+    public List<ClasseAvecDroitDto> obtenirClassesAvecDroitsDetail(String utilisateurId) throws SchoolException {
+        log.info("Getting classes with rights detail for user {}", utilisateurId);
+
+        UtilisateursEntity utilisateur = daoAccessorService.getRepository(UtilisateursRepository.class)
+                .findById(utilisateurId)
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "User not found"));
+
+        List<ClasseAvecDroitDto> result = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+
+        // 1. For professors: moderated classes (user is the moderator of the class)
+        if (utilisateur instanceof ProfesseursEntity) {
+            ProfesseursEntity prof = (ProfesseursEntity) utilisateur;
+            if (prof.getModeratedClasses() != null) {
+                for (ClassesEntity classe : prof.getModeratedClasses()) {
+                    if (seen.add(classe.getId())) {
+                        Classes mapped = mapClassWithMinimalData(classe);
+                        // estCreateur=true only if this user originally created the class
+                        boolean estCreateur = utilisateurId.equals(classe.getCreatorId());
+                        result.add(new ClasseAvecDroitDto(mapped, true, true, estCreateur));
+                    }
+                }
+            }
+        }
+
+        // 2. Classes from droits_publication table where user is NOT the moderator → granted rights
+        List<DroitPublicationEntity> droits = daoAccessorService
+                .getRepository(DroitPublicationRepository.class)
+                .findAllClassesByUserId(utilisateurId);
+
+        for (DroitPublicationEntity droit : droits) {
+            ClassesEntity classe = droit.getClasse();
+            if (classe != null && seen.add(classe.getId())) {
+                // Only add here if user is NOT the moderator of this class
+                boolean isModerator = classe.getModerator() != null
+                        && utilisateurId.equals(classe.getModerator().getId());
+                if (!isModerator) {
+                    Classes mapped = mapClassWithMinimalData(classe);
+                    result.add(new ClasseAvecDroitDto(mapped, droit.isPeutPublier(), false));
+                }
+            }
+        }
+
+        return result;
     }
 }

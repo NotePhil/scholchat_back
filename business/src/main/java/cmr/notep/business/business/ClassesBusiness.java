@@ -64,14 +64,19 @@ public class ClassesBusiness {
         EtablissementEntity etablissement = null;
         ProfesseursEntity moderator = null;
         
-        // Handle moderator assignment
-        if (classeDto.getModeratorId() != null && !classeDto.getModeratorId().trim().isEmpty()) {
+        // Handle moderator assignment — creator is always moderator by default
+        String effectiveModeratorId = (classeDto.getModeratorId() != null && !classeDto.getModeratorId().trim().isEmpty())
+                ? classeDto.getModeratorId()
+                : classeDto.getCreatorId();
+
+        if (effectiveModeratorId != null && !effectiveModeratorId.trim().isEmpty()) {
             moderator = daoAccessorService.getRepository(ProfesseursRepository.class)
-                    .findById(classeDto.getModeratorId())
+                    .findById(effectiveModeratorId)
                     .orElse(null);
             if (moderator != null) {
                 classesEntity.setModerator(moderator);
-                log.info("Moderator {} assigned to class", classeDto.getModeratorId());
+                classesEntity.setCreatorId(moderator.getId());
+                log.info("Moderator {} assigned to class", effectiveModeratorId);
             }
         }
         

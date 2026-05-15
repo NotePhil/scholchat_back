@@ -15,6 +15,7 @@ public class ClasseCreationDto {
     private String etablissementId;
     private String codeUnique;
     private String moderatorId;
+    private String creatorId;
     private boolean accesMajeur;
     private PaymentInfoDto paymentInfo;
     

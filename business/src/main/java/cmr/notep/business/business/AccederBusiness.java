@@ -60,10 +60,14 @@ public class AccederBusiness {
                     "Seules les classes ACTIF peuvent être accessibles");
         }
 
-        // Bloquer les demandes d'accès standard pour les classes majeures
+        // Bloquer les demandes d'accès standard pour les classes majeures uniquement pour les non-professeurs
         if (classe.isAccesMajeur()) {
-            throw new SchoolException(SchoolErrorCode.INVALID_OPERATION,
-                    "Cette classe est une classe majeure. L'accès se fait uniquement par invitation directe.");
+            UtilisateursEntity requester = daoAccessorService.getRepository(UtilisateursRepository.class)
+                    .findById(utilisateurId).orElse(null);
+            if (!(requester instanceof ProfesseursEntity)) {
+                throw new SchoolException(SchoolErrorCode.INVALID_OPERATION,
+                        "Cette classe est une classe majeure. L'accès se fait uniquement par invitation directe.");
+            }
         }
 
         // Check if activation code matches
@@ -76,12 +80,6 @@ public class AccederBusiness {
         UtilisateursEntity utilisateur = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .findById(utilisateurId)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable"));
-
-        // Empêcher les professeurs de faire des demandes d'accès
-        if (utilisateur instanceof ProfesseursEntity) {
-            throw new SchoolException(SchoolErrorCode.INVALID_OPERATION,
-                    "Les professeurs ne peuvent pas faire de demandes d'accès. Utilisez les droits de publication.");
-        }
 
         // Check if access already exists
         if (daoAccessorService.getRepository(AccederRepository.class)
@@ -184,9 +182,14 @@ public class AccederBusiness {
         // 1. Accorder l'accès principal
         accorderAcces(demande.getUtilisateur().getId(), demande.getClasse().getId());
 
+        // 2. Si le demandeur est un professeur, lui accorder automatiquement les droits de publication
+        if (demande.getUtilisateur() instanceof ProfesseursEntity) {
+            accorderDroitPublication(demande.getUtilisateur().getId(), demande.getClasse().getId());
+        }
+
         String eleveId = null;
 
-        // 2. Gestion des demandes parent
+        // 3. Gestion des demandes parent
         if (demande.isEstParent()) {
             eleveId = demande.getEleveAssocieId();
             if (eleveId != null) {
@@ -261,6 +264,20 @@ public class AccederBusiness {
             daoAccessorService.getRepository(AccederRepository.class).save(acces);
         }
     }
+    private void accorderDroitPublication(String utilisateurId, String classeId) {
+        if (!daoAccessorService.getRepository(DroitPublicationRepository.class)
+                .existsByUtilisateurIdAndClasseId(utilisateurId, classeId)) {
+            DroitPublicationEntity droit = new DroitPublicationEntity();
+            droit.setUtilisateurId(utilisateurId);
+            droit.setClasseId(classeId);
+            droit.setPeutPublier(true);
+            droit.setPeutModerer(false);
+            droit.setDateAttribution(new Date());
+            daoAccessorService.getRepository(DroitPublicationRepository.class).save(droit);
+            log.info("Publication rights granted to professor {} for class {}", utilisateurId, classeId);
+        }
+    }
+
     private void creerRelationParentEleve(String parentId, String eleveId) {
         if (!daoAccessorService.getRepository(ParentEleveRepository.class)
                 .existsByParentIdAndEleveId(parentId, eleveId)) {

@@ -2,6 +2,7 @@ package cmr.notep.business.impl;
 
 import cmr.notep.business.business.DroitPublicationBusiness;
 import cmr.notep.interfaces.api.DroitPublicationApi;
+import cmr.notep.interfaces.dto.ClasseAvecDroitDto;
 import cmr.notep.interfaces.modeles.Classes;
 import cmr.notep.interfaces.modeles.Utilisateurs;
 import lombok.RequiredArgsConstructor;
@@ -45,5 +46,11 @@ public class DroitPublicationService implements DroitPublicationApi {
     public List<Classes> obtenirClassesAvecDroitPublication(String utilisateurId) {
         log.info("API - Getting classes with publication rights for user {}", utilisateurId);
         return droitPublicationBusiness.obtenirClassesAvecDroitPublication(utilisateurId);
+    }
+
+    @Override
+    public List<ClasseAvecDroitDto> obtenirClassesAvecDroitsDetail(String utilisateurId) {
+        log.info("API - Getting classes with rights detail for user {}", utilisateurId);
+        return droitPublicationBusiness.obtenirClassesAvecDroitsDetail(utilisateurId);
     }
 }
