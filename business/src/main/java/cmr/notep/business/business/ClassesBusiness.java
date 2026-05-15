@@ -576,6 +576,26 @@ public class ClassesBusiness {
         log.info("Classe supprimée avec succès: {}", idClasse);
     }
 
+    public Classes obtenirClasseParCodeActivation(String code) throws SchoolException {
+        ClassesRepository classesRepository = daoAccessorService.getRepository(ClassesRepository.class);
+        ClassesEntity classeEntity = classesRepository.findByActivationToken(code)
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Aucune classe trouvée avec ce code d'activation"));
+
+        Classes classe = dozerMapperBean.map(classeEntity, Classes.class);
+
+        if (classeEntity.getModerator() != null) {
+            cmr.notep.interfaces.modeles.Professeurs moderator = new cmr.notep.interfaces.modeles.Professeurs();
+            moderator.setId(classeEntity.getModerator().getId());
+            moderator.setNom(classeEntity.getModerator().getNom());
+            moderator.setPrenom(classeEntity.getModerator().getPrenom());
+            classe.setModerator(moderator);
+        }
+
+        return classe;
+    }
+
     public Classes obtenirClasseParId(String idClasse) throws SchoolException {
         ClassesRepository classesRepository = daoAccessorService.getRepository(ClassesRepository.class);
         ClassesEntity classeEntity = classesRepository.findById(idClasse)
@@ -585,7 +605,7 @@ public class ClassesBusiness {
 
         // Map moderated classes to just IDs to prevent circular references
         if (classeEntity.getModerator() != null) {
-            Professeurs moderator = new Professeurs();
+            cmr.notep.interfaces.modeles.Professeurs moderator = new cmr.notep.interfaces.modeles.Professeurs();
             moderator.setId(classeEntity.getModerator().getId());
             moderator.setNom(classeEntity.getModerator().getNom());
             moderator.setPrenom(classeEntity.getModerator().getPrenom());

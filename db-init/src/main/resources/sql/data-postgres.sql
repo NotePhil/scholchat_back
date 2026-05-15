@@ -317,6 +317,22 @@ INSERT INTO exercise_programmer_classes (exercise_programmer_id, classe_id) VALU
 
 -- demo eleve inscrit mais n a pas encore repondu (pas de participer_exo ni repondre)
 
+-- Demo eleve et parent (crees ici car references dans participer_exo ci-dessous)
+INSERT INTO utilisateurs (id, nom, prenom, email, passeaccess, telephone, adresse, activation_token, etat, is_admin) VALUES
+('demo-eleve-0000-0000-000000000001', 'Demo', 'Eleve', 'simokylian1@gmail.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0600000001', '1 Rue Demo', 'demo-eleve-token-001', 'ACTIVE', FALSE);
+
+INSERT INTO eleves (eleves_id, niveau) VALUES
+('demo-eleve-0000-0000-000000000001', '6eme');
+
+INSERT INTO utilisateurs (id, nom, prenom, email, passeaccess, telephone, adresse, activation_token, etat, is_admin) VALUES
+('demo-parent-0000-0000-000000000001', 'Demo', 'Parent', 'parent.demo@scholchat.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0600000002', '1 Rue Demo', 'demo-parent-token-001', 'ACTIVE', FALSE);
+
+INSERT INTO parents (parents_id) VALUES
+('demo-parent-0000-0000-000000000001');
+
+INSERT INTO parent_eleve (parent_id, eleve_id) VALUES
+('demo-parent-0000-0000-000000000001', 'demo-eleve-0000-0000-000000000001');
+
 -- ── Devoir demo : Dissertation Francais (DEVOIR, EN_ATTENTE_CORRECTION) ──────
 INSERT INTO exercises (id, nom, description, date_creation, etat, restriction, niveau, redacteur_id) VALUES
 ('ffffffff-0006-0006-0006-000000000007', 'Dissertation : La liberte', 'Rediger une dissertation philosophique sur la liberte', '2025-03-10 08:00:00', 'PUBLIE', 'PRIVE', 'LYCEE', '550e8400-e29b-41d4-a716-446655440007');
@@ -395,19 +411,6 @@ INSERT INTO histo_activation (id, classe_id, utilisateur_id, date_activation, is
 ('aaaabbbb-0008-0008-0008-000000000001', '550e8400-e29b-41d4-a716-446655440400', '550e8400-e29b-41d4-a716-446655440007', '2024-11-28 08:00:00', TRUE, 'ACTIF'),
 ('aaaabbbb-0008-0008-0008-000000000002', '550e8400-e29b-41d4-a716-446655440404', '550e8400-e29b-41d4-a716-446655440007', '2024-11-30 08:00:00', FALSE, 'INACTIF'),
 ('aaaabbbb-0008-0008-0008-000000000003', '550e8400-e29b-41d4-a716-446655440407', '550e8400-e29b-41d4-a716-446655440007', '2024-12-01 11:00:00', TRUE, 'ACTIF');
-
-INSERT INTO utilisateurs (id, nom, prenom, email, passeaccess, telephone, adresse, activation_token, etat, is_admin) VALUES
-('demo-eleve-0000-0000-000000000001', 'Demo', 'Eleve', 'simokylian1@gmail.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0600000001', '1 Rue Demo', 'demo-eleve-token-001', 'ACTIVE', FALSE);
-
-INSERT INTO eleves (eleves_id, niveau) VALUES
-('demo-eleve-0000-0000-000000000001', '6eme');
-
--- Demo parent (parent du demo eleve)
-INSERT INTO utilisateurs (id, nom, prenom, email, passeaccess, telephone, adresse, activation_token, etat, is_admin) VALUES
-('demo-parent-0000-0000-000000000001', 'Demo', 'Parent', 'parent.demo@scholchat.com', '$2a$10$DyP2uVCelVt3OJnRXs.A2Oa30GyPINfeaKSlCnwYt8uHMiVkn2BDO', '0600000002', '1 Rue Demo', 'demo-parent-token-001', 'ACTIVE', FALSE);
-
-INSERT INTO parents (parents_id) VALUES
-('demo-parent-0000-0000-000000000001');
 
 INSERT INTO parent_eleve (parent_id, eleve_id) VALUES
 ('demo-parent-0000-0000-000000000001', 'demo-eleve-0000-0000-000000000001'),

@@ -73,6 +73,13 @@ public interface ClassesApi {
     @ResponseStatus(HttpStatus.OK)
     List<Classes> obtenirToutesLesClasses();
 
+    @GetMapping(
+            path = "/by-code/{code}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    Classes obtenirClasseParCode(@PathVariable("code") String code);
+
     @PatchMapping(
             path = "/{idClasse}/publication-rights",
             produces = MediaType.APPLICATION_JSON_VALUE

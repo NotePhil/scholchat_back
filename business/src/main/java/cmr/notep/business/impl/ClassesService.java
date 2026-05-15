@@ -120,6 +120,12 @@ public class ClassesService implements ClassesApi {
     }
 
     @Override
+    public Classes obtenirClasseParCode(@NonNull String code) {
+        log.info("Récupération de la classe avec le code d'activation: {}", code);
+        return classesBusiness.obtenirClasseParCodeActivation(code);
+    }
+
+    @Override
     public Classes modifierDroitPublication(String idClasse, DroitPublication droitPublication) {
         log.info("Modification du droit de publication pour la classe: {}", idClasse);
         return classesBusiness.modifierDroitPublication(idClasse, droitPublication);
