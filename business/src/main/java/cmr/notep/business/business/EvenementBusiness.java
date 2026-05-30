@@ -44,12 +44,6 @@ public class EvenementBusiness {
 
     public Evenement creerEvenement(Evenement evenement) {
         try {
-            // Check for duplicate title
-            if (daoAccessorService.getRepository(EvenementRepository.class).existsByTitre(evenement.getTitre())) {
-                throw new SchoolException(SchoolErrorCode.DUPLICATE_RESOURCE,
-                        "Un événement avec ce titre existe déjà: " + evenement.getTitre());
-            }
-
             // Map the event DTO to entity
             EvenementEntity entity = dozerMapperBean.map(evenement, EvenementEntity.class);
             entity.setId(UUID.randomUUID().toString());
