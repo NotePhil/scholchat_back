@@ -120,12 +120,8 @@ public class ExerciseProgrammerBusiness {
                         .findById(exerciseProgrammer.getProgrammeParId()).orElse(null);
                 if (prof != null) {
                     String profName = prof.getPrenom() + " " + prof.getNom();
-                    // Use the exercise NAME (not ID) for the notification message
-                    String exerciseName = (source != null && source.getNom() != null)
-                            ? source.getNom()
-                            : "Exercice";
                     notificationService.createExerciseAssignedNotification(
-                            exerciseName, prof.getId(), profName, classeIds);
+                            exerciseProgramme.getExerciseId(), prof.getId(), profName, classeIds);
                 }
             } catch (Exception e) {
                 log.error("Error sending exercise notifications: {}", e.getMessage());
