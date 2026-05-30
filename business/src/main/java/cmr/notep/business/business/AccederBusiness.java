@@ -60,13 +60,16 @@ public class AccederBusiness {
                     "Seules les classes ACTIF peuvent être accessibles");
         }
 
-        // Bloquer les demandes d'accès standard pour les classes majeures uniquement pour les non-professeurs
-        if (classe.isAccesMajeur()) {
+        // For classes WITHOUT "accès majeur" (minor classes): block direct student access
+        // — minors are added by their parent via the parent-access flow
+        if (!classe.isAccesMajeur()) {
             UtilisateursEntity requester = daoAccessorService.getRepository(UtilisateursRepository.class)
                     .findById(utilisateurId).orElse(null);
-            if (!(requester instanceof ProfesseursEntity)) {
+            boolean isProfesseur = requester instanceof ProfesseursEntity;
+            // Parents use the parent-access flow; students cannot self-register for minor classes
+            if (!isProfesseur) {
                 throw new SchoolException(SchoolErrorCode.INVALID_OPERATION,
-                        "Cette classe est une classe majeure. L'accès se fait uniquement par invitation directe.");
+                        "Cette classe est réservée aux mineurs. L'accès se fait via le compte parent.");
             }
         }
 
@@ -97,7 +100,23 @@ public class AccederBusiness {
                     "Une demande d'accès est déjà en attente pour cette classe");
         }
 
-        // Create new access request
+        // For "accès majeur" classes: auto-approve adult access using the existing accorderAcces pattern
+        if (classe.isAccesMajeur() && !(utilisateur instanceof ProfesseursEntity)) {
+            accorderAcces(utilisateurId, classeId);
+            log.info("Accès majeur: accès auto-approuvé pour utilisateur {} dans classe {}", utilisateurId, classeId);
+            // Audit trail: record as immediately approved
+            DemandeAccesEntity demande = new DemandeAccesEntity();
+            demande.setId(UUID.randomUUID().toString());
+            demande.setUtilisateur(utilisateur);
+            demande.setClasse(classe);
+            demande.setCodeActivation(codeActivation);
+            demande.setEtat(EtatDemandeAcces.APPROUVEE);
+            demande.setEstParent(false);
+            daoAccessorService.getRepository(DemandeAccesRepository.class).save(demande);
+            return;
+        }
+
+        // Create new access request (pending moderator approval)
         DemandeAccesEntity demande = new DemandeAccesEntity();
         demande.setId(UUID.randomUUID().toString());
         demande.setUtilisateur(utilisateur);

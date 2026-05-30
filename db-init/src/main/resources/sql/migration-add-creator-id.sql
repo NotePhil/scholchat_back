@@ -1,3 +1,5 @@
+SET search_path TO ressources;
+
 -- Add creator_id column to classes table
 ALTER TABLE classes ADD COLUMN IF NOT EXISTS creator_id VARCHAR(255);
 
