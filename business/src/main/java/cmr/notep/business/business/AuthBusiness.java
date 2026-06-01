@@ -99,6 +99,7 @@ public class AuthBusiness {
         // Update password and activate account
         user.setPasseAccess(passwordEncoder.encode(request.getPasseAccess()));
         user.setEtat(EtatUtilisateur.ACTIVE);
+        user.setActivationToken(null); // Invalidate token now that password is set
 
         // Save user
         utilisateursBusiness.mettreUtilisateurAJour(user);

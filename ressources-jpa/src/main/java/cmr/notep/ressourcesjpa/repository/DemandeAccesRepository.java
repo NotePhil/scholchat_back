@@ -22,4 +22,8 @@ public interface DemandeAccesRepository extends JpaRepository<DemandeAccesEntity
     // Dans DemandeAccesRepository.java
     List<DemandeAccesEntity> findByClasseIdInAndEtat(List<String> classeIds, EtatDemandeAcces etat);
 
+    List<DemandeAccesEntity> findAllByUtilisateurIdAndClasseId(String utilisateurId, String classeId);
+
+    void deleteAllByUtilisateurIdAndClasseId(String utilisateurId, String classeId);
+
 }

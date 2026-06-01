@@ -82,6 +82,12 @@ public interface MessagesApi {
     )
     List<MessageStatutDTO> obtenirNonLus(@PathVariable String utilisateurId);
 
+    @GetMapping(
+            path = "/utilisateur/{utilisateurId}/non-lus/count",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    long compterNonLus(@PathVariable String utilisateurId);
+
     @PostMapping(
             path = "/group",
             produces = MediaType.APPLICATION_JSON_VALUE,

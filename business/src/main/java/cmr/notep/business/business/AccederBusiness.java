@@ -100,23 +100,14 @@ public class AccederBusiness {
                     "Une demande d'accès est déjà en attente pour cette classe");
         }
 
-        // For "accès majeur" classes: auto-approve adult access using the existing accorderAcces pattern
-        if (classe.isAccesMajeur() && !(utilisateur instanceof ProfesseursEntity)) {
-            accorderAcces(utilisateurId, classeId);
-            log.info("Accès majeur: accès auto-approuvé pour utilisateur {} dans classe {}", utilisateurId, classeId);
-            // Audit trail: record as immediately approved
-            DemandeAccesEntity demande = new DemandeAccesEntity();
-            demande.setId(UUID.randomUUID().toString());
-            demande.setUtilisateur(utilisateur);
-            demande.setClasse(classe);
-            demande.setCodeActivation(codeActivation);
-            demande.setEtat(EtatDemandeAcces.APPROUVEE);
-            demande.setEstParent(false);
-            daoAccessorService.getRepository(DemandeAccesRepository.class).save(demande);
-            return;
+        // Delete any previous rejected request so the new one starts clean
+        if (existingRequest.isPresent() && existingRequest.get().getEtat() == EtatDemandeAcces.REJETEE) {
+            daoAccessorService.getRepository(DemandeAccesRepository.class).delete(existingRequest.get());
         }
 
         // Create new access request (pending moderator approval)
+        // Note: accesMajeur only means the student can self-register;
+        // the professor still needs to approve the request.
         DemandeAccesEntity demande = new DemandeAccesEntity();
         demande.setId(UUID.randomUUID().toString());
         demande.setUtilisateur(utilisateur);
@@ -395,7 +386,12 @@ public class AccederBusiness {
 
         // Delete access
         daoAccessorService.getRepository(AccederRepository.class).delete(acceder);
-        log.info("Accès retiré avec succès");
+
+        // Delete all access requests (any state) for this user+class
+        daoAccessorService.getRepository(DemandeAccesRepository.class)
+                .deleteAllByUtilisateurIdAndClasseId(utilisateurId, classeId);
+
+        log.info("Accès et demandes d'accès retirés avec succès");
     }
 
 //    public List<Utilisateurs> obtenirUtilisateursAvecAcces(String classeId) throws SchoolException {

@@ -96,6 +96,12 @@ public class MessagesService implements MessagesApi {
     }
 
     @Override
+    public long compterNonLus(String utilisateurId) {
+        log.info("Compter les messages non lus de l'utilisateur {}", utilisateurId);
+        return messagesBusiness.compterNonLus(utilisateurId);
+    }
+
+    @Override
     public void supprimerMessage(String messageId) {
         log.info("Suppression du message avec ID: {}", messageId);
         messagesBusiness.supprimerMessage(messageId);

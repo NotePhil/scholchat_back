@@ -13,4 +13,6 @@ public interface MessageStatutRepository extends JpaRepository<MessageStatutEnti
     List<MessageStatutEntity> findByIdUtilisateurIdAndFavoriTrue(String utilisateurId);
 
     List<MessageStatutEntity> findByIdUtilisateurIdAndLuFalse(String utilisateurId);
+
+    long countByIdUtilisateurIdAndLuFalse(String utilisateurId);
 }

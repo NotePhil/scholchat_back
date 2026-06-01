@@ -51,7 +51,7 @@ public class ActivationService {
         }
 
         utilisateur.setEtat(EtatUtilisateur.ACTIVE);
-        utilisateur.setActivationToken(null);  // Invalidate used token
+        // Keep activationToken until password is set — cleared by registerPassword
 
         return utilisateursBusiness.mettreUtilisateurAJour(utilisateur);
     }

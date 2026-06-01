@@ -438,6 +438,11 @@ public class MessagesBusiness {
                 .stream().map(this::mapStatutToDto).collect(Collectors.toList());
     }
 
+    public long compterNonLus(String utilisateurId) {
+        return daoAccessorService.getRepository(MessageStatutRepository.class)
+                .countByIdUtilisateurIdAndLuFalse(utilisateurId);
+    }
+
     public List<MessageStatutDTO> obtenirNonLus(String utilisateurId) {
         return daoAccessorService.getRepository(MessageStatutRepository.class)
                 .findByIdUtilisateurIdAndLuFalse(utilisateurId)
