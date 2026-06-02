@@ -27,4 +27,6 @@ public class MediaDto {
     private String presignedUrl;
     private String uploadUrl;
     private String downloadUrl;
+
+    private String coursId;
 }

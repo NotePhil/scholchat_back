@@ -28,7 +28,7 @@ public class MediaBusiness {
 
     @Transactional
     public MediaEntity saveMediaMetadata(String fileName, String filePath,
-                                         String contentType, String mediaType, String ownerId) {
+                                         String contentType, String mediaType, String ownerId, String coursId) {
         try {
             UtilisateursEntity owner = null;
             if (ownerId != null && !ownerId.equals("temp")) {
@@ -52,6 +52,7 @@ public class MediaBusiness {
                 media.setMediaType(mediaType);
                 media.setUploadedDate(LocalDateTime.now());
                 media.setOwnerId(ownerId);
+                if (coursId != null) media.setCoursId(coursId);
 
                 MediaEntity savedMedia = mediaRepository.save(media);
                 log.debug("Media entity updated successfully with ID: {}", savedMedia.getId());
@@ -68,6 +69,7 @@ public class MediaBusiness {
             media.setUploadedDate(LocalDateTime.now());
             media.setBucketName(mediaService.getDefaultBucketName());
             media.setOwnerId(ownerId);
+            media.setCoursId(coursId);
 
             log.debug("Saving media entity with ID: {} and filePath: {}", mediaId, filePath);
             MediaEntity savedMedia = mediaRepository.save(media);
@@ -82,14 +84,12 @@ public class MediaBusiness {
     }
 
     public String generateUploadUrl(String fileName, String contentType,
-                                    String mediaType, String ownerId, String documentType) {
+                                    String mediaType, String ownerId, String documentType, String coursId) {
         try {
             String sanitizedFileName = sanitizeFileName(fileName);
             String filePath = buildUserMediaPath(ownerId, mediaType, documentType, sanitizedFileName);
 
-            //ensureUserMediaFoldersExist(ownerId, mediaType, documentType);
-
-            MediaEntity savedMedia = saveMediaMetadata(fileName, filePath, contentType, mediaType, ownerId);
+            MediaEntity savedMedia = saveMediaMetadata(fileName, filePath, contentType, mediaType, ownerId, coursId);
             log.debug("Media metadata saved with ID: {}", savedMedia.getId());
 
             return mediaService.generateUploadPresignedUrl(filePath, contentType);
@@ -167,6 +167,17 @@ public class MediaBusiness {
                 .orElseThrow(() -> new SchoolException(
                         SchoolErrorCode.RESOURCE_NOT_FOUND,
                         "Media not found with ID: " + mediaId));
+    }
+
+    public List<MediaEntity> getMediaByCoursId(String coursId) {
+        try {
+            if (coursId == null || coursId.isEmpty()) return List.of();
+            return mediaRepository.findByCoursId(coursId);
+        } catch (Exception e) {
+            log.error("Error getting media for cours: {} - {}", coursId, e.getMessage(), e);
+            throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR,
+                    "Failed to get media by cours: " + e.getMessage());
+        }
     }
 
     public List<MediaEntity> getMediaByOwnerId(String ownerId) {

@@ -66,7 +66,8 @@ public class MediaServiceImpl {
                     request.getContentType(),
                     request.getMediaType(),
                     request.getOwnerId(),
-                    request.getDocumentType());
+                    request.getDocumentType(),
+                    request.getCoursId());
 
             log.info("Generated presigned URL: {}", presignedUrl);
 
@@ -165,6 +166,13 @@ public class MediaServiceImpl {
         return ResponseEntity.ok(mediaDto);
     }
 
+    @GetMapping("/cours/{coursId}")
+    public ResponseEntity<List<MediaDto>> getMediaByCoursId(@PathVariable String coursId) {
+        List<MediaEntity> mediaList = mediaBusiness.getMediaByCoursId(coursId);
+        List<MediaDto> mediaDtoList = mediaList.stream().map(this::convertToDto).collect(Collectors.toList());
+        return ResponseEntity.ok(mediaDtoList);
+    }
+
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<MediaDto>> getMediaByUserId(@PathVariable String userId) {
         if (userId == null || userId.isEmpty()) {
@@ -176,6 +184,19 @@ public class MediaServiceImpl {
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(mediaDtoList);
+    }
+
+    @GetMapping("/find")
+    public ResponseEntity<MediaDto> findByFileNameAndOwner(
+            @RequestParam String fileName,
+            @RequestParam String ownerId) {
+        // Try exact match first
+        Optional<MediaEntity> exact = mediaRepository.findByFileNameAndOwnerId(fileName, ownerId);
+        if (exact.isPresent()) return ResponseEntity.ok(convertToDto(exact.get()));
+        // Fall back to partial match (e.g. stored as "timestamp_originalname.mp4")
+        List<MediaEntity> partial = mediaRepository.findByOwnerIdAndFileNameContaining(ownerId, fileName);
+        if (!partial.isEmpty()) return ResponseEntity.ok(convertToDto(partial.get(0)));
+        return ResponseEntity.notFound().build();
     }
 
     @DeleteMapping("/{mediaId}")
@@ -246,6 +267,7 @@ public class MediaServiceImpl {
         dto.setMediaType(entity.getMediaType());
         dto.setContentType(entity.getContentType());
         dto.setBucketName(entity.getBucketName());
+        dto.setCoursId(entity.getCoursId());
         return dto;
     }
 
@@ -339,6 +361,7 @@ public class MediaServiceImpl {
         private String mediaType;
         private String ownerId;
         private String documentType;
+        private String coursId;
 
         // Getters and setters
         public String getFileName() { return fileName; }
@@ -351,6 +374,8 @@ public class MediaServiceImpl {
         public void setOwnerId(String ownerId) { this.ownerId = ownerId; }
         public String getDocumentType() { return documentType; }
         public void setDocumentType(String documentType) { this.documentType = documentType; }
+        public String getCoursId() { return coursId; }
+        public void setCoursId(String coursId) { this.coursId = coursId; }
     }
 
     public static class MediaUpdateRequest {

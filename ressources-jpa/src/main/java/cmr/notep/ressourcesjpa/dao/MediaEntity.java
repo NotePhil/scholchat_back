@@ -55,6 +55,9 @@ public class MediaEntity {
     @Column(name = "file_type", length = 50)
     private String fileType;
 
+    @Column(name = "cours_id", length = 255)
+    private String coursId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "evenement_id")
     private EvenementEntity evenement;

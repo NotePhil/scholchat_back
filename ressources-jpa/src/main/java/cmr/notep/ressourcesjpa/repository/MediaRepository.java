@@ -13,11 +13,16 @@ import java.util.Optional;
 public interface MediaRepository extends JpaRepository<MediaEntity, String> {
     List<MediaEntity> findByOwnerId(String ownerId);
 
+    List<MediaEntity> findByCoursId(String coursId);
+
     Optional<MediaEntity> findByFilePath(String filePath);
 
     List<MediaEntity> findByMediaType(String mediaType);
 
     Optional<MediaEntity> findByFileNameAndOwnerId(String fileName, String ownerId);
+
+    @Query("SELECT m FROM MediaEntity m WHERE m.ownerId = :ownerId AND m.fileName LIKE %:fileNamePart% ORDER BY m.uploadedDate DESC")
+    List<MediaEntity> findByOwnerIdAndFileNameContaining(@Param("ownerId") String ownerId, @Param("fileNamePart") String fileNamePart);
 
     // Updated method to handle potential duplicates
     List<MediaEntity> findByFileName(String fileName);

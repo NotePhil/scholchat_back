@@ -90,3 +90,10 @@ databaseChangeLog:
         - sqlFile:
             path: sql/migration-add-creator-id.sql
             relativeToChangelogFile: false
+  - changeSet:
+      id: 14-add-media-cours-id
+      author: db-init
+      changes:
+        - sqlFile:
+            path: sql/migration-add-media-cours-id.sql
+            relativeToChangelogFile: false
