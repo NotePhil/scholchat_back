@@ -272,34 +272,74 @@ public class MediaServiceImpl {
     }
 
     @GetMapping("/{mediaId}/content")
-    public ResponseEntity<byte[]> proxyDownload(@PathVariable("mediaId") String mediaId) {
+    public ResponseEntity<org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody> proxyDownload(
+            @PathVariable("mediaId") String mediaId,
+            @RequestHeader(value = "Range", required = false) String rangeHeader) {
         try {
             MediaEntity media = mediaBusiness.getMediaById(mediaId);
             if (media == null) {
                 return ResponseEntity.notFound().build();
             }
 
-            log.info("Proxy download for media: id={}, filePath={}, bucket={}",
-                    mediaId, media.getFilePath(), media.getBucketName());
+            log.info("Proxy download for media: id={}, filePath={}, bucket={}, range={}",
+                    mediaId, media.getFilePath(), media.getBucketName(), rangeHeader);
 
-            // Download directly from S3/MinIO using the S3Client
-            software.amazon.awssdk.services.s3.model.GetObjectRequest getRequest =
-                software.amazon.awssdk.services.s3.model.GetObjectRequest.builder()
-                    .bucket(media.getBucketName() != null ? media.getBucketName() : "scholchat")
-                    .key(media.getFilePath())
-                    .build();
+            String bucket = media.getBucketName() != null ? media.getBucketName() : "scholchat";
+            String contentType = media.getContentType() != null ? media.getContentType() : "application/octet-stream";
 
-            software.amazon.awssdk.core.ResponseBytes<software.amazon.awssdk.services.s3.model.GetObjectResponse> objectBytes =
-                s3Client.getObjectAsBytes(getRequest);
-
-            byte[] fileBytes = objectBytes.asByteArray();
+            // Get object metadata for Content-Length
+            software.amazon.awssdk.services.s3.model.HeadObjectRequest headRequest =
+                software.amazon.awssdk.services.s3.model.HeadObjectRequest.builder()
+                    .bucket(bucket).key(media.getFilePath()).build();
+            software.amazon.awssdk.services.s3.model.HeadObjectResponse headResponse =
+                s3Client.headObject(headRequest);
+            long totalLength = headResponse.contentLength();
 
             org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
-            headers.set("Content-Type", media.getContentType() != null ? media.getContentType() : "application/octet-stream");
+            headers.set("Content-Type", contentType);
             headers.set("Content-Disposition", "inline; filename=\"" + media.getFileName() + "\"");
+            headers.set("Accept-Ranges", "bytes");
             headers.set("Cache-Control", "public, max-age=3600");
 
-            return new ResponseEntity<>(fileBytes, headers, org.springframework.http.HttpStatus.OK);
+            // Handle Range request (needed for video seeking in browsers)
+            if (rangeHeader != null && rangeHeader.startsWith("bytes=")) {
+                String[] parts = rangeHeader.substring(6).split("-");
+                long start = Long.parseLong(parts[0]);
+                long end = parts.length > 1 && !parts[1].isEmpty() ? Long.parseLong(parts[1]) : totalLength - 1;
+                long rangeLength = end - start + 1;
+
+                software.amazon.awssdk.services.s3.model.GetObjectRequest rangeRequest =
+                    software.amazon.awssdk.services.s3.model.GetObjectRequest.builder()
+                        .bucket(bucket).key(media.getFilePath())
+                        .range("bytes=" + start + "-" + end)
+                        .build();
+
+                headers.set("Content-Range", "bytes " + start + "-" + end + "/" + totalLength);
+                headers.setContentLength(rangeLength);
+
+                org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody body = out -> {
+                    try (java.io.InputStream in = s3Client.getObject(rangeRequest)) {
+                        in.transferTo(out);
+                    }
+                };
+                return ResponseEntity.status(org.springframework.http.HttpStatus.PARTIAL_CONTENT)
+                        .headers(headers).body(body);
+            }
+
+            // Full file streaming
+            software.amazon.awssdk.services.s3.model.GetObjectRequest getRequest =
+                software.amazon.awssdk.services.s3.model.GetObjectRequest.builder()
+                    .bucket(bucket).key(media.getFilePath()).build();
+
+            headers.setContentLength(totalLength);
+
+            org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody body = out -> {
+                try (java.io.InputStream in = s3Client.getObject(getRequest)) {
+                    in.transferTo(out);
+                }
+            };
+            return ResponseEntity.ok().headers(headers).body(body);
+
         } catch (Exception e) {
             log.error("Proxy download failed for mediaId {}: {}", mediaId, e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
@@ -334,8 +374,10 @@ public class MediaServiceImpl {
 
             org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
             headers.set("Content-Type", contentType);
-            org.springframework.http.HttpEntity<byte[]> requestEntity =
-                    new org.springframework.http.HttpEntity<>(file.getBytes(), headers);
+            headers.setContentLength(file.getSize());
+            org.springframework.http.HttpEntity<org.springframework.core.io.InputStreamResource> requestEntity =
+                    new org.springframework.http.HttpEntity<>(
+                            new org.springframework.core.io.InputStreamResource(file.getInputStream()), headers);
 
             org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
             restTemplate.exchange(trustedUrl, org.springframework.http.HttpMethod.PUT, requestEntity, String.class);
