@@ -9,6 +9,7 @@ import cmr.notep.business.services.PasswordResetEmailService;
 import cmr.notep.business.services.RoleService;
 import cmr.notep.business.services.UserValidationService;
 import cmr.notep.business.utils.JwtUtil;
+import cmr.notep.interfaces.dto.ChangePasswordRequest;
 import cmr.notep.interfaces.dto.LoginDto;
 import cmr.notep.interfaces.dto.PasswordResetRequest;
 import cmr.notep.interfaces.dto.PasswordSetupRequest;
@@ -314,33 +315,25 @@ public class AuthBusiness {
      * Validates password strength requirements
      */
     private void validatePasswordStrength(String password) {
-        // Password must be at least 8 characters
         if (password.length() < 8) {
             throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
-                    "Password must be at least 8 characters long");
+                    "Le mot de passe doit contenir au moins 8 caractères");
         }
-
-        // Check for at least one uppercase letter
         if (!password.matches(".*[A-Z].*")) {
             throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
-                    "Password must contain at least one uppercase letter");
+                    "Le mot de passe doit contenir au moins une lettre majuscule");
         }
-
-        // Check for at least one lowercase letter
         if (!password.matches(".*[a-z].*")) {
             throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
-                    "Password must contain at least one lowercase letter");
+                    "Le mot de passe doit contenir au moins une lettre minuscule");
         }
-
-        // Check for at least one digit
         if (!password.matches(".*\\d.*")) {
             throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
-                    "Password must contain at least one digit");
+                    "Le mot de passe doit contenir au moins un chiffre");
         }
-
-        // Check for at least one special character
-        if (!password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?].*")) { throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
-                "Password must contain at least one special character");
+        if (!password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?].*")) {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
+                    "Le mot de passe doit contenir au moins un caractère spécial (!@#$%^&*...)");
         }
     }
 
@@ -452,6 +445,25 @@ public class AuthBusiness {
         // Save user
         utilisateursBusiness.mettreUtilisateurAJour(user);
         log.info("Password reset successful");
+    }
+
+    public void changePassword(String userEmail, ChangePasswordRequest request) {
+        log.info("Processing change-password for: {}", userEmail);
+
+        Utilisateurs user = utilisateursBusiness.avoirUtilisateurParEmail(userEmail);
+        if (user == null) {
+            throw new SchoolException(SchoolErrorCode.NOT_FOUND, "User not found");
+        }
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasseAccess())) {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Mot de passe actuel incorrect");
+        }
+
+        validatePasswordStrength(request.getNewPassword());
+
+        user.setPasseAccess(passwordEncoder.encode(request.getNewPassword()));
+        utilisateursBusiness.mettreUtilisateurAJour(user);
+        log.info("Password changed successfully for: {}", userEmail);
     }
 
     public Utilisateurs registerUserWithToken(Utilisateurs utilisateur, String token) {

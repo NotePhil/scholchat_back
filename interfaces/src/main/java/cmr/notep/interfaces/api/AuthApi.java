@@ -1,5 +1,6 @@
 package cmr.notep.interfaces.api;
 
+import cmr.notep.interfaces.dto.ChangePasswordRequest;
 import cmr.notep.interfaces.dto.LoginDto;
 import cmr.notep.interfaces.dto.PasswordResetRequest;
 import cmr.notep.interfaces.dto.PasswordSetupRequest;
@@ -86,5 +87,13 @@ public interface AuthApi {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     Utilisateurs activerUtilisateur(@RequestParam String activationToken);
+
+    @PostMapping(
+            path = "/change-password",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    void changePassword(@RequestBody ChangePasswordRequest request);
 
 }

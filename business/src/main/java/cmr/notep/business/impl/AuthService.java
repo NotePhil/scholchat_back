@@ -2,6 +2,7 @@ package cmr.notep.business.impl;
 
 import cmr.notep.business.business.AuthBusiness;
 import cmr.notep.interfaces.api.AuthApi;
+import cmr.notep.interfaces.dto.ChangePasswordRequest;
 import cmr.notep.interfaces.dto.LoginDto;
 import cmr.notep.interfaces.dto.PasswordResetRequest;
 import cmr.notep.interfaces.dto.PasswordSetupRequest;
@@ -11,6 +12,7 @@ import cmr.notep.business.services.ActivationService;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -84,5 +86,12 @@ public class AuthService implements AuthApi {
     public void registerPassword(PasswordSetupRequest request) {
         log.info("Setting initial password for: {}", request.getEmail());
         authBusiness.registerPassword(request);
+    }
+
+    @Override
+    public void changePassword(ChangePasswordRequest request) {
+        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        log.info("Changing password for user: {}", userEmail);
+        authBusiness.changePassword(userEmail, request);
     }
 }
