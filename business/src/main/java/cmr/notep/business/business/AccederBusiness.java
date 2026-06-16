@@ -60,14 +60,13 @@ public class AccederBusiness {
                     "Seules les classes ACTIF peuvent être accessibles");
         }
 
-        // For classes WITHOUT "accès majeur" (minor classes): block direct student access
-        // — minors are added by their parent via the parent-access flow
+        // For classes WITHOUT "accès majeur" (minor classes): only professors and parents may enroll
         if (!classe.isAccesMajeur()) {
             UtilisateursEntity requester = daoAccessorService.getRepository(UtilisateursRepository.class)
                     .findById(utilisateurId).orElse(null);
             boolean isProfesseur = requester instanceof ProfesseursEntity;
-            // Parents use the parent-access flow; students cannot self-register for minor classes
-            if (!isProfesseur) {
+            boolean isParentUser  = estParent && (requester instanceof ParentsEntity);
+            if (!isProfesseur && !isParentUser) {
                 throw new SchoolException(SchoolErrorCode.INVALID_OPERATION,
                         "Cette classe est réservée aux mineurs. L'accès se fait via le compte parent.");
             }
