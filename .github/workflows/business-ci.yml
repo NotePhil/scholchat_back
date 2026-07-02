@@ -54,6 +54,6 @@ jobs:
           context: ./business
           push: true
           tags: |
-            ghcr.io/notephil/scholchat-business:latest
-            ghcr.io/notephil/scholchat-business:${{ github.run_number }}
+            ghcr.io/${{ github.repository_owner }}/scholchat-business:latest
+            ghcr.io/${{ github.repository_owner }}/scholchat-business:${{ github.run_number }}
 
