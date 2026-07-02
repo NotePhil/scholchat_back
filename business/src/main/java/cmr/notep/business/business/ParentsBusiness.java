@@ -121,6 +121,18 @@ public class ParentsBusiness {
             parent.setEnfants(new ArrayList<>());
         }
 
+        // Duplicate check: same nom + prenom + niveau (case-insensitive)
+        boolean duplicate = parent.getEnfants().stream().anyMatch(e ->
+                e.getNom() != null && e.getNom().equalsIgnoreCase(eleve.getNom()) &&
+                e.getPrenom() != null && e.getPrenom().equalsIgnoreCase(eleve.getPrenom()) &&
+                e.getNiveau() != null && e.getNiveau().equalsIgnoreCase(eleve.getNiveau())
+        );
+        if (duplicate) {
+            throw new SchoolException(SchoolErrorCode.ALREADY_EXISTS,
+                    "Un enfant nommé " + eleve.getPrenom() + " " + eleve.getNom() +
+                    " en " + eleve.getNiveau() + " est déjà associé à ce compte.");
+        }
+
         if (!parent.getEnfants().contains(eleve)) {
             parent.getEnfants().add(eleve);
             daoAccessorService.getRepository(ParentsRepository.class).save(parent);
