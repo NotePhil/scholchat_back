@@ -78,7 +78,7 @@ public class ParentsBusiness {
 
         ParentsRepository repository = daoAccessorService.getRepository(ParentsRepository.class);
         ParentsEntity existingEntity = repository.findById(idParent)
-                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Parent introuvable avec l'ID: " + idParent));
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Parent introuvable avec l'ID si: " + idParent));
 
         // Update only non-null fields from partialParent
         Parents existingParent = dozerMapperBean.map(existingEntity, Parents.class);
