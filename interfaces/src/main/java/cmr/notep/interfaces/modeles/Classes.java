@@ -30,6 +30,7 @@ public class Classes implements Serializable {
     private String etablissementToken; // For token validation during creation
     private boolean paymentRequired; // True when no establishment is provided
     private boolean accesMajeur;
+    private boolean expireParOffre; // True si la classe a ete desactivee automatiquement (offre/contrat expire)
     private Professeurs moderator;
     private String creatorId;
     private DroitPublication droitPublication;

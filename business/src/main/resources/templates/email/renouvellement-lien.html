@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Lien de renouvellement</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #eff6ff; padding: 10px; text-align: center; }
+        .content { padding: 20px; }
+        .footer { margin-top: 20px; font-size: 12px; text-align: center; color: #6c757d; }
+        .button {
+            display: inline-block; padding: 10px 20px; background-color: #2563eb;
+            color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;
+        }
+        .identifiant { background: #f3f4f6; padding: 8px 12px; border-radius: 6px; font-family: monospace; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Renouvellement de votre offre</h1>
+    </div>
+    <div class="content">
+        <p>Bonjour,</p>
+        <p>Vous avez demandé à renouveler ou modifier l'offre de <strong th:text="${nomCible}"></strong>.</p>
+        <p>
+            Identifiant <span th:text="${entityType == 'ETABLISSEMENT'} ? 'établissement' : 'classe'"></span> :
+            <span class="identifiant" th:text="${entityId}"></span>
+        </p>
+        <p>Cliquez sur le bouton ci-dessous pour accéder à la page de renouvellement (lien valable 7 jours) :</p>
+        <a class="button" th:href="${lienRenouvellement}">Renouveler / changer d'offre</a>
+        <p>Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email.</p>
+    </div>
+    <div class="footer">
+        <p>© 2025 ScholChat. Tous droits réservés.</p>
+    </div>
+</div>
+</body>
+</html>

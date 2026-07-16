@@ -91,7 +91,9 @@ public class SecurityConfig {
                                 "/acceder/classes/{classeId}/utilisateurs",
                                 "/acceder/utilisateurs/{utilisateurId}/classes",
                                 "/utilisateurs/professors/{professorId}/validate",
-                                "/utilisateurs/professeurs/{professorId}/rejet"
+                                "/utilisateurs/professeurs/{professorId}/rejet",
+                                "/contrats/renouvellement-info", "/contrats/renouvellement-info/",
+                                "/contrats/renouvellement/**"
 
                         ).permitAll()
                         .requestMatchers(

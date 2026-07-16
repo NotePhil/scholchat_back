@@ -360,6 +360,27 @@ public class NotificationService {
         log.info("Message notification sent to {} from {}", recipientId, senderName);
     }
 
+    @Transactional
+    public void createOffreExpirationBientotNotification(String userId, String nomEntite, String entiteId, String entiteType) {
+        saveNotification(userId, "OFFRE_EXPIRATION_BIENTOT", "Offre bientôt expirée",
+                "L'offre de \"" + nomEntite + "\" arrive bientôt à expiration. Pensez à la renouveler.",
+                null, null, entiteId, entiteType);
+    }
+
+    @Transactional
+    public void createOffreExpireeNotification(String userId, String nomEntite, String entiteId, String entiteType) {
+        saveNotification(userId, "OFFRE_EXPIREE", "Offre expirée",
+                "L'offre de \"" + nomEntite + "\" a expiré. Renouvelez-la pour réactiver l'accès.",
+                null, null, entiteId, entiteType);
+    }
+
+    @Transactional
+    public void createSuppressionImminenteNotification(String userId, String nomEntite, String entiteId, String entiteType) {
+        saveNotification(userId, "SUPPRESSION_IMMINENTE", "Suppression imminente",
+                "\"" + nomEntite + "\" sera définitivement supprimé(e) si l'offre n'est pas renouvelée rapidement.",
+                null, null, entiteId, entiteType);
+    }
+
     private void saveNotification(String userId, String type, String title, String message,
                                   String actorId, String actorName, String relatedEntityId, String relatedEntityType) {
         try {

@@ -25,6 +25,9 @@ public class AuthResponse {
     private boolean multiRole;
     // Parent-children info
     private java.util.List<ChildInfo> children;
+    // Classes/etablissements dont l'offre est expiree (professeur/gestionnaire concerne) ;
+    // vide/absent si aucune offre expiree. Voir ContratBusiness.resoudreEntitesExpirees.
+    private java.util.List<java.util.Map<String, String>> expiredEntities;
 
     @Data
     @Builder

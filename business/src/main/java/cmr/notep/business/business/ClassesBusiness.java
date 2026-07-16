@@ -37,16 +37,19 @@ public class ClassesBusiness {
     private final TokenService tokenService;
     private final PaymentService paymentService;
     private final NotificationService notificationService;
+    private final ContratBusiness contratBusiness;
 
     public ClassesBusiness(DaoAccessorService daoAccessorService, MailService mailService,
                           EmailTemplateService emailTemplateService, TokenService tokenService,
-                          PaymentService paymentService, NotificationService notificationService) {
+                          PaymentService paymentService, NotificationService notificationService,
+                          ContratBusiness contratBusiness) {
         this.daoAccessorService = daoAccessorService;
         this.mailService = mailService;
         this.emailTemplateService = emailTemplateService;
         this.tokenService = tokenService;
         this.paymentService = paymentService;
         this.notificationService = notificationService;
+        this.contratBusiness = contratBusiness;
     }
 
     public ClasseCreationResponseDto creerNouvelleClasse(ClasseCreationDto classeDto) throws SchoolException {
@@ -94,12 +97,15 @@ public class ClassesBusiness {
                 }
             }
             
+            // Verifie le quota de classes actives du forfait de l'etablissement avant de rattacher la classe
+            contratBusiness.verifierQuotaEtablissement(etablissement.getId());
+
             classesEntity.setEtablissement(etablissement);
             // Only professors need approval, others get ACTIF directly
             classesEntity.setEtat(moderator != null ? EtatClasse.EN_ATTENTE_APPROBATION : EtatClasse.ACTIF);
             classesEntity.setPaymentRequired(false);
             token = tokenService.generateClassToken();
-            
+
         } else {
             if (classeDto.getPaymentInfo() == null) {
                 throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Informations de paiement requises");
@@ -116,7 +122,14 @@ public class ClassesBusiness {
         }
         
         ClassesEntity savedEntity = daoAccessorService.getRepository(ClassesRepository.class).save(classesEntity);
-        
+
+        // Classe independante (sans etablissement) : souscription automatique au contrat/offre choisi.
+        // Le paiement vient d'etre valide ci-dessus par paymentService.processPayment(...).
+        if (etablissement == null && classeDto.getOffreId() != null && !classeDto.getOffreId().trim().isEmpty()) {
+            String souscripteur = moderator != null ? moderator.getId() : classeDto.getCreatorId();
+            contratBusiness.souscrireEtActiverPourClasse(classeDto.getOffreId(), classeDto.getPeriodicite(), savedEntity, souscripteur);
+        }
+
         // Update moderator's moderated classes list
         if (moderator != null) {
             if (!moderator.getModeratedClasses().contains(savedEntity)) {
@@ -334,6 +347,8 @@ public class ClassesBusiness {
 
         ClassesEntity classeExistante = classesRepository.findById(idClasse)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe non trouvée avec l'ID: " + idClasse));
+
+        contratBusiness.verifierAbonnementActif(idClasse);
 
         // Handle moderator update - FIXED VERSION
         updateModerator(classeExistante, classeModifiee);
@@ -642,9 +657,18 @@ public class ClassesBusiness {
     }
 
     public List<Classes> obtenirToutesLesClasses() throws SchoolException {
+        return obtenirToutesLesClasses(true);
+    }
+
+    /**
+     * @param inclureInactives false pour les appels non-admin : masque les classes desactivees
+     *                         (notamment par expiration de leur offre/contrat, voir ContratBusiness).
+     */
+    public List<Classes> obtenirToutesLesClasses(boolean inclureInactives) throws SchoolException {
         ClassesRepository classesRepository = daoAccessorService.getRepository(ClassesRepository.class);
         return classesRepository.findAll()
                 .stream()
+                .filter(c -> inclureInactives || c.getEtat() != EtatClasse.INACTIF)
                 .map(c -> dozerMapperBean.map(c, Classes.class))
                 .collect(Collectors.toList());
     }

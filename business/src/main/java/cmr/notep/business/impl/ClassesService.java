@@ -114,7 +114,10 @@ public class ClassesService implements ClassesApi {
     @Override
     public List<Classes> obtenirToutesLesClasses() {
         log.info("Récupération de toutes les classes");
-        List<Classes> classes = classesBusiness.obtenirToutesLesClasses();
+        boolean isAdmin = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null
+                && org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getAuthorities()
+                        .stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        List<Classes> classes = classesBusiness.obtenirToutesLesClasses(isAdmin);
         log.info("Récupération de {} classes", classes.size());
         return classes;
     }

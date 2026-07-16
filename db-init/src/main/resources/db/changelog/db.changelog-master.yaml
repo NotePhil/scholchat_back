@@ -97,3 +97,24 @@ databaseChangeLog:
         - sqlFile:
             path: sql/migration-add-media-cours-id.sql
             relativeToChangelogFile: false
+  - changeSet:
+      id: 15-add-offres-contrats
+      author: db-init
+      changes:
+        - sqlFile:
+            path: sql/migration-add-offres-contrats.sql
+            relativeToChangelogFile: false
+  - changeSet:
+      id: 16-add-expire-par-offre
+      author: db-init
+      changes:
+        - sqlFile:
+            path: sql/migration-add-expire-par-offre.sql
+            relativeToChangelogFile: false
+  - changeSet:
+      id: 17-add-purge-et-restrictions-offres
+      author: db-init
+      changes:
+        - sqlFile:
+            path: sql/migration-add-purge-et-restrictions-offres.sql
+            relativeToChangelogFile: false

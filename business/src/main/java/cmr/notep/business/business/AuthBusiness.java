@@ -39,9 +39,10 @@ public class AuthBusiness {
     private final UserValidationService userValidationService;
     private final RoleService roleService;
     private final PasswordDecryptionService passwordDecryptionService;
+    private final ContratBusiness contratBusiness;
 
 
-    public AuthBusiness(PasswordEncoder passwordEncoder, UtilisateursBusiness utilisateursBusiness, JwtUtil jwtUtil, JwtConfig jwtConfig, ActivationEmailService activationEmailService, RefreshTokenBusiness refreshTokenBusiness, PasswordResetEmailService passwordResetEmailService,RoleService roleService, UserValidationService userValidationService, PasswordDecryptionService passwordDecryptionService) {
+    public AuthBusiness(PasswordEncoder passwordEncoder, UtilisateursBusiness utilisateursBusiness, JwtUtil jwtUtil, JwtConfig jwtConfig, ActivationEmailService activationEmailService, RefreshTokenBusiness refreshTokenBusiness, PasswordResetEmailService passwordResetEmailService,RoleService roleService, UserValidationService userValidationService, PasswordDecryptionService passwordDecryptionService, ContratBusiness contratBusiness) {
         this.passwordEncoder = passwordEncoder;
         this.utilisateursBusiness = utilisateursBusiness;
         this.jwtUtil = jwtUtil;
@@ -52,6 +53,7 @@ public class AuthBusiness {
         this.userValidationService = userValidationService;
         this.passwordResetEmailService = passwordResetEmailService;
         this.passwordDecryptionService = passwordDecryptionService;
+        this.contratBusiness = contratBusiness;
     }
 
     /**
@@ -179,7 +181,30 @@ public class AuthBusiness {
                 .map(r -> r.startsWith("ROLE_") ? r : "ROLE_" + r)
                 .collect(java.util.stream.Collectors.toList());
         tokenRoles.add("ROLE_USER");
-        String accessToken = jwtUtil.generateAccessToken(existingUser.getEmail(), tokenRoles);
+
+        // Un utilisateur peut moderer/acceder a plusieurs classes (ou gerer plusieurs etablissements) :
+        // on ne bloque la connexion QUE si TOUTES ses classes/etablissements ont une offre expiree
+        // (plus aucun acces utile). S'il lui en reste au moins une active, la connexion se fait
+        // normalement et sans interruption ; l'avertissement pour l'entite expiree specifique est
+        // alors affiche au moment ou l'utilisateur ouvre cette classe/etablissement (voir OffreInfoPanel
+        // cote frontend), pas a la connexion. Le vrai verrou d'ecriture (403) reste applique au niveau
+        // des actions concernees, voir ContratBusiness.verifierAbonnementActif.
+        boolean isAdminUser = availableRoles.stream().anyMatch(r -> r.equalsIgnoreCase("ADMIN"));
+        ContratBusiness.AccesUtilisateurInfo acces = isAdminUser
+                ? new ContratBusiness.AccesUtilisateurInfo(java.util.Collections.emptyList(), true)
+                : contratBusiness.resoudreAccesUtilisateur(existingUser.getId());
+
+        if (!acces.isHasActiveEntity() && !acces.getExpiredEntities().isEmpty()) {
+            String noms = acces.getExpiredEntities().stream()
+                    .map(e -> e.get("nom"))
+                    .collect(java.util.stream.Collectors.joining(", "));
+            throw new SchoolException(SchoolErrorCode.ABONNEMENT_EXPIRE,
+                    "Votre offre a expiré pour : " + noms + ". Veuillez la renouveler pour vous connecter.");
+        }
+
+        List<java.util.Map<String, String>> expiredEntities = acces.getExpiredEntities();
+
+        String accessToken = jwtUtil.generateAccessToken(existingUser.getEmail(), tokenRoles, expiredEntities);
 
         boolean isMultiRole = availableRoles.size() > 1;
 
@@ -202,6 +227,7 @@ public class AuthBusiness {
                 .selectedRole(selectedRole)
                 .multiRole(isMultiRole)
                 .children(children)
+                .expiredEntities(expiredEntities.isEmpty() ? null : expiredEntities)
                 .build();
     }
 

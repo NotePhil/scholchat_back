@@ -26,7 +26,15 @@ public enum SchoolErrorCode {
     ALREADY_EXISTS("Existing entity"),
     INVALID_CODE("Code d'activation invalide"),
     CONFLICT("Utilisateur existe deja"),
-    PAYMENT_FAILED("Payment processing failed");
+    PAYMENT_FAILED("Payment processing failed"),
+
+    // Codes pour le module Offres/Contrats
+    OFFRE_INTROUVABLE("Offre introuvable"),
+    CONTRAT_INTROUVABLE("Contrat introuvable"),
+    CIBLE_OFFRE_INVALIDE("Cette offre ne correspond pas au type de cible demande (classe/etablissement)"),
+    QUOTA_CLASSES_ATTEINT("Le quota de classes de votre forfait est atteint"),
+    ABONNEMENT_EXPIRE("Votre offre a expire, veuillez la renouveler pour continuer"),
+    RENOUVELLEMENT_TOKEN_INVALIDE("Lien de renouvellement invalide ou expire");
     private final String message;
 
     SchoolErrorCode(String message) {

@@ -5,7 +5,9 @@ import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.EmailTemplateService;
 import cmr.notep.business.services.MailService;
 import cmr.notep.business.services.NotificationService;
+import cmr.notep.business.services.PaymentService;
 import cmr.notep.business.services.TokenService;
+import cmr.notep.interfaces.dto.ClasseCreationDto;
 import cmr.notep.interfaces.modeles.Etablissement;
 import cmr.notep.interfaces.modeles.Utilisateurs;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
@@ -33,15 +35,20 @@ public class EtablissementBusiness {
     private final MailService mailService;
     private final EmailTemplateService emailTemplateService;
     private final NotificationService notificationService;
+    private final PaymentService paymentService;
+    private final ContratBusiness contratBusiness;
 
     public EtablissementBusiness(DaoAccessorService daoAccessorService, TokenService tokenService,
                                   MailService mailService, EmailTemplateService emailTemplateService,
-                                  NotificationService notificationService) {
+                                  NotificationService notificationService, PaymentService paymentService,
+                                  ContratBusiness contratBusiness) {
         this.daoAccessorService = daoAccessorService;
         this.tokenService = tokenService;
         this.mailService = mailService;
         this.emailTemplateService = emailTemplateService;
         this.notificationService = notificationService;
+        this.paymentService = paymentService;
+        this.contratBusiness = contratBusiness;
     }
 
     public Etablissement creerEtablissement(Etablissement etablissement) {
@@ -61,6 +68,29 @@ public class EtablissementBusiness {
             entity.setCodeUnique(tokenService.generateUniqueCode());
             
             EtablissementEntity saved = daoAccessorService.getRepository(EtablissementRepository.class).save(entity);
+
+            // Souscription automatique au contrat/offre choisi, si un forfait a ete selectionne a la creation.
+            if (etablissement.getOffreId() != null && !etablissement.getOffreId().trim().isEmpty()) {
+                if (etablissement.getPaymentInfo() == null) {
+                    throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Informations de paiement requises pour ce forfait");
+                }
+                ClasseCreationDto.PaymentInfoDto legacyPaymentInfo = ClasseCreationDto.PaymentInfoDto.builder()
+                        .paymentMethod(etablissement.getPaymentInfo().getPaymentMethod())
+                        .cardNumber(etablissement.getPaymentInfo().getCardNumber())
+                        .expiryDate(etablissement.getPaymentInfo().getExpiryDate())
+                        .cvv(etablissement.getPaymentInfo().getCvv())
+                        .cardHolderName(etablissement.getPaymentInfo().getCardHolderName())
+                        .phoneNumber(etablissement.getPaymentInfo().getPhoneNumber())
+                        .amount(etablissement.getPaymentInfo().getAmount())
+                        .build();
+                boolean paiementOk = paymentService.processPayment(legacyPaymentInfo);
+                if (!paiementOk) {
+                    throw new SchoolException(SchoolErrorCode.PAYMENT_FAILED, "Échec du paiement du forfait établissement");
+                }
+                String souscripteur = saved.getGestionnaire() != null ? saved.getGestionnaire().getId() : null;
+                contratBusiness.souscrireEtActiverPourEtablissement(etablissement.getOffreId(), etablissement.getPeriodicite(), saved, souscripteur);
+            }
+
             Etablissement result = mapToEtablissement(saved);
             if (result.getGestionnaire() != null && result.getGestionnaire().getEmail() != null) {
                 try {

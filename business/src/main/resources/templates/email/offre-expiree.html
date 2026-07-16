@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Votre offre a expiré</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #fef2f2; padding: 10px; text-align: center; }
+        .content { padding: 20px; }
+        .footer { margin-top: 20px; font-size: 12px; text-align: center; color: #6c757d; }
+        .button {
+            display: inline-block; padding: 10px 20px; background-color: #dc2626;
+            color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Votre offre a expiré</h1>
+    </div>
+    <div class="content">
+        <p>Bonjour,</p>
+        <p>L'offre <strong th:text="${offreNom}"></strong> de <strong th:text="${nomCible}"></strong> vient d'expirer.
+            L'accès a été désactivé automatiquement.</p>
+        <p>Renouvelez dès maintenant pour réactiver l'accès :</p>
+        <a class="button" th:href="${renewalUrl}">Renouveler mon offre</a>
+    </div>
+    <div class="footer">
+        <p>© 2025 ScholChat. Tous droits réservés.</p>
+    </div>
+</div>
+</body>
+</html>

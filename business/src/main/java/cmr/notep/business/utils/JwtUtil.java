@@ -37,6 +37,18 @@ public class JwtUtil {
         return createToken(claims, email, accessTokenExpirationMillis);
     }
 
+    // Generate an access token with roles, additionally flagging entities (classe/etablissement)
+    // whose offre/contrat is expired. Additive overload: existing callers/consumers of
+    // generateAccessToken(email, roles) and its "roles" claim are unaffected.
+    public String generateAccessToken(String email, List<String> roles, List<Map<String, String>> expiredEntities) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", roles);
+        if (expiredEntities != null && !expiredEntities.isEmpty()) {
+            claims.put("expiredEntities", expiredEntities);
+        }
+        return createToken(claims, email, accessTokenExpirationMillis);
+    }
+
     // Generate a refresh token (without roles)
     public String generateRefreshToken(String email) {
         Map<String, Object> claims = new HashMap<>();
@@ -63,6 +75,38 @@ public class JwtUtil {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    // Jeton de renouvellement d'offre/contrat (meme forme que le jeton de reset de mot de passe,
+    // mais porte le type et l'id de l'entite (classe/etablissement) a renouveler plutot qu'un email).
+    public String generateRenewalToken(String entityType, String entityId) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("entityType", entityType);
+        claims.put("entityId", entityId);
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject(entityId)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + jwtConfig.getRenewalTokenExpirationMillis()))
+                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public boolean validateRenewalToken(String token) {
+        try {
+            Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public String getEntityTypeFromRenewalToken(String token) {
+        return getClaimFromToken(token, claims -> claims.get("entityType", String.class));
+    }
+
+    public String getEntityIdFromRenewalToken(String token) {
+        return getClaimFromToken(token, claims -> claims.get("entityId", String.class));
     }
     private String createToken(Map<String, Object> claims, String subject, long expirationMillis) {
         return Jwts.builder()

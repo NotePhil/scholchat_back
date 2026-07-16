@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Confirmation de souscription</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #f0fdf4; padding: 10px; text-align: center; }
+        .content { padding: 20px; }
+        .footer { margin-top: 20px; font-size: 12px; text-align: center; color: #6c757d; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Offre activée avec succès</h1>
+    </div>
+    <div class="content">
+        <p>Bonjour,</p>
+        <p>Votre offre a été activée avec succès pour <strong th:text="${nomCible}"></strong> :</p>
+        <ul>
+            <li><strong>Offre :</strong> <span th:text="${offreNom}"></span></li>
+            <li><strong>Périodicité :</strong> <span th:text="${periodicite}"></span></li>
+            <li><strong>Montant payé :</strong> <span th:text="${prixPaye}"></span> FCFA</li>
+            <li><strong>Valide jusqu'au :</strong> <span th:text="${#temporals.format(dateFin, 'dd/MM/yyyy HH:mm')}"></span></li>
+        </ul>
+        <p>Merci de votre confiance.</p>
+    </div>
+    <div class="footer">
+        <p>© 2025 ScholChat. Tous droits réservés.</p>
+    </div>
+</div>
+</body>
+</html>

@@ -39,6 +39,10 @@ echo Step 6: Apply migrations...
 %PSQL% -U postgres -d scholchat -f "%SQLDIR%\migration-session-attendance.sql"
 %PSQL% -U postgres -d scholchat -f "%SQLDIR%\migration-type-assignation-etat-soumission.sql"
 %PSQL% -U postgres -d scholchat -f "%SQLDIR%\migration-fix-moderator-droits.sql"
+%PSQL% -U postgres -d scholchat -f "%SQLDIR%\migration-add-media-cours-id.sql"
+%PSQL% -U postgres -d scholchat -f "%SQLDIR%\migration-add-offres-contrats.sql"
+%PSQL% -U postgres -d scholchat -f "%SQLDIR%\migration-add-expire-par-offre.sql"
+%PSQL% -U postgres -d scholchat -f "%SQLDIR%\migration-add-purge-et-restrictions-offres.sql"
 echo.
 
 echo ============================================

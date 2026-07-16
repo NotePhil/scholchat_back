@@ -48,4 +48,7 @@ public class EtablissementEntity {
 
     @OneToMany(mappedBy = "etablissement", cascade = CascadeType.ALL)
     private List<ClassesEntity> classes = new ArrayList<>();
+
+    @Column(name = "expire_par_offre")
+    private boolean expireParOffre;
 }

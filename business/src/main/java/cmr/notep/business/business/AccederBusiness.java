@@ -55,6 +55,12 @@ public class AccederBusiness {
                 .findById(classeId)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe introuvable"));
 
+        if (classe.isExpireParOffre()) {
+            throw new SchoolException(SchoolErrorCode.ABONNEMENT_EXPIRE,
+                    "Cette classe n'est plus accessible : son offre a expiré. Votre demande d'accès est bloquée " +
+                            "tant que le professeur/modérateur n'a pas renouvelé l'offre de cette classe.");
+        }
+
         if (classe.getEtat() != EtatClasse.ACTIF) {
             throw new SchoolException(SchoolErrorCode.INVALID_STATE,
                     "Seules les classes ACTIF peuvent être accessibles");

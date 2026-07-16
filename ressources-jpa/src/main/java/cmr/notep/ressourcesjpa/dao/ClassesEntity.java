@@ -75,6 +75,9 @@ public class ClassesEntity {
     @Column(name = "payment_required")
     private boolean paymentRequired;
 
+    @Column(name = "expire_par_offre")
+    private boolean expireParOffre;
+
     @ManyToMany(mappedBy = "classesDiffusees")
     private List<ExerciseProgrammerEntity> exercisesProgrammes = new ArrayList<>();
 

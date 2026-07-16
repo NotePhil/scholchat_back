@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Suppression définitive</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #f3f4f6; padding: 10px; text-align: center; }
+        .content { padding: 20px; }
+        .footer { margin-top: 20px; font-size: 12px; text-align: center; color: #6c757d; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Suppression définitive</h1>
+    </div>
+    <div class="content">
+        <p>Bonjour,</p>
+        <p><strong th:text="${nomCible}"></strong> (offre <strong th:text="${offreNom}"></strong>) vient d'être
+            définitivement supprimé(e), faute de renouvellement dans le délai imparti.</p>
+        <p>Toutes les données associées ont été retirées. Cette action est irréversible.</p>
+        <p>Si vous souhaitez reprendre l'activité, vous pouvez recréer une nouvelle classe ou un nouvel
+            établissement à tout moment depuis votre espace.</p>
+    </div>
+    <div class="footer">
+        <p>© 2025 ScholChat. Tous droits réservés.</p>
+    </div>
+</div>
+</body>
+</html>

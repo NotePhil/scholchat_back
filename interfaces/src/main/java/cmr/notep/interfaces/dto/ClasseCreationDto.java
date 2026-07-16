@@ -1,5 +1,6 @@
 package cmr.notep.interfaces.dto;
 
+import cmr.notep.modele.PeriodiciteContrat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,6 +19,9 @@ public class ClasseCreationDto {
     private String creatorId;
     private boolean accesMajeur;
     private PaymentInfoDto paymentInfo;
+    // Offre/Contrat (uniquement pour une classe sans etablissement) : voir ContratBusiness.
+    private String offreId;
+    private PeriodiciteContrat periodicite;
     
     @Data
     @Builder

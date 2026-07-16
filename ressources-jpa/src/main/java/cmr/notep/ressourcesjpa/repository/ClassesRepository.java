@@ -20,5 +20,8 @@ public interface ClassesRepository extends JpaRepository<ClassesEntity, String> 
 
     boolean existsByCodeActivationAndEtat(String token, EtatClasse etat);
 
+    List<ClassesEntity> findByEtablissementIdAndEtat(String etablissementId, EtatClasse etat);
+
+    long countByEtablissementIdAndEtat(String etablissementId, EtatClasse etat);
 
 }

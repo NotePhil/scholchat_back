@@ -30,6 +30,9 @@ public class EmailTemplateService {
     @Value("${app.class-rejection-url}")
     private String classRejectionUrl;
 
+    @Value("${app.renewal-url}")
+    private String renewalUrl;
+
 
     public String generateActivationEmail(Utilisateurs utilisateur, String activationToken) {
         Context context = new Context();
@@ -154,5 +157,58 @@ public class EmailTemplateService {
         context.setVariable("etablissement", etablissement);
         context.setVariable("dateCreation", new Date());
         return templateEngine.process("email/class-creation-notification", context);
+    }
+
+    public String generateContratConfirmationEmail(String nomCible, String offreNom, String periodicite,
+                                                     java.math.BigDecimal prixPaye, java.time.LocalDateTime dateFin) {
+        Context context = new Context();
+        context.setVariable("nomCible", nomCible);
+        context.setVariable("offreNom", offreNom);
+        context.setVariable("periodicite", periodicite);
+        context.setVariable("prixPaye", prixPaye);
+        context.setVariable("dateFin", dateFin);
+        return templateEngine.process("email/contrat-confirmation", context);
+    }
+
+    public String generateOffreExpirationBientotEmail(String nomCible, String offreNom, java.time.LocalDateTime dateFin) {
+        Context context = new Context();
+        context.setVariable("nomCible", nomCible);
+        context.setVariable("offreNom", offreNom);
+        context.setVariable("dateFin", dateFin);
+        context.setVariable("renewalUrl", renewalUrl);
+        return templateEngine.process("email/offre-expiration-bientot", context);
+    }
+
+    public String generateOffreExpireeEmail(String nomCible, String offreNom) {
+        Context context = new Context();
+        context.setVariable("nomCible", nomCible);
+        context.setVariable("offreNom", offreNom);
+        context.setVariable("renewalUrl", renewalUrl);
+        return templateEngine.process("email/offre-expiree", context);
+    }
+
+    public String generateRenouvellementLienEmail(String nomCible, String entityType, String entityId, String token) {
+        Context context = new Context();
+        context.setVariable("nomCible", nomCible);
+        context.setVariable("entityType", entityType);
+        context.setVariable("entityId", entityId);
+        context.setVariable("lienRenouvellement", renewalUrl + "?token=" + token);
+        return templateEngine.process("email/renouvellement-lien", context);
+    }
+
+    public String generateSuppressionImminenteEmail(String nomCible, String offreNom, java.time.LocalDateTime dateSuppressionPrevue) {
+        Context context = new Context();
+        context.setVariable("nomCible", nomCible);
+        context.setVariable("offreNom", offreNom);
+        context.setVariable("dateSuppressionPrevue", dateSuppressionPrevue);
+        context.setVariable("renewalUrl", renewalUrl);
+        return templateEngine.process("email/suppression-imminente", context);
+    }
+
+    public String generateEntiteSupprimeeEmail(String nomCible, String offreNom) {
+        Context context = new Context();
+        context.setVariable("nomCible", nomCible);
+        context.setVariable("offreNom", offreNom);
+        return templateEngine.process("email/entite-supprimee", context);
     }
 }

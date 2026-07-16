@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Suppression imminente</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #fef2f2; padding: 10px; text-align: center; }
+        .content { padding: 20px; }
+        .footer { margin-top: 20px; font-size: 12px; text-align: center; color: #6c757d; }
+        .warning { background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px; color: #991b1b; }
+        .button {
+            display: inline-block; padding: 10px 20px; background-color: #dc2626;
+            color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>⚠️ Suppression imminente</h1>
+    </div>
+    <div class="content">
+        <p>Bonjour,</p>
+        <p>L'offre <strong th:text="${offreNom}"></strong> de <strong th:text="${nomCible}"></strong> est expirée
+            et n'a pas été renouvelée.</p>
+        <div class="warning">
+            <p>Sans renouvellement, <strong th:text="${nomCible}"></strong> sera <strong>définitivement supprimé(e)</strong>
+                le <strong th:text="${#temporals.format(dateSuppressionPrevue, 'dd/MM/yyyy à HH:mm')}"></strong>.
+                Cette action sera irréversible.</p>
+        </div>
+        <p>Renouvelez dès maintenant pour éviter la suppression :</p>
+        <a class="button" th:href="${renewalUrl}">Renouveler maintenant</a>
+    </div>
+    <div class="footer">
+        <p>© 2025 ScholChat. Tous droits réservés.</p>
+    </div>
+</div>
+</body>
+</html>

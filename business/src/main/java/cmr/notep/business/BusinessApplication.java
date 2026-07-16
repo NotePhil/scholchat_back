@@ -8,7 +8,7 @@ import org.springframework.retry.annotation.EnableRetry;
 
 @SpringBootApplication(scanBasePackages = "cmr.notep")
 @EntityScan(basePackages = "cmr.notep.ressourcesjpa.dao")
-//@EnableScheduling
+@EnableScheduling
 @EnableRetry
 public class BusinessApplication {
     public static void main(String[] args) {
