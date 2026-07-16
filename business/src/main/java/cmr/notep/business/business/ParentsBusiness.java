@@ -78,7 +78,7 @@ public class ParentsBusiness {
 
         ParentsRepository repository = daoAccessorService.getRepository(ParentsRepository.class);
         ParentsEntity existingEntity = repository.findById(idParent)
-                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Parent introuvable avec l'ID: " + idParent));
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Parent introuvable avec l'ID : " + idParent));
 
         // Update only non-null fields from partialParent
         Parents existingParent = dozerMapperBean.map(existingEntity, Parents.class);
@@ -119,6 +119,18 @@ public class ParentsBusiness {
 
         if (parent.getEnfants() == null) {
             parent.setEnfants(new ArrayList<>());
+        }
+
+        // Duplicate check: same nom + prenom + niveau (case-insensitive)
+        boolean duplicate = parent.getEnfants().stream().anyMatch(e ->
+                e.getNom() != null && e.getNom().equalsIgnoreCase(eleve.getNom()) &&
+                e.getPrenom() != null && e.getPrenom().equalsIgnoreCase(eleve.getPrenom()) &&
+                e.getNiveau() != null && e.getNiveau().equalsIgnoreCase(eleve.getNiveau())
+        );
+        if (duplicate) {
+            throw new SchoolException(SchoolErrorCode.ALREADY_EXISTS,
+                    "Un enfant nommé " + eleve.getPrenom() + " " + eleve.getNom() +
+                    " en " + eleve.getNiveau() + " est déjà associé à ce compte.");
         }
 
         if (!parent.getEnfants().contains(eleve)) {

@@ -56,10 +56,10 @@ public class GlobalExceptionHandler {
 
     private HttpStatus mapSchoolExceptionToHttpStatus(SchoolErrorCode code) {
         return switch (code) {
-            case NOT_FOUND, OFFRE_INTROUVABLE, CONTRAT_INTROUVABLE -> HttpStatus.NOT_FOUND;
-            case OPERATION_INTERDITE, INVALID_STATE, INACTIVE_USER, ABONNEMENT_EXPIRE -> HttpStatus.FORBIDDEN;
-            case INTERFACE_NON_RESPECTEE, INVALID_INPUT, CIBLE_OFFRE_INVALIDE, RENOUVELLEMENT_TOKEN_INVALIDE -> HttpStatus.BAD_REQUEST;
-            case DUPLICATE_RESOURCE, QUOTA_CLASSES_ATTEINT -> HttpStatus.CONFLICT;
+            case NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case OPERATION_INTERDITE, INVALID_STATE, INACTIVE_USER -> HttpStatus.FORBIDDEN;
+            case INTERFACE_NON_RESPECTEE, INVALID_INPUT -> HttpStatus.BAD_REQUEST;
+            case DUPLICATE_RESOURCE -> HttpStatus.CONFLICT;
             default -> HttpStatus.INTERNAL_SERVER_ERROR;
         };
     }
