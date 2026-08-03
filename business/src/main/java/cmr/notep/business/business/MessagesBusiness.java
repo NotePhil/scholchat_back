@@ -27,10 +27,14 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 public class MessagesBusiness {
     private final DaoAccessorService daoAccessorService;
     private final cmr.notep.business.services.NotificationService notificationService;
+    private final cmr.notep.business.services.MessagePublisher messagePublisher;
 
-    public MessagesBusiness(DaoAccessorService daoAccessorService, cmr.notep.business.services.NotificationService notificationService) {
+    public MessagesBusiness(DaoAccessorService daoAccessorService,
+                            cmr.notep.business.services.NotificationService notificationService,
+                            cmr.notep.business.services.MessagePublisher messagePublisher) {
         this.daoAccessorService = daoAccessorService;
         this.notificationService = notificationService;
+        this.messagePublisher = messagePublisher;
     }
 
     public Messages avoirMessage(String idMessage) {
@@ -75,6 +79,16 @@ public class MessagesBusiness {
             }
         } catch (Exception e) {
             log.error("Failed to send message notifications: {}", e.getMessage());
+        }
+
+        // Push real-time WebSocket event to sender + all recipients
+        try {
+            String senderId = savedEntity.getExpediteurEntity() != null
+                    ? savedEntity.getExpediteurEntity().getId() : null;
+            MessageDto dto = mapToMessageDto(savedEntity, senderId, true);
+            messagePublisher.pushNewMessage(dto, senderId);
+        } catch (Exception e) {
+            log.warn("Failed to push real-time message event: {}", e.getMessage());
         }
 
         return mapMessageEntityToDto(savedEntity);
@@ -156,6 +170,14 @@ public class MessagesBusiness {
             log.error("Failed to send group message notifications: {}", e.getMessage());
         }
 
+        // Push real-time WebSocket event to sender + all recipients
+        try {
+            MessageDto dto = mapToMessageDto(savedEntity, sender.getId(), true);
+            messagePublisher.pushNewMessage(dto, sender.getId());
+        } catch (Exception e) {
+            log.warn("Failed to push real-time group message event: {}", e.getMessage());
+        }
+
         return mapMessageEntityToDto(savedEntity);
     }
 
@@ -215,7 +237,7 @@ public class MessagesBusiness {
                 .findByExpediteurEntityId(utilisateurId);
 
         return sentMessages.stream()
-                .map(m -> mapToMessageDto(m, utilisateurId))
+                .map(m -> mapToMessageDto(m, utilisateurId, true))
                 .collect(Collectors.toList());
     }
 
@@ -230,7 +252,7 @@ public class MessagesBusiness {
                 .findByDestinatairesEntitiesId(utilisateurId);
 
         return receivedMessages.stream()
-                .map(m -> mapToMessageDto(m, utilisateurId))
+                .map(m -> mapToMessageDto(m, utilisateurId, false))
                 .collect(Collectors.toList());
     }
 
@@ -288,6 +310,10 @@ public class MessagesBusiness {
     }
     
     private MessageDto mapToMessageDto(MessagesEntity entity, String utilisateurId) {
+        return mapToMessageDto(entity, utilisateurId, false);
+    }
+
+    private MessageDto mapToMessageDto(MessagesEntity entity, String utilisateurId, boolean isSender) {
         MessageDto dto = new MessageDto();
         dto.setId(entity.getId());
         dto.setObjet(entity.getObjet());
@@ -319,13 +345,17 @@ public class MessagesBusiness {
         // peupler le statut lu/favori si utilisateurId fourni
         if (utilisateurId != null) {
             MessageStatutId statutId = new MessageStatutId(utilisateurId, entity.getId());
-            daoAccessorService.getRepository(MessageStatutRepository.class)
-                    .findById(statutId)
-                    .ifPresent(s -> {
-                        dto.setLu(s.isLu());
-                        dto.setFavori(s.isFavori());
-                        dto.setDateLecture(s.getDateLecture());
-                    });
+            java.util.Optional<MessageStatutEntity> statut =
+                daoAccessorService.getRepository(MessageStatutRepository.class).findById(statutId);
+            if (statut.isPresent()) {
+                dto.setLu(statut.get().isLu());
+                dto.setFavori(statut.get().isFavori());
+                dto.setDateLecture(statut.get().getDateLecture());
+            } else if (isSender) {
+                // A sender has inherently "read" their own sent message —
+                // default to true so sent messages never appear as unread.
+                dto.setLu(true);
+            }
         }
 
         return dto;
