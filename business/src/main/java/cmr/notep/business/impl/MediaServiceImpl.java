@@ -97,12 +97,15 @@ public class MediaServiceImpl {
         MediaEntity media = mediaBusiness.getMediaById(mediaId);
         String presignedUrl = mediaService.generateDownloadPresignedUrl(media.getFilePath());
 
-        return ResponseEntity.ok(Map.of(
-                "url", presignedUrl,
-                "fileName", media.getFileName(),
-                "contentType", media.getContentType(),
-                "ownerId", media.getOwnerId()
-        ));
+        // Cache for 50 min in the browser — safe margin under the 55-min server cache TTL
+        return ResponseEntity.ok()
+                .header("Cache-Control", "private, max-age=3000")
+                .body(Map.of(
+                        "url", presignedUrl,
+                        "fileName", media.getFileName(),
+                        "contentType", media.getContentType(),
+                        "ownerId", media.getOwnerId()
+                ));
     }
 
     @GetMapping("/{mediaId}/download")
@@ -272,33 +275,59 @@ public class MediaServiceImpl {
     }
 
     @GetMapping("/{mediaId}/content")
-    public ResponseEntity<byte[]> proxyDownload(@PathVariable("mediaId") String mediaId) {
+    public ResponseEntity<org.springframework.core.io.InputStreamResource> proxyDownload(
+            @PathVariable("mediaId") String mediaId,
+            @RequestHeader(value = "Range", required = false) String rangeHeader) {
         try {
             MediaEntity media = mediaBusiness.getMediaById(mediaId);
-            if (media == null) {
-                return ResponseEntity.notFound().build();
-            }
+            if (media == null) return ResponseEntity.notFound().build();
 
-            log.info("Proxy download for media: id={}, filePath={}, bucket={}",
-                    mediaId, media.getFilePath(), media.getBucketName());
+            String bucket = media.getBucketName() != null ? media.getBucketName() : "scholchat";
+            String key    = media.getFilePath();
+            String contentType = media.getContentType() != null ? media.getContentType() : "application/octet-stream";
 
-            software.amazon.awssdk.services.s3.model.GetObjectRequest getRequest =
+            // HEAD to get total size
+            software.amazon.awssdk.services.s3.model.HeadObjectResponse head =
+                s3Client.headObject(r -> r.bucket(bucket).key(key));
+            long totalSize = head.contentLength();
+
+            software.amazon.awssdk.services.s3.model.GetObjectRequest.Builder reqBuilder =
                 software.amazon.awssdk.services.s3.model.GetObjectRequest.builder()
-                    .bucket(media.getBucketName() != null ? media.getBucketName() : "scholchat")
-                    .key(media.getFilePath())
-                    .build();
-
-            software.amazon.awssdk.core.ResponseBytes<software.amazon.awssdk.services.s3.model.GetObjectResponse> objectBytes =
-                s3Client.getObjectAsBytes(getRequest);
-
-            byte[] fileBytes = objectBytes.asByteArray();
+                    .bucket(bucket).key(key);
 
             org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
-            headers.set("Content-Type", media.getContentType() != null ? media.getContentType() : "application/octet-stream");
+            headers.set("Content-Type", contentType);
             headers.set("Content-Disposition", "inline; filename=\"" + media.getFileName() + "\"");
-            headers.set("Cache-Control", "public, max-age=3600");
+            headers.set("Accept-Ranges", "bytes");
+            headers.set("Cache-Control", "private, max-age=3600");
 
-            return new ResponseEntity<>(fileBytes, headers, org.springframework.http.HttpStatus.OK);
+            // Handle Range request (video seek / partial content)
+            if (rangeHeader != null && rangeHeader.startsWith("bytes=")) {
+                String[] parts = rangeHeader.substring(6).split("-");
+                long start = Long.parseLong(parts[0]);
+                long end   = parts.length > 1 && !parts[1].isEmpty()
+                             ? Long.parseLong(parts[1]) : totalSize - 1;
+                end = Math.min(end, totalSize - 1);
+                long length = end - start + 1;
+
+                reqBuilder.range("bytes=" + start + "-" + end);
+                java.io.InputStream stream = s3Client.getObject(reqBuilder.build());
+
+                headers.set("Content-Range", "bytes " + start + "-" + end + "/" + totalSize);
+                headers.setContentLength(length);
+
+                return ResponseEntity.status(org.springframework.http.HttpStatus.PARTIAL_CONTENT)
+                        .headers(headers)
+                        .body(new org.springframework.core.io.InputStreamResource(stream));
+            }
+
+            // Full stream (no Range header)
+            java.io.InputStream stream = s3Client.getObject(reqBuilder.build());
+            headers.setContentLength(totalSize);
+
+            return ResponseEntity.ok().headers(headers)
+                    .body(new org.springframework.core.io.InputStreamResource(stream));
+
         } catch (Exception e) {
             log.error("Proxy download failed for mediaId {}: {}", mediaId, e.getMessage(), e);
             return ResponseEntity.internalServerError().build();

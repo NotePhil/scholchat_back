@@ -12,7 +12,10 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.*;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
@@ -22,6 +25,13 @@ public class S3MediaServiceImpl implements MediaService {
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
     private final S3Config s3Config;
+
+    // filePath -> (presignedUrl, expiresAt)
+    private final Map<String, CachedUrl> downloadUrlCache = new ConcurrentHashMap<>();
+
+    private record CachedUrl(String url, Instant expiresAt) {
+        boolean isValid() { return Instant.now().isBefore(expiresAt); }
+    }
 
     @Override
     public String generateUploadPresignedUrl(String filePath, String contentType) {
@@ -50,23 +60,32 @@ public class S3MediaServiceImpl implements MediaService {
 
     @Override
     public String generateDownloadPresignedUrl(String filePath) {
+        CachedUrl cached = downloadUrlCache.get(filePath);
+        if (cached != null && cached.isValid()) {
+            return cached.url();
+        }
         try {
+            Duration ttl = Duration.ofHours(1);
             GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                    .bucket(s3Config.getBucketName()) // <- FIX HERE TOO
-                    .key(filePath)                   // <- FIX HERE TOO
+                    .bucket(s3Config.getBucketName())
+                    .key(filePath)
                     .build();
-
             GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-                    .signatureDuration(Duration.ofHours(1))
+                    .signatureDuration(ttl)
                     .getObjectRequest(getObjectRequest)
                     .build();
-
-            PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(presignRequest);
-            return presignedRequest.url().toString();
+            String url = s3Presigner.presignGetObject(presignRequest).url().toString();
+            // Cache for 55 min — 5 min before the URL actually expires
+            downloadUrlCache.put(filePath, new CachedUrl(url, Instant.now().plus(Duration.ofMinutes(55))));
+            return url;
         } catch (Exception e) {
             log.error("Error generating download URL for path: {}", filePath, e);
             throw new RuntimeException("Failed to generate download URL", e);
         }
+    }
+
+    public void evictDownloadUrlCache(String filePath) {
+        downloadUrlCache.remove(filePath);
     }
 
 

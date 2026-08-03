@@ -152,6 +152,7 @@ public class MediaBusiness {
     public void deleteMedia(String mediaId) {
         try {
             MediaEntity media = getMediaById(mediaId);
+            mediaService.evictDownloadUrlCache(media.getFilePath());
             mediaService.deleteMedia(media.getFilePath());
             mediaRepository.delete(media);
             log.info("Deleted media with ID: {}", mediaId);

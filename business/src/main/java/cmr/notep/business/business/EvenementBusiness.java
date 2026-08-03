@@ -2,6 +2,7 @@ package cmr.notep.business.business;
 
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
+import cmr.notep.business.services.MediaService;
 import cmr.notep.business.services.NotificationService;
 import cmr.notep.interfaces.modeles.Evenement;
 import cmr.notep.interfaces.modeles.Media;
@@ -34,12 +35,14 @@ public class EvenementBusiness {
     private final DaoAccessorService daoAccessorService;
     private final InteractionBusiness interactionBusiness;
     private final NotificationService notificationService;
+    private final MediaService mediaService;
 
     public EvenementBusiness(DaoAccessorService daoAccessorService, InteractionBusiness interactionBusiness,
-                             NotificationService notificationService) {
+                             NotificationService notificationService, MediaService mediaService) {
         this.daoAccessorService = daoAccessorService;
         this.interactionBusiness = interactionBusiness;
         this.notificationService = notificationService;
+        this.mediaService = mediaService;
     }
 
     public Evenement creerEvenement(Evenement evenement) {
@@ -329,6 +332,18 @@ public class EvenementBusiness {
                             evenement.setClassesIds(e.getClasses().stream()
                                     .map(ClassesEntity::getId).collect(Collectors.toList()));
                             evenement.setInteractions(interactionBusiness.getInteractionsByEvent(e.getId()));
+                            // Embed presigned URL in each media — eliminates N download-url round trips
+                            if (evenement.getMedias() != null) {
+                                evenement.getMedias().forEach(media -> {
+                                    if (media.getFilePath() != null) {
+                                        try {
+                                            media.setPresignedUrl(mediaService.generateDownloadPresignedUrl(media.getFilePath()));
+                                        } catch (Exception ex) {
+                                            log.warn("Could not generate presigned URL for media {}: {}", media.getId(), ex.getMessage());
+                                        }
+                                    }
+                                });
+                            }
                             return evenement;
                         } catch (Exception ex) {
                             log.error("Error mapping event with ID {}: {}", e.getId(), ex.getMessage());
