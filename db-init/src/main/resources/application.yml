@@ -20,7 +20,7 @@ spring:
 
 logging:
   level:
-    root: INFO
+    root: DEBUG
 
 ---
 # Profil prod : BDD Postgres via variables d'environnement / IaC
@@ -42,4 +42,4 @@ spring:
 
 logging:
   level:
-    root: INFO
+    root: DEBUG
