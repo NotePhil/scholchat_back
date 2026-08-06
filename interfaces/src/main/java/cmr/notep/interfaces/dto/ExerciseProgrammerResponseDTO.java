@@ -17,6 +17,7 @@ import java.util.List;
 @AllArgsConstructor
 public class ExerciseProgrammerResponseDTO {
     private String id;
+    private String exerciseId;  // base exercise ID — needed for /questions/exercise/{exerciseId}
     private String nom;
     private String description;
     private Date dateCreation;

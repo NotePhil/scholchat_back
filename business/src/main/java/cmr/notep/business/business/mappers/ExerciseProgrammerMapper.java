@@ -56,6 +56,7 @@ public class ExerciseProgrammerMapper {
 
         ExerciseProgrammerResponseDTO responseDTO = ExerciseProgrammerResponseDTO.builder()
                 .id(entity.getId())
+                .exerciseId(source.getId())  // expose the base exercise ID for the frontend
                 .nom(source.getNom())
                 .description(source.getDescription())
                 .dateCreation(source.getDateCreation())
