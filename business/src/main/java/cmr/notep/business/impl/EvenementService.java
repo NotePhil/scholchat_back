@@ -8,6 +8,7 @@ import cmr.notep.interfaces.modeles.Evenement;
 import cmr.notep.interfaces.modeles.Interaction;
 import cmr.notep.interfaces.modeles.CommentRequest;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
+import cmr.notep.interfaces.modeles.PagedResponse;
 import cmr.notep.ressourcesjpa.dao.AccederEntity;
 import cmr.notep.ressourcesjpa.dao.UtilisateursEntity;
 import cmr.notep.ressourcesjpa.repository.AccederRepository;
@@ -18,6 +19,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -53,6 +55,17 @@ public class EvenementService implements EvenementApi {
         return evenementBusiness.creerEvenement(evenement);
     }
     
+    @Override
+    public PagedResponse<Evenement> obtenirEvenementsPagines(int page, int size) {
+        log.info("Récupération paginée des événements (page={}, size={})", page, size);
+        String userId = getCurrentUserId();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAdmin = auth != null && auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        List<String> userClasses = isAdmin ? java.util.Collections.emptyList() : getUserClasses(userId);
+        return evenementBusiness.obtenirEvenementsPagines(page, size, userClasses, isAdmin);
+    }
+
     @Override
     public List<Evenement> obtenirTousEvenements() {
         log.info("Récupération de tous les événements");

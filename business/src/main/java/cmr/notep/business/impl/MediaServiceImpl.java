@@ -282,11 +282,21 @@ public class MediaServiceImpl {
             MediaEntity media = mediaBusiness.getMediaById(mediaId);
             if (media == null) return ResponseEntity.notFound().build();
 
-            String bucket = media.getBucketName() != null ? media.getBucketName() : "scholchat";
-            String key    = media.getFilePath();
+            // For images/documents: redirect to presigned URL directly — avoids proxying large files
             String contentType = media.getContentType() != null ? media.getContentType() : "application/octet-stream";
+            boolean isVideo = contentType.startsWith("video/") ||
+                    (media.getMediaType() != null && media.getMediaType().equalsIgnoreCase("VIDEO"));
 
-            // HEAD to get total size
+            if (!isVideo) {
+                String presignedUrl = mediaService.generateDownloadPresignedUrl(media.getFilePath());
+                return ResponseEntity.status(org.springframework.http.HttpStatus.FOUND)
+                        .header("Location", presignedUrl)
+                        .build();
+            }
+
+            String bucket = media.getBucketName() != null ? media.getBucketName() : "scholchat";
+            String key = media.getFilePath();
+
             software.amazon.awssdk.services.s3.model.HeadObjectResponse head =
                 s3Client.headObject(r -> r.bucket(bucket).key(key));
             long totalSize = head.contentLength();
@@ -301,36 +311,39 @@ public class MediaServiceImpl {
             headers.set("Accept-Ranges", "bytes");
             headers.set("Cache-Control", "private, max-age=3600");
 
-            // Handle Range request (video seek / partial content)
             if (rangeHeader != null && rangeHeader.startsWith("bytes=")) {
                 String[] parts = rangeHeader.substring(6).split("-");
                 long start = Long.parseLong(parts[0]);
-                long end   = parts.length > 1 && !parts[1].isEmpty()
-                             ? Long.parseLong(parts[1]) : totalSize - 1;
+                long end = parts.length > 1 && !parts[1].isEmpty()
+                        ? Long.parseLong(parts[1]) : totalSize - 1;
                 end = Math.min(end, totalSize - 1);
                 long length = end - start + 1;
-
                 reqBuilder.range("bytes=" + start + "-" + end);
                 java.io.InputStream stream = s3Client.getObject(reqBuilder.build());
-
                 headers.set("Content-Range", "bytes " + start + "-" + end + "/" + totalSize);
                 headers.setContentLength(length);
-
                 return ResponseEntity.status(org.springframework.http.HttpStatus.PARTIAL_CONTENT)
                         .headers(headers)
                         .body(new org.springframework.core.io.InputStreamResource(stream));
             }
 
-            // Full stream (no Range header)
             java.io.InputStream stream = s3Client.getObject(reqBuilder.build());
             headers.setContentLength(totalSize);
-
             return ResponseEntity.ok().headers(headers)
                     .body(new org.springframework.core.io.InputStreamResource(stream));
 
         } catch (Exception e) {
             log.error("Proxy download failed for mediaId {}: {}", mediaId, e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
+            // Fallback: redirect to presigned URL if proxy fails
+            try {
+                MediaEntity media = mediaBusiness.getMediaById(mediaId);
+                String presignedUrl = mediaService.generateDownloadPresignedUrl(media.getFilePath());
+                return ResponseEntity.status(org.springframework.http.HttpStatus.FOUND)
+                        .header("Location", presignedUrl)
+                        .build();
+            } catch (Exception fallbackEx) {
+                return ResponseEntity.internalServerError().build();
+            }
         }
     }
 
