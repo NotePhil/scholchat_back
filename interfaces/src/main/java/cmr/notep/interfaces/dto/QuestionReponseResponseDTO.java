@@ -1,5 +1,6 @@
 package cmr.notep.interfaces.dto;
 
+import cmr.notep.interfaces.modeles.Media;
 import cmr.notep.modele.TypeQuestion;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,4 +21,5 @@ public class QuestionReponseResponseDTO {
     private String exerciseId;
     private Integer points;
     private List<ChoixReponseDTO> choixReponses;
+    private List<Media> medias;
 }

@@ -21,4 +21,5 @@ public class QuestionReponse {
     private String exerciseId;
     private Integer points;
     private List<ChoixReponseDTO> choixReponses;
+    private List<Media> medias;
 }

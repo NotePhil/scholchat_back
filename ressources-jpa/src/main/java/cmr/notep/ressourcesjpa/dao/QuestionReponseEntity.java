@@ -39,4 +39,7 @@ public class QuestionReponseEntity {
 
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChoixReponseEntity> choixReponses = new ArrayList<>();
+
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<MediaEntity> medias = new ArrayList<>();
 }

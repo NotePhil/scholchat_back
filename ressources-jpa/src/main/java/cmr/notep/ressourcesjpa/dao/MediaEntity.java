@@ -15,7 +15,7 @@ import java.util.Objects;
 @Getter
 @Setter
 @NoArgsConstructor
-@ToString(exclude = {"owner", "evenement"})
+@ToString(exclude = {"owner", "evenement", "question"})
 public class MediaEntity {
 
     @Id
@@ -61,6 +61,10 @@ public class MediaEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "evenement_id")
     private EvenementEntity evenement;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "question_id")
+    private QuestionReponseEntity question;
 
     @PrePersist
     protected void onCreate() {

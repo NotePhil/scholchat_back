@@ -40,6 +40,7 @@ public class QuestionReponseService implements QuestionReponseApi {
         dto.setExerciseId(question.getExerciseId());
         dto.setPoints(question.getPoints());
         dto.setChoixReponses(question.getChoixReponses());
+        dto.setMedias(question.getMedias());
         return dto;
     }
 
