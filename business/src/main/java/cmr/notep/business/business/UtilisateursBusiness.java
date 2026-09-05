@@ -33,7 +33,6 @@ import cmr.notep.ressourcesjpa.repository.UserRoleRepository;
 import java.util.Optional;
 
 
-import java.net.URI;
 import java.time.LocalDateTime;
 
 import java.util.ArrayList;
@@ -177,18 +176,10 @@ public class UtilisateursBusiness {
         if (url == null || url.isBlank()) {
             throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "L'URL du média ne peut pas être vide");
         }
-
-        try {
-            new URI(url).toURL(); // Validate URL format
-        } catch (Exception e) {
-            throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
-                    "L'URL du média n'est pas valide: " + url);
-        }
-
-        // Optionally verify the URL points to your Minio storage
-        if (!url.startsWith("http://localhost:9000") && !url.startsWith("https://your-minio-domain")) {
-            log.warn("Media URL points to external storage: {}", url);
-        }
+        // These fields store the S3 object key/filename the upload flow returns
+        // (media.presigned-url), the same convention as MediaEntity.filePath —
+        // resolved to a viewable URL on demand via /media/download-by-path.
+        // Requiring an absolute URI here rejected every legitimate upload.
     }
     public Utilisateurs avoirUtilisateur(String idUtilisateur) {
         log.info("Récupération de l'utilisateur avec ID: {}", idUtilisateur);
