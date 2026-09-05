@@ -118,3 +118,10 @@ databaseChangeLog:
         - sqlFile:
             path: sql/migration-add-purge-et-restrictions-offres.sql
             relativeToChangelogFile: false
+  - changeSet:
+      id: 18-add-media-question-id
+      author: db-init
+      changes:
+        - sqlFile:
+            path: sql/migration-add-media-question-id.sql
+            relativeToChangelogFile: false

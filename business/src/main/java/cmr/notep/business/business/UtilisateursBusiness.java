@@ -474,14 +474,11 @@ public class UtilisateursBusiness {
             );
         }
 
-        // Ensure the professor has uploaded all required documents
-        ProfesseursEntity professeurEntity = (ProfesseursEntity) userEntity;
-        if (!Boolean.TRUE.equals(professeurEntity.getHasUploaded())) {
-            throw new SchoolException(
-                    SchoolErrorCode.INVALID_STATE,
-                    "Le professeur n'a pas encore uploadé tous les documents requis"
-            );
-        }
+        // Documents are no longer a hard gate here: an admin can validate a
+        // professor even if a document upload never completed (e.g. one
+        // failed mid-signup). Missing documents are instead surfaced to the
+        // professor as a "complete your profile" prompt on login — see
+        // hasUploaded on the response DTO, checked client-side after login.
 
         // Ensure the professor is in the correct state
         if (userEntity.getEtat() != EtatUtilisateur.AWAITING_VALIDATION) {
