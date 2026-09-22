@@ -189,7 +189,6 @@ public class UtilisateursBusiness {
 
         // Force loading of received messages
         Hibernate.initialize(utilisateurEntity.getMessagesEnvoyerEntities());
-        Hibernate.initialize(utilisateurEntity.getMessagesRecusEntities());
 
         return mapUtilisateursEntityToModele(utilisateurEntity);
     }

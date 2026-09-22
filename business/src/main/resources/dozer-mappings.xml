@@ -29,5 +29,9 @@
             <a>messagesEnvoyerEntities</a>
             <b>messagesEnvoyer</b>
         </field-exclude>
+        <field-exclude>
+            <a>messagesRecusEntities</a>
+            <b>messagesRecus</b>
+        </field-exclude>
     </mapping>
 </mappings>

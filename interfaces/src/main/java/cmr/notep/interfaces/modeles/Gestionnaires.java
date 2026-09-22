@@ -12,7 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
-@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonIgnoreProperties(value = {"messagesEnvoyer", "messagesRecus"}, ignoreUnknown = true)
 public class Gestionnaires extends Utilisateurs {
     @JsonBackReference
     private List<Etablissement> etablissementsGeres;
