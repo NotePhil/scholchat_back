@@ -21,6 +21,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -56,7 +57,8 @@ public class SecurityConfig {
                                 "/cours/*/session/active",
                                 "/cours/*/session/*/join",
                                 "/cours/*/session/*/leave",
-                                "/cours/*/progress"
+                                "/cours/*/progress",
+                                "/public/jitsi-branding"
                         ).permitAll()
                         .requestMatchers(
                                 "/auth/register", "/auth/register/",
@@ -149,7 +151,20 @@ public class SecurityConfig {
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
+        // The self-hosted Jitsi web app fetches /public/jitsi-branding directly
+        // from the Jitsi domain (not ours), so it can never carry credentials
+        // and must stay openly readable — it's non-sensitive (just a logo URL
+        // and a color). Registered as its own pattern since it's more specific
+        // than "/**" above and Spring picks the best-matching registration.
+        CorsConfiguration openBranding = new CorsConfiguration();
+        openBranding.setAllowedOrigins(List.of("*"));
+        openBranding.setAllowedMethods(List.of("GET", "OPTIONS"));
+        openBranding.setAllowedHeaders(List.of("*"));
+        openBranding.setAllowCredentials(false);
+        openBranding.setMaxAge(3600L);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/public/jitsi-branding", openBranding);
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
