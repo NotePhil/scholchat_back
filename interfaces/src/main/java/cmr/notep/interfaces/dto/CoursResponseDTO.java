@@ -17,6 +17,7 @@ public class CoursResponseDTO {
     private String titre;
     private String description;
     private Date dateCreation;
+    private Date datePublication;
     private EtatCours etat;
     private String references;
     private String restriction;

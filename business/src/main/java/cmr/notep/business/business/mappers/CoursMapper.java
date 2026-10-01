@@ -41,6 +41,7 @@ public class CoursMapper {
                 .titre(entity.getTitre())
                 .description(entity.getDescription())
                 .dateCreation(entity.getDateCreation())
+                .datePublication(entity.getDatePublication())
                 .etat(entity.getEtat())
                 .references(entity.getReference())
                 .restriction(entity.getRestriction())

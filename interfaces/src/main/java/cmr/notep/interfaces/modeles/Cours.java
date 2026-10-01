@@ -20,6 +20,7 @@ public class Cours {
     private String titre;
     private String description;
     private Date dateCreation;
+    private Date datePublication;
     private EtatCours etat;
     private String references;
     private String restriction; // PUBLIC/PRIVE

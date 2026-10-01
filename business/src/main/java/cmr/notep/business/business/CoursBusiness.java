@@ -53,6 +53,9 @@ public class CoursBusiness {
         if (entity.getEtat() == null) {
             entity.setEtat(EtatCours.BROUILLON);
         }
+        if (entity.getEtat() == EtatCours.PUBLIE) {
+            entity.setDatePublication(new Date());
+        }
 
         // Set default restriction if not provided
         if (entity.getRestriction() == null) {
@@ -151,7 +154,13 @@ public class CoursBusiness {
             existingEntity.setDescription(cours.getDescription());
         }
         if (cours.getEtat() != null) {
+            boolean justPublished = cours.getEtat() == EtatCours.PUBLIE
+                    && existingEntity.getEtat() != EtatCours.PUBLIE
+                    && existingEntity.getDatePublication() == null;
             existingEntity.setEtat(cours.getEtat());
+            if (justPublished) {
+                existingEntity.setDatePublication(new Date());
+            }
         }
         if (cours.getReferences() != null) {
             existingEntity.setReference(cours.getReferences());

@@ -28,6 +28,9 @@ public class CoursEntity {
     @Temporal(TemporalType.TIMESTAMP)
     private Date dateCreation;
 
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date datePublication;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EtatCours etat;
