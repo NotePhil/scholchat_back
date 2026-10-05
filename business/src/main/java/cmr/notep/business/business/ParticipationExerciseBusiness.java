@@ -13,6 +13,11 @@ import cmr.notep.ressourcesjpa.dao.ParticiperExoEntity;
 import cmr.notep.ressourcesjpa.dao.UtilisateursEntity;
 import cmr.notep.ressourcesjpa.dao.ParticiperExoId;
 import cmr.notep.ressourcesjpa.repository.ExerciseProgrammerRepository;
+import cmr.notep.ressourcesjpa.repository.RepondreRepository;
+import cmr.notep.ressourcesjpa.dao.ChoixReponseEntity;
+import cmr.notep.ressourcesjpa.dao.QuestionReponseEntity;
+import cmr.notep.ressourcesjpa.dao.RepondreEntity;
+import cmr.notep.modele.TypeQuestion;
 import cmr.notep.ressourcesjpa.repository.ParticiperExoRepository;
 import cmr.notep.ressourcesjpa.repository.UtilisateursRepository;
 import lombok.RequiredArgsConstructor;
@@ -65,6 +70,10 @@ public class ParticipationExerciseBusiness {
         participation.setEtatSoumission(requestDTO.getEtatSoumission() != null 
             ? requestDTO.getEtatSoumission() 
             : cmr.notep.modele.EtatSoumission.EN_COURS);
+        if (estUneSoumission(participation.getEtatSoumission())) {
+            autoCorrigerQuestionsObjectives(requestDTO.getUtilisateurId(), exerciseProgrammer);
+            participation.setEtatSoumission(EtatSoumission.EN_ATTENTE_CORRECTION);
+        }
         participation.setDateSoumission(new Date());
 
         ParticiperExoEntity savedParticipation = repository.save(participation);
@@ -96,14 +105,20 @@ public class ParticipationExerciseBusiness {
         if (requestDTO.getAppreciation() != null) {
             participation.setAppreciation(requestDTO.getAppreciation());
         }
-        if (requestDTO.getEtatSoumission() != null) {
+        boolean soumission = estUneSoumission(requestDTO.getEtatSoumission());
+        if (soumission) {
+            // L'élève rend sa copie (le web/mobile envoient SOUMIS) : les QCM / Vrai-Faux sont corrigés
+            // automatiquement et la copie part dans la liste « à corriger » du professeur.
+            autoCorrigerQuestionsObjectives(requestDTO.getUtilisateurId(), participation.getExerciseProgrammer());
+            participation.setEtatSoumission(EtatSoumission.EN_ATTENTE_CORRECTION);
+        } else if (requestDTO.getEtatSoumission() != null) {
             participation.setEtatSoumission(requestDTO.getEtatSoumission());
         }
 
         ParticiperExoEntity updatedParticipation = repository.save(participation);
 
-        // Notify professor when student submits a DEVOIR (EN_ATTENTE_CORRECTION)
-        if (EtatSoumission.EN_ATTENTE_CORRECTION.equals(requestDTO.getEtatSoumission())) {
+        // Notify professor when student submits a DEVOIR
+        if (soumission) {
             try {
                 ExerciseProgrammerEntity prog = updatedParticipation.getExerciseProgrammer();
                 if (TypeAssignation.DEVOIR.equals(prog.getTypeAssignation())) {
@@ -147,7 +162,7 @@ public class ParticipationExerciseBusiness {
         return daoAccessorService.getRepository(ParticiperExoRepository.class)
                 .findByExerciseProgrammerId(exerciseProgrammerId)
                 .stream()
-                .filter(p -> cmr.notep.modele.EtatSoumission.EN_ATTENTE_CORRECTION.equals(p.getEtatSoumission()))
+                .filter(p -> aCorriger(p.getEtatSoumission()))
                 .map(this::mapToResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -157,7 +172,7 @@ public class ParticipationExerciseBusiness {
         return daoAccessorService.getRepository(ParticiperExoRepository.class)
                 .findAll()
                 .stream()
-                .filter(p -> cmr.notep.modele.EtatSoumission.EN_ATTENTE_CORRECTION.equals(p.getEtatSoumission())
+                .filter(p -> aCorriger(p.getEtatSoumission())
                     && p.getExerciseProgrammer().getProgrammePar().getId().equals(professeurId))
                 .map(this::mapToResponseDTO)
                 .collect(Collectors.toList());
@@ -174,6 +189,61 @@ public class ParticipationExerciseBusiness {
 
         repository.delete(participation);
         log.info("Participation supprimée avec succès");
+    }
+
+    private static boolean estUneSoumission(EtatSoumission etat) {
+        return EtatSoumission.SOUMIS.equals(etat) || EtatSoumission.EN_ATTENTE_CORRECTION.equals(etat);
+    }
+
+    /** Copies rendues et pas encore corrigées (les anciennes copies SOUMIS comprises). */
+    private static boolean aCorriger(EtatSoumission etat) {
+        return estUneSoumission(etat);
+    }
+
+    private static String normaliser(String v) {
+        if (v == null) return "";
+        String n = java.text.Normalizer.normalize(v.trim().toLowerCase(), java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");
+        if (n.equals("true") || n.equals("vrai")) return "vrai";
+        if (n.equals("false") || n.equals("faux")) return "faux";
+        return n;
+    }
+
+    /**
+     * Corrige les questions à réponse fermée (QCM, Vrai/Faux) encore non corrigées : la réponse
+     * (texte du choix, ou son id) est comparée au(x) choix correct(s), à défaut à la réponse attendue
+     * de la question. Pose estCorrecte et la note « obtenus/max » ; le professeur peut ensuite corriger.
+     */
+    private void autoCorrigerQuestionsObjectives(String utilisateurId, ExerciseProgrammerEntity prog) {
+        try {
+            if (prog == null || prog.getExercise() == null) return;
+            RepondreRepository repondreRepository = daoAccessorService.getRepository(RepondreRepository.class);
+            for (RepondreEntity r : repondreRepository.findByUtilisateurIdAndExerciseId(utilisateurId, prog.getExercise().getId())) {
+                QuestionReponseEntity q = r.getQuestion();
+                if (q == null || r.getEstCorrecte() != null) continue;
+                if (q.getTypeQuestion() != TypeQuestion.QCM && q.getTypeQuestion() != TypeQuestion.VRAI_FAUX) continue;
+                java.util.Set<String> attendues = new java.util.HashSet<>();
+                if (q.getChoixReponses() != null) {
+                    for (ChoixReponseEntity c : q.getChoixReponses()) {
+                        if (Boolean.TRUE.equals(c.getEstCorrect())) {
+                            attendues.add(normaliser(c.getTexte()));
+                            if (c.getId() != null) attendues.add(normaliser(c.getId()));
+                        }
+                    }
+                }
+                if (attendues.isEmpty() && q.getReponse() != null && !q.getReponse().isBlank()) {
+                    attendues.add(normaliser(q.getReponse()));
+                }
+                if (attendues.isEmpty()) continue; // pas de corrigé : correction manuelle
+                boolean correcte = attendues.contains(normaliser(r.getReponseUtilisateur()));
+                int max = q.getPoints() != null && q.getPoints() > 0 ? q.getPoints() : 1;
+                r.setEstCorrecte(correcte);
+                if (r.getNote() == null || r.getNote().isBlank()) r.setNote((correcte ? max : 0) + "/" + max);
+                repondreRepository.save(r);
+            }
+        } catch (Exception e) {
+            log.warn("Correction automatique impossible pour {} : {}", utilisateurId, e.getMessage());
+        }
     }
 
     private ParticipationExerciseResponseDTO mapToResponseDTO(ParticiperExoEntity participation) {

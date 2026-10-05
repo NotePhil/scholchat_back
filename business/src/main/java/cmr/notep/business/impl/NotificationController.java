@@ -53,8 +53,9 @@ public class NotificationController implements NotificationApi {
     
     @Override
     public Notification markAsRead(String id) {
-        log.info("Marking notification as read: {}", id);
-        NotificationEntity entity = notificationService.markAsRead(id);
+        String userId = getCurrentUserId();
+        log.info("Marking notification as read: {} for user: {}", id, userId);
+        NotificationEntity entity = notificationService.markAsRead(id, userId);
         return convertToDto(entity);
     }
     

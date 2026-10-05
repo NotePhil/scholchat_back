@@ -1,5 +1,7 @@
 package cmr.notep.business.business;
 
+import cmr.notep.business.security.UserSubtypeService;
+
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.interfaces.dto.ClasseAvecDroitDto;
@@ -21,9 +23,11 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 public class DroitPublicationBusiness {
 
     private final DaoAccessorService daoAccessorService;
+    private final UserSubtypeService userSubtypeService;
 
-    public DroitPublicationBusiness(DaoAccessorService daoAccessorService) {
+    public DroitPublicationBusiness(DaoAccessorService daoAccessorService, UserSubtypeService userSubtypeService) {
         this.daoAccessorService = daoAccessorService;
+        this.userSubtypeService = userSubtypeService;
     }
 
     public void attribuerDroitPublication(String utilisateurId, String classeId, boolean peutPublier, boolean peutModerer)
@@ -54,7 +58,8 @@ public class DroitPublicationBusiness {
                 .findById(userId)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "User not found"));
 
-        if (!(user instanceof ProfesseursEntity)) {
+        // Rôle lu dans la table professeurs : le sous-type chargé est arbitraire pour un compte multi-rôles
+        if (!userSubtypeService.isProfesseur(userId)) {
             throw new SchoolException(SchoolErrorCode.INVALID_OPERATION,
                     "Only professors can have publication rights");
         }
@@ -133,15 +138,16 @@ public class DroitPublicationBusiness {
     }
 
     private Utilisateurs mapToSpecificUserType(UtilisateursEntity entity) {
-        if (entity instanceof ProfesseursEntity) {
+        String type = userSubtypeService.typeUtilisateur(entity.getId());
+        if ("PROFESSEUR".equals(type)) {
             return dozerMapperBean.map(entity, cmr.notep.interfaces.modeles.Professeurs.class);
-        } else if (entity instanceof ElevesEntity) {
+        } else if ("ELEVE".equals(type)) {
             return dozerMapperBean.map(entity, cmr.notep.interfaces.modeles.Eleves.class);
-        } else if (entity instanceof ParentsEntity) {
+        } else if ("PARENT".equals(type)) {
             return dozerMapperBean.map(entity, cmr.notep.interfaces.modeles.Parents.class);
-        } else if (entity instanceof RepetiteursEntity) {
+        } else if ("REPETITEUR".equals(type)) {
             return dozerMapperBean.map(entity, cmr.notep.interfaces.modeles.Repetiteurs.class);
-        } else if (entity instanceof GestionnairesEntity) {
+        } else if ("GESTIONNAIRE".equals(type)) {
             return dozerMapperBean.map(entity, cmr.notep.interfaces.modeles.Gestionnaires.class);
         }
         return dozerMapperBean.map(entity, Utilisateurs.class);
@@ -160,8 +166,8 @@ public class DroitPublicationBusiness {
         }
 
         // For professors, include moderated classes + classes with publication rights
-        if (utilisateur instanceof ProfesseursEntity) {
-            return getClassesForProfessor((ProfesseursEntity) utilisateur, utilisateurId);
+        if (userSubtypeService.isProfesseur(utilisateurId)) {
+            return getClassesForProfessor(utilisateurId);
         }
 
         return getClassesWithPublicationRights(utilisateurId);
@@ -175,16 +181,14 @@ public class DroitPublicationBusiness {
                 .collect(Collectors.toList());
     }
 
-    private List<Classes> getClassesForProfessor(ProfesseursEntity professor, String userId) {
+    private List<Classes> getClassesForProfessor(String userId) {
         Set<String> classIds = new HashSet<>();
         List<Classes> result = new ArrayList<>();
 
         // Add moderated classes
-        if (professor.getModeratedClasses() != null) {
-            for (ClassesEntity classe : professor.getModeratedClasses()) {
-                if (classIds.add(classe.getId())) {
-                    result.add(mapClassWithMinimalData(classe));
-                }
+        for (ClassesEntity classe : daoAccessorService.getRepository(ClassesRepository.class).findByModeratorId(userId)) {
+            if (classIds.add(classe.getId())) {
+                result.add(mapClassWithMinimalData(classe));
             }
         }
 
@@ -240,16 +244,13 @@ public class DroitPublicationBusiness {
         Set<String> seen = new HashSet<>();
 
         // 1. For professors: moderated classes (user is the moderator of the class)
-        if (utilisateur instanceof ProfesseursEntity) {
-            ProfesseursEntity prof = (ProfesseursEntity) utilisateur;
-            if (prof.getModeratedClasses() != null) {
-                for (ClassesEntity classe : prof.getModeratedClasses()) {
-                    if (seen.add(classe.getId())) {
-                        Classes mapped = mapClassWithMinimalData(classe);
-                        // estCreateur=true only if this user originally created the class
-                        boolean estCreateur = utilisateurId.equals(classe.getCreatorId());
-                        result.add(new ClasseAvecDroitDto(mapped, true, true, estCreateur));
-                    }
+        if (userSubtypeService.isProfesseur(utilisateurId)) {
+            for (ClassesEntity classe : daoAccessorService.getRepository(ClassesRepository.class).findByModeratorId(utilisateurId)) {
+                if (seen.add(classe.getId())) {
+                    Classes mapped = mapClassWithMinimalData(classe);
+                    // estCreateur=true only if this user originally created the class
+                    boolean estCreateur = utilisateurId.equals(classe.getCreatorId());
+                    result.add(new ClasseAvecDroitDto(mapped, true, true, estCreateur));
                 }
             }
         }

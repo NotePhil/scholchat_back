@@ -43,7 +43,7 @@ public class ExerciseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "redacteur_id", nullable = false)
-    private ProfesseursEntity redacteur;
+    private UtilisateursEntity redacteur;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "exercise_matieres", schema = "ressources",

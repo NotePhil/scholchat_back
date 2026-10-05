@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.dozer.Mapping;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Setter
@@ -20,7 +21,7 @@ public class MessagesEntity {
     @Column(name = "objet")
     private String objet;
 
-    @Column(name = "contenu")
+    @Column(name = "contenu", columnDefinition = "TEXT")
     private String contenu;
 
     @Column(name = "datecreation")
@@ -63,4 +64,9 @@ public class MessagesEntity {
 
     @Column(name = "etat_original")
     private String etatOriginal;
+
+    /** Attachments. Named so Dozer does not auto-map it onto Messages#medias (mapped by hand). */
+    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("ordre ASC")
+    private List<MessageMediaEntity> piecesJointesEntities = new ArrayList<>();
 }

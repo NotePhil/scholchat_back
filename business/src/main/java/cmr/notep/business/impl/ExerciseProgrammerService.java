@@ -19,12 +19,26 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 public class ExerciseProgrammerService implements ExerciseProgrammerApi {
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.CurrentUserService currentUser;
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.AccessControlService accessControl;
+
 
     private final ExerciseProgrammerBusiness exerciseProgrammerBusiness;
     private final ExerciseProgrammerMapper exerciseProgrammerMapper;
 
     @Override
     public ExerciseProgrammerResponseDTO programmerExercise(ExerciseProgrammerRequestDTO requestDTO) {
+        currentUser.requireAuthenticated();
+        if (!currentUser.isAdmin()) {
+            if (!currentUser.hasRole("PROFESSOR") && !currentUser.hasRole("TUTOR")) {
+                throw cmr.notep.business.security.CurrentUserService.forbidden("Seuls les professeurs peuvent créer du contenu pédagogique.");
+            }
+            requestDTO.setProgrammeParId(currentUser.requireUserId());
+        if (!accessControl.isTeacherOfExercise(requestDTO.getExerciseId(), currentUser.requireUserId()) && !accessControl.isExercisePublicOrAuthor(requestDTO.getExerciseId(), currentUser.requireUserId())) accessControl.requireExerciseAuthor(requestDTO.getExerciseId());
+        if (!currentUser.isAdmin() && requestDTO.getClasseIds() != null) requestDTO.getClasseIds().forEach(accessControl::requireClassTeacher);
+        }
         log.info("Programmation d'un nouvel exercice à partir de l'exercice ID: {}", requestDTO.getExerciseId());
 
         ExerciseProgrammer exerciseProgrammer = exerciseProgrammerMapper.toModel(requestDTO);
@@ -36,6 +50,15 @@ public class ExerciseProgrammerService implements ExerciseProgrammerApi {
 
     @Override
     public ExerciseProgrammerResponseDTO programmerEtDiffuserExercise(ExerciseProgrammerRequestDTO requestDTO) {
+        currentUser.requireAuthenticated();
+        if (!currentUser.isAdmin()) {
+            if (!currentUser.hasRole("PROFESSOR") && !currentUser.hasRole("TUTOR")) {
+                throw cmr.notep.business.security.CurrentUserService.forbidden("Seuls les professeurs peuvent créer du contenu pédagogique.");
+            }
+            requestDTO.setProgrammeParId(currentUser.requireUserId());
+        if (!accessControl.isTeacherOfExercise(requestDTO.getExerciseId(), currentUser.requireUserId()) && !accessControl.isExercisePublicOrAuthor(requestDTO.getExerciseId(), currentUser.requireUserId())) accessControl.requireExerciseAuthor(requestDTO.getExerciseId());
+        if (!currentUser.isAdmin() && requestDTO.getClasseIds() != null) requestDTO.getClasseIds().forEach(accessControl::requireClassTeacher);
+        }
         log.info("Programmation et diffusion d'un exercice à partir de l'exercice ID: {}", requestDTO.getExerciseId());
 
         ExerciseProgrammer exerciseProgrammer = exerciseProgrammerMapper.toModel(requestDTO);
@@ -47,6 +70,8 @@ public class ExerciseProgrammerService implements ExerciseProgrammerApi {
 
     @Override
     public ExerciseProgrammerResponseDTO diffuserExerciseDansClasse(String exerciseProgrammerId, String classeId) {
+        accessControl.requireExerciseProgrammeTeacher(exerciseProgrammerId);
+        accessControl.requireClassTeacher(classeId);
         log.info("Diffusion de l'exercice programmé {} dans la classe {}", exerciseProgrammerId, classeId);
 
         ExerciseProgrammerEntity entity = exerciseProgrammerBusiness.diffuserExerciseDansClasse(exerciseProgrammerId, classeId);
@@ -55,6 +80,7 @@ public class ExerciseProgrammerService implements ExerciseProgrammerApi {
 
     @Override
     public ExerciseProgrammerResponseDTO retirerExerciseDeClasse(String exerciseProgrammerId, String classeId) {
+        accessControl.requireExerciseProgrammeTeacher(exerciseProgrammerId);
         log.info("Retrait de l'exercice programmé {} de la classe {}", exerciseProgrammerId, classeId);
 
         ExerciseProgrammerEntity entity = exerciseProgrammerBusiness.retirerExerciseDeClasse(exerciseProgrammerId, classeId);
@@ -76,6 +102,7 @@ public class ExerciseProgrammerService implements ExerciseProgrammerApi {
 
     @Override
     public List<ExerciseProgrammerResponseDTO> obtenirExercisesProgrammesParClasse(String classeId) {
+        accessControl.requireClassMember(classeId);
         log.info("Récupération des exercices programmés pour la classe: {}", classeId);
 
         return exerciseProgrammerBusiness.obtenirExercisesProgrammesParClasse(classeId)
@@ -89,6 +116,7 @@ public class ExerciseProgrammerService implements ExerciseProgrammerApi {
 
     @Override
     public ExerciseProgrammerResponseDTO mettreAJourEtatExerciseProgramme(String exerciseProgrammerId, EtatExercise nouvelEtat) {
+        accessControl.requireExerciseProgrammeTeacher(exerciseProgrammerId);
         log.info("Mise à jour de l'état de l'exercice programmé {} vers {}", exerciseProgrammerId, nouvelEtat);
 
         ExerciseProgrammer updatedExercise = exerciseProgrammerBusiness.mettreAJourEtatExerciseProgramme(exerciseProgrammerId, nouvelEtat);
@@ -119,6 +147,7 @@ public class ExerciseProgrammerService implements ExerciseProgrammerApi {
 
     @Override
     public void supprimerExerciseProgramme(String exerciseProgrammerId) {
+        accessControl.requireExerciseProgrammeTeacher(exerciseProgrammerId);
         log.info("Suppression de l'exercice programmé: {}", exerciseProgrammerId);
         exerciseProgrammerBusiness.supprimerExerciseProgramme(exerciseProgrammerId);
     }

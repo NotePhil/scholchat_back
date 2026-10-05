@@ -12,6 +12,11 @@ import java.util.List;
 @RestController
 @Slf4j
 public class RepetiteursService implements RepetiteursApi {
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.CurrentUserService currentUser;
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.AccessControlService accessControl;
+
     private final RepetiteursBusiness repetiteursBusiness;
 
     public RepetiteursService(RepetiteursBusiness repetiteursBusiness) {
@@ -20,16 +25,19 @@ public class RepetiteursService implements RepetiteursApi {
 
     @Override
     public Repetiteurs avoirRepetiteur(@NonNull String idRepetiteur) {
+        currentUser.requireAuthenticated();
         return repetiteursBusiness.avoirRepetiteur(idRepetiteur);
     }
 
     @Override
     public List<Repetiteurs> avoirToutRepetiteurs() {
+        currentUser.requireAdmin();
         return repetiteursBusiness.avoirToutRepetiteurs();
     }
 
     @Override
     public Repetiteurs posterRepetiteur(@NonNull Repetiteurs repetiteur) {
+        currentUser.requireAdmin();
         return repetiteursBusiness.posterRepetiteur(repetiteur);
     }
 }

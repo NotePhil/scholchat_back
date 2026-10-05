@@ -2,16 +2,20 @@ package cmr.notep.business.impl;
 
 import cmr.notep.business.business.MessagesBusiness;
 import cmr.notep.interfaces.dto.GroupMessageDto;
+import cmr.notep.interfaces.dto.MessageBulkDeleteRequest;
+import cmr.notep.interfaces.dto.MessageClasseDto;
 import cmr.notep.interfaces.dto.MessageStatutDTO;
 import cmr.notep.interfaces.api.MessagesApi;
 import cmr.notep.interfaces.modeles.MessageDto;
 import cmr.notep.interfaces.modeles.Messages;
+import cmr.notep.interfaces.modeles.UtilisateurSimpleDto;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @Slf4j
@@ -102,9 +106,27 @@ public class MessagesService implements MessagesApi {
     }
 
     @Override
-    public void supprimerMessage(String messageId) {
-        log.info("Suppression du message avec ID: {}", messageId);
-        messagesBusiness.supprimerMessage(messageId);
+    public void supprimerMessage(String messageId, String scope) {
+        log.info("Suppression du message {} (scope={})", messageId, scope);
+        messagesBusiness.supprimerMessage(messageId, scope);
+    }
+
+    @Override
+    public Map<String, Integer> supprimerMessages(MessageBulkDeleteRequest request) {
+        log.info("Suppression groupée de {} message(s) (scope={})",
+                request != null && request.getMessageIds() != null ? request.getMessageIds().size() : 0,
+                request != null ? request.getScope() : null);
+        return messagesBusiness.supprimerMessages(request);
+    }
+
+    @Override
+    public List<UtilisateurSimpleDto> obtenirContacts() {
+        return messagesBusiness.obtenirContacts();
+    }
+
+    @Override
+    public List<MessageClasseDto> obtenirClassesAutorisees() {
+        return messagesBusiness.obtenirClassesAutorisees();
     }
     
     @Override
@@ -115,7 +137,7 @@ public class MessagesService implements MessagesApi {
     
     @Override
     public void viderCorbeille() {
-        log.info("Vider la corbeille - suppression définitive des anciens messages");
+        log.info("Vider la corbeille de l'utilisateur connecté");
         messagesBusiness.viderCorbeille();
     }
     

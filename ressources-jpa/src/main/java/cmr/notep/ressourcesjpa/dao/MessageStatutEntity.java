@@ -34,4 +34,16 @@ public class MessageStatutEntity {
     @Column(name = "date_lecture")
     @Temporal(TemporalType.TIMESTAMP)
     private Date dateLecture;
+
+    /** "Supprimer pour moi": hidden for this user only (in their trash). */
+    @Column(name = "supprime", nullable = false)
+    private boolean supprime = false;
+
+    /** Permanently removed from this user's trash. */
+    @Column(name = "purge", nullable = false)
+    private boolean purge = false;
+
+    @Column(name = "date_suppression")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date dateSuppression;
 }

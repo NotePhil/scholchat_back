@@ -8,7 +8,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Date;
 
 @Component
@@ -22,14 +22,14 @@ public class PendingUserPurgeJob {
         this.pendingPurgeConfig = pendingPurgeConfig;
     }
 
-    @Scheduled(cron = "0 0 2 * * ?") // Run daily at 2:00 AM
+    @Scheduled(cron = "0 0 2 * * ?", zone = "${app.display-timezone:Africa/Douala}") // Daily at 2:00 AM users' local time (off-peak)
     @Transactional
     public void purgePendingUsers() {
         log.info("Starting purge of pending users...");
 
         // Calculate the threshold date
         LocalDateTime thresholdDate = LocalDateTime.now().minusDays(pendingPurgeConfig.getPurgeDays());
-        Date threshold = Date.from(thresholdDate.atZone(ZoneId.systemDefault()).toInstant());
+        Date threshold = Date.from(thresholdDate.atZone(ZoneOffset.UTC).toInstant());
 
         // Delete users in PENDING state before the threshold date
         int deletedCount = utilisateursRepository.deleteByEtatAndCreationDateBefore("PENDING", threshold);

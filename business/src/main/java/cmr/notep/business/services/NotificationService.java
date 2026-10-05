@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -82,6 +83,21 @@ public class NotificationService {
             }
         }
         log.info("Course scheduled notifications sent for {} classes", classeIds.size());
+    }
+
+    /** Live course session started: notify every expected participant (relatedEntityId = coursId). */
+    @Transactional
+    public void createLiveSessionStartedNotification(String coursId, String coursTitle, String professorId,
+                                                     String professorName, Collection<String> participantIds) {
+        if (participantIds == null) return;
+        String titre = coursTitle != null && !coursTitle.isBlank() ? coursTitle : "un cours";
+        for (String participantId : participantIds) {
+            if (participantId == null || participantId.equals(professorId)) continue;
+            saveNotification(participantId, "LIVE_SESSION_STARTED", "Session en direct",
+                    professorName + " a démarré une session en direct : " + titre,
+                    professorId, professorName, coursId, "COURSE");
+        }
+        log.info("Live session notifications sent to {} participants for cours {}", participantIds.size(), coursId);
     }
 
     @Transactional
@@ -308,6 +324,62 @@ public class NotificationService {
         log.info("Professor created notification sent to admins for {}", professorId);
     }
     
+    /** Demande de rôle supplémentaire (ex. parent qui devient professeur) traitée par un administrateur. */
+    @Transactional
+    public void createRoleRequestDecisionNotification(String userId, String roleLabel, boolean approved, String motif) {
+        String message = approved
+                ? "Votre profil " + roleLabel + " a été validé. Vous pouvez y basculer depuis le sélecteur de profil."
+                : "Votre demande de profil " + roleLabel + " a été refusée." + (motif != null && !motif.isBlank() ? " Motif : " + motif : "");
+        saveNotification(userId, approved ? "ROLE_VALIDATED" : "ROLE_REJECTED",
+                approved ? "Profil " + roleLabel + " validé" : "Profil " + roleLabel + " refusé",
+                message, null, null, userId, "UTILISATEUR");
+    }
+
+    /** Types de notification envoyés au professeur quand le statut de vérification de son profil change. */
+    public static final String TYPE_PROF_VERIFICATION_VALIDEE = "PROFESSOR_VERIFICATION_VALIDATED";
+    public static final String TYPE_PROF_VERIFICATION_REJETEE = "PROFESSOR_VERIFICATION_REJECTED";
+    public static final String TYPE_PROF_VERIFICATION_PIECES = "PROFESSOR_VERIFICATION_DOCUMENTS_REQUIRED";
+
+    /**
+     * Décision de l'administrateur sur le profil professeur (pièces d'identité) :
+     * validé, refusé (avec motif) ou compte activé mais pièces encore manquantes.
+     */
+    @Transactional
+    public void createProfessorVerificationNotification(String userId, String statut, String motif) {
+        switch (statut) {
+            case "VALIDE" -> saveNotification(userId, TYPE_PROF_VERIFICATION_VALIDEE, "Profil professeur validé",
+                    "L'administrateur a validé vos pièces justificatives. Toutes les fonctionnalités professeur sont désormais disponibles.",
+                    null, null, userId, "PROFESSOR");
+            case "REJETE" -> saveNotification(userId, TYPE_PROF_VERIFICATION_REJETEE, "Profil professeur refusé",
+                    "Vos pièces justificatives ont été refusées." + (motif != null && !motif.isBlank() ? " Motif : " + motif : "")
+                            + " Vous pouvez déposer de nouvelles pièces depuis votre profil.",
+                    null, null, userId, "PROFESSOR");
+            case "DOCUMENTS_MANQUANTS" -> saveNotification(userId, TYPE_PROF_VERIFICATION_PIECES, "Complétez votre profil professeur",
+                    "Votre compte est activé. Déposez votre CNI (recto et verso) et un selfie : l'administrateur doit les valider avant que vous puissiez utiliser les fonctionnalités professeur.",
+                    null, null, userId, "PROFESSOR");
+            default -> { }
+        }
+    }
+
+    /** Pièces justificatives d'un professeur déposées (ou redéposées) : les administrateurs doivent les vérifier. */
+    @Transactional
+    public void createProfessorDocumentsSubmittedNotification(String userId, String userName) {
+        for (String adminId : utilisateursRepository.findAdminUserIds()) {
+            saveNotification(adminId, "PROFESSOR_CREATED", "Pièces professeur à valider",
+                    userName + " a déposé ses pièces justificatives et attend la validation de son profil professeur.",
+                    userId, userName, userId, "PROFESSOR");
+        }
+    }
+
+    @Transactional
+    public void createProfessorRoleRequestedNotification(String userId, String userName) {
+        for (String adminId : utilisateursRepository.findAdminUserIds()) {
+            saveNotification(adminId, "PROFESSOR_CREATED", "Demande de profil professeur",
+                    userName + " a demandé le profil professeur (compte existant) et attend votre validation.",
+                    userId, userName, userId, "PROFESSOR");
+        }
+    }
+
     public List<NotificationEntity> getUserNotifications(String userId) {
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
@@ -321,9 +393,12 @@ public class NotificationService {
     }
     
     @Transactional
-    public NotificationEntity markAsRead(String notificationId) {
+    public NotificationEntity markAsRead(String notificationId, String userId) {
         NotificationEntity notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new RuntimeException("Notification not found"));
+        if (!notification.getUserId().equals(userId)) {
+            throw new RuntimeException("Unauthorized to update this notification");
+        }
         notification.setRead(true);
         return notificationRepository.save(notification);
     }

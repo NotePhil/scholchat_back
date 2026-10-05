@@ -45,6 +45,10 @@ public class UtilisateursEntity {
     @Column(name = "activation_token", unique = true)
     private String activationToken;
 
+    /** Jeton de réinitialisation du mot de passe en cours (lien e-mail), usage unique. */
+    @Column(name = "reset_password_token", columnDefinition = "TEXT")
+    private String resetPasswordToken;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "etat")
     private EtatUtilisateur etat = EtatUtilisateur.INACTIVE;

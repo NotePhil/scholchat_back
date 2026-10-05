@@ -1,5 +1,7 @@
 package cmr.notep.business.business;
 
+import cmr.notep.business.security.UserSubtypeService;
+
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.NotificationService;
@@ -28,10 +30,13 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 @Component
 @Slf4j
 public class CoursBusiness {
+    private final UserSubtypeService userSubtypeService;
     private final DaoAccessorService daoAccessorService;
     private final NotificationService notificationService;
 
-    public CoursBusiness(DaoAccessorService daoAccessorService, NotificationService notificationService) {
+    public CoursBusiness(DaoAccessorService daoAccessorService, NotificationService notificationService,
+            UserSubtypeService userSubtypeService) {
+        this.userSubtypeService = userSubtypeService;
         this.daoAccessorService = daoAccessorService;
         this.notificationService = notificationService;
     }
@@ -39,8 +44,7 @@ public class CoursBusiness {
 
     public Cours creerCours(Cours cours) {
         // Validate professor
-        ProfesseursEntity professeur = daoAccessorService.getRepository(ProfesseursRepository.class)
-                .findById(cours.getRedacteurId())
+        UtilisateursEntity professeur = userSubtypeService.findProfesseur(cours.getRedacteurId())
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Professeur introuvable"));
 
         // Map and save course
@@ -140,8 +144,7 @@ public class CoursBusiness {
 
         // Validate professor if redacteurId is being updated
         if (cours.getRedacteurId() != null && !cours.getRedacteurId().equals(existingEntity.getRedacteur().getId())) {
-            ProfesseursEntity professeur = daoAccessorService.getRepository(ProfesseursRepository.class)
-                    .findById(cours.getRedacteurId())
+            UtilisateursEntity professeur = userSubtypeService.findProfesseur(cours.getRedacteurId())
                     .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Professeur introuvable"));
             existingEntity.setRedacteur(professeur);
         }

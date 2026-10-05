@@ -96,4 +96,5 @@ public interface AuthApi {
     @ResponseStatus(HttpStatus.OK)
     void changePassword(@RequestBody ChangePasswordRequest request);
 
+
 }

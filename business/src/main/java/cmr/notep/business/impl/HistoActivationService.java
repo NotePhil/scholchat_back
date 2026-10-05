@@ -15,40 +15,51 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 public class HistoActivationService implements HistoActivationApi {
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.CurrentUserService currentUser;
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.AccessControlService accessControl;
+
     private final HistoActivationBusiness histoActivationBusiness;
 
     @Override
     public HistoActivation creerEntreeActivation(@NonNull HistoActivation histoActivation) {
+        currentUser.requireAdmin();
         log.info("Création d'une nouvelle entrée d'activation pour la classe: {}", histoActivation.getClasseId());
         return histoActivationBusiness.creerEntreeActivation(histoActivation);
     }
 
     @Override
     public HistoActivation desactiverEntree(@NonNull String id, @NonNull String motif) {
+        currentUser.requireAdmin();
         log.info("Désactivation de l'entrée d'activation avec l'ID: {}", id);
         return histoActivationBusiness.desactiverEntree(id, motif);
     }
 
     @Override
     public List<HistoActivation> obtenirHistoriqueParClasse(@NonNull String classeId) {
+        accessControl.requireClassMember(classeId);
         log.info("Récupération de l'historique d'activation pour la classe: {}", classeId);
         return histoActivationBusiness.obtenirHistoriqueParClasse(classeId);
     }
 
     @Override
     public List<HistoActivation> obtenirHistoriqueParUtilisateur(@NonNull String utilisateurId) {
+        currentUser.requireSelfOrAdmin(utilisateurId);
         log.info("Récupération de l'historique d'activation pour l'utilisateur: {}", utilisateurId);
         return histoActivationBusiness.obtenirHistoriqueParUtilisateur(utilisateurId);
     }
 
     @Override
     public List<HistoActivation> obtenirActivationsActives() {
+        currentUser.requireAdmin();
         log.info("Récupération des activations actives");
         return histoActivationBusiness.obtenirActivationsActives();
     }
 
     @Override
     public List<HistoActivation> obtenirParEtatClasse(EtatClasse etatClasse) {
+        currentUser.requireAdmin();
         log.info("Récupération des activations par état de classe: {}", etatClasse);
         return histoActivationBusiness.obtenirParEtatClasse(etatClasse);
     }

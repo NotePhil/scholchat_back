@@ -11,4 +11,6 @@ public class GroupMessageDto {
     private String content;
     private String senderId;
     private List<String> copieRecipientIds;
+    /** Pièces jointes (fileName, filePath, contentType, fileSize). */
+    private List<cmr.notep.interfaces.modeles.Media> medias;
 }

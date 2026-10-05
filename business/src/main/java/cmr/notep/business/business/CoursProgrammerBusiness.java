@@ -1,5 +1,7 @@
 package cmr.notep.business.business;
 
+import cmr.notep.business.security.UserSubtypeService;
+
 import cmr.notep.business.services.NotificationService;
 import cmr.notep.interfaces.modeles.CoursProgrammer;
 import cmr.notep.modele.EtatCours;
@@ -17,10 +19,13 @@ import java.util.stream.Collectors;
 @Component
 public class CoursProgrammerBusiness {
 
+    private final UserSubtypeService userSubtypeService;
     private final DaoAccessorService daoAccessorService;
     private final NotificationService notificationService;
 
-    public CoursProgrammerBusiness(DaoAccessorService daoAccessorService, NotificationService notificationService) {
+    public CoursProgrammerBusiness(DaoAccessorService daoAccessorService, NotificationService notificationService,
+            UserSubtypeService userSubtypeService) {
+        this.userSubtypeService = userSubtypeService;
         this.daoAccessorService = daoAccessorService;
         this.notificationService = notificationService;
     }
@@ -38,8 +43,7 @@ public class CoursProgrammerBusiness {
         validateCourseStatusForScheduling(cours);
 
         // Get the professor
-        ProfesseursEntity professeur = daoAccessorService.getRepository(ProfesseursRepository.class)
-                .findById(coursProgrammer.getProfesseurId())
+        UtilisateursEntity professeur = userSubtypeService.findProfesseur(coursProgrammer.getProfesseurId())
                 .orElseThrow(() -> new RuntimeException("Professor not found with ID: " + coursProgrammer.getProfesseurId()));
 
         // Validate that the professor is the author of the course
@@ -219,7 +223,7 @@ public class CoursProgrammerBusiness {
             throw new IllegalStateException("Le cours doit être en état BROUILLON ou PUBLIE pour être programmé");
         }
     }
-    private CoursProgrammerEntity createScheduledCourseEntity(CoursProgrammer coursProgrammer, CoursEntity cours, ProfesseursEntity professeur) {
+    private CoursProgrammerEntity createScheduledCourseEntity(CoursProgrammer coursProgrammer, CoursEntity cours, UtilisateursEntity professeur) {
         CoursProgrammerEntity entity = new CoursProgrammerEntity();
         entity.setId(UUID.randomUUID().toString());
 

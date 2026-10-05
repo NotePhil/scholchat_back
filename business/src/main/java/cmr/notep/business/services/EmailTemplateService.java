@@ -1,5 +1,7 @@
 package cmr.notep.business.services;
 
+import cmr.notep.business.config.time.ClientTimeZone;
+import cmr.notep.business.config.time.ServerDateTimes;
 import cmr.notep.interfaces.modeles.*;
 import cmr.notep.ressourcesjpa.dao.MotifRejetEntity;
 import cmr.notep.ressourcesjpa.dao.ProfesseursEntity;
@@ -9,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -21,6 +25,9 @@ public class EmailTemplateService {
         this.templateEngine = templateEngine;
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.utils.JwtUtil jwtUtil;
+
     @Value("${app.activation-url}")
     private String activationUrl;
 
@@ -32,6 +39,15 @@ public class EmailTemplateService {
 
     @Value("${app.renewal-url}")
     private String renewalUrl;
+
+    /** Dates are stored in UTC; e-mails render them in the users' zone (with the zone name). */
+    @Value("${app.display-timezone:Africa/Douala}")
+    private String displayTimezone;
+
+    private ZoneId displayZone() {
+        ZoneId zone = ClientTimeZone.parse(displayTimezone);
+        return zone != null ? zone : ZoneId.of("Africa/Douala");
+    }
 
 
     public String generateActivationEmail(Utilisateurs utilisateur, String activationToken) {
@@ -63,7 +79,7 @@ public class EmailTemplateService {
         context.setVariable("moderator", moderator);
         context.setVariable("demandeur", demandeur);
         context.setVariable("classe", classe);
-        context.setVariable("dateDemande", dateDemande);
+        context.setVariable("dateDemande", ServerDateTimes.inZone(dateDemande, displayZone()));
         context.setVariable("dashboardUrl", "http://your-frontend-url.com/moderator/dashboard");
 
         return templateEngine.process("email/access-request-notification", context);
@@ -128,8 +144,17 @@ public class EmailTemplateService {
         context.setVariable("classe", classe);
         context.setVariable("etablissement", etablissement);
         
-        String approvalUrl = classApprovalUrl + "?classeId=" + classeId + "&etablissementId=" + etablissementId;
-        String rejectionUrl = classRejectionUrl + "?classeId=" + classeId + "&etablissementId=" + etablissementId;
+        String decisionToken = jwtUtil.generateClassDecisionToken(classeId, etablissementId);
+        // Le nom de la classe est ajouté au lien pour que la page de confirmation l'affiche
+        // (au lieu de « cette classe »).
+        String nomParam = (classe != null && classe.getNom() != null && !classe.getNom().isBlank())
+                ? "&nom=" + java.net.URLEncoder.encode(classe.getNom().trim(), java.nio.charset.StandardCharsets.UTF_8)
+                        .replace("+", "%20")
+                : "";
+        String approvalUrl = classApprovalUrl + "?classeId=" + classeId + "&etablissementId=" + etablissementId
+                + "&token=" + decisionToken + nomParam;
+        String rejectionUrl = classRejectionUrl + "?classeId=" + classeId + "&etablissementId=" + etablissementId
+                + "&token=" + decisionToken + nomParam;
         
         context.setVariable("approvalUrl", approvalUrl);
         context.setVariable("rejectionUrl", rejectionUrl);
@@ -155,7 +180,7 @@ public class EmailTemplateService {
         Context context = new Context();
         context.setVariable("classe", classe);
         context.setVariable("etablissement", etablissement);
-        context.setVariable("dateCreation", new Date());
+        context.setVariable("dateCreation", ZonedDateTime.now(displayZone()));
         return templateEngine.process("email/class-creation-notification", context);
     }
 
@@ -166,7 +191,7 @@ public class EmailTemplateService {
         context.setVariable("offreNom", offreNom);
         context.setVariable("periodicite", periodicite);
         context.setVariable("prixPaye", prixPaye);
-        context.setVariable("dateFin", dateFin);
+        context.setVariable("dateFin", ServerDateTimes.inZone(dateFin, displayZone()));
         return templateEngine.process("email/contrat-confirmation", context);
     }
 
@@ -174,7 +199,7 @@ public class EmailTemplateService {
         Context context = new Context();
         context.setVariable("nomCible", nomCible);
         context.setVariable("offreNom", offreNom);
-        context.setVariable("dateFin", dateFin);
+        context.setVariable("dateFin", ServerDateTimes.inZone(dateFin, displayZone()));
         context.setVariable("renewalUrl", renewalUrl);
         return templateEngine.process("email/offre-expiration-bientot", context);
     }
@@ -200,7 +225,7 @@ public class EmailTemplateService {
         Context context = new Context();
         context.setVariable("nomCible", nomCible);
         context.setVariable("offreNom", offreNom);
-        context.setVariable("dateSuppressionPrevue", dateSuppressionPrevue);
+        context.setVariable("dateSuppressionPrevue", ServerDateTimes.inZone(dateSuppressionPrevue, displayZone()));
         context.setVariable("renewalUrl", renewalUrl);
         return templateEngine.process("email/suppression-imminente", context);
     }

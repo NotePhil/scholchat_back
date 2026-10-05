@@ -17,27 +17,36 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RequiredArgsConstructor
 public class ContratService implements ContratApi {
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.CurrentUserService currentUser;
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.AccessControlService accessControl;
+
 
     private final ContratBusiness contratBusiness;
 
     @Override
     public Contrat obtenirContratCourantDeLaClasse(String classeId) {
+        accessControl.requireClassMember(classeId);
         return contratBusiness.obtenirContratCourantDeLaClasse(classeId);
     }
 
     @Override
     public Contrat obtenirContratCourantDeLetablissement(String etablissementId) {
+        accessControl.requireEtablissementGestionnaireOrAdmin(etablissementId);
         return contratBusiness.obtenirContratCourantDeLetablissement(etablissementId);
     }
 
     @Override
     public Contrat prolongerContratClasse(String classeId, ContratActionDto action) {
+        accessControl.requireClassTeacher(classeId);
         log.info("Prolongation du contrat de la classe: {}", classeId);
         return contratBusiness.prolongerContratClasse(classeId, action, currentUserId(), currentUserIsAdmin());
     }
 
     @Override
     public Contrat changerOffreClasse(String classeId, ContratActionDto action) {
+        accessControl.requireClassTeacher(classeId);
         log.info("Changement d'offre pour la classe: {}", classeId);
         return contratBusiness.changerOffreClasse(classeId, action, currentUserId(), currentUserIsAdmin());
     }

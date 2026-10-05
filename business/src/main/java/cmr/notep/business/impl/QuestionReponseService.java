@@ -19,12 +19,18 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 public class QuestionReponseService implements QuestionReponseApi {
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.CurrentUserService currentUser;
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.AccessControlService accessControl;
+
 
     private final QuestionReponseBusiness questionReponseBusiness;
     private final QuestionReponseMapper questionReponseMapper;
 
     @Override
     public QuestionReponseResponseDTO creerQuestion(String exerciseId, QuestionReponseRequestDTO questionRequestDTO) {
+        accessControl.requireExerciseAuthor(exerciseId);
         log.info("Création d'une nouvelle question pour l'exercice: {}", exerciseId);
         QuestionReponse question = questionReponseMapper.toModel(questionRequestDTO);
         QuestionReponse createdQuestion = questionReponseBusiness.creerQuestion(exerciseId, question);
@@ -56,6 +62,7 @@ public class QuestionReponseService implements QuestionReponseApi {
 
     @Override
     public QuestionReponseResponseDTO mettreAJourQuestion(String questionId, QuestionReponseRequestDTO questionRequestDTO) {
+        accessControl.requireQuestionAuthor(questionId);
         log.info("Mise à jour de la question: {}", questionId);
         QuestionReponse question = questionReponseMapper.toModel(questionRequestDTO);
         QuestionReponse updatedQuestion = questionReponseBusiness.mettreAJourQuestion(questionId, question);
@@ -64,6 +71,7 @@ public class QuestionReponseService implements QuestionReponseApi {
 
     @Override
     public void supprimerQuestion(String questionId) {
+        accessControl.requireQuestionAuthor(questionId);
         log.info("Suppression de la question: {}", questionId);
         questionReponseBusiness.supprimerQuestion(questionId);
     }

@@ -1,5 +1,7 @@
 package cmr.notep.business.business;
 
+import cmr.notep.business.security.UserSubtypeService;
+
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.EmailTemplateService;
@@ -38,11 +40,13 @@ public class ClassesBusiness {
     private final PaymentService paymentService;
     private final NotificationService notificationService;
     private final ContratBusiness contratBusiness;
+    private final UserSubtypeService userSubtypeService;
 
     public ClassesBusiness(DaoAccessorService daoAccessorService, MailService mailService,
                           EmailTemplateService emailTemplateService, TokenService tokenService,
                           PaymentService paymentService, NotificationService notificationService,
-                          ContratBusiness contratBusiness) {
+                          ContratBusiness contratBusiness, UserSubtypeService userSubtypeService) {
+        this.userSubtypeService = userSubtypeService;
         this.daoAccessorService = daoAccessorService;
         this.mailService = mailService;
         this.emailTemplateService = emailTemplateService;
@@ -65,7 +69,7 @@ public class ClassesBusiness {
         
         String token = null;
         EtablissementEntity etablissement = null;
-        ProfesseursEntity moderator = null;
+        UtilisateursEntity moderator = null;
         
         // Handle moderator assignment — creator is always moderator by default
         String effectiveModeratorId = (classeDto.getModeratorId() != null && !classeDto.getModeratorId().trim().isEmpty())
@@ -73,9 +77,8 @@ public class ClassesBusiness {
                 : classeDto.getCreatorId();
 
         if (effectiveModeratorId != null && !effectiveModeratorId.trim().isEmpty()) {
-            moderator = daoAccessorService.getRepository(ProfesseursRepository.class)
-                    .findById(effectiveModeratorId)
-                    .orElse(null);
+            // Compte multi-rôles : ne pas passer par ProfesseursRepository (sous-type déjà chargé)
+            moderator = userSubtypeService.findProfesseur(effectiveModeratorId).orElse(null);
             if (moderator != null) {
                 classesEntity.setModerator(moderator);
                 classesEntity.setCreatorId(moderator.getId());
@@ -93,7 +96,7 @@ public class ClassesBusiness {
                     throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Code unique requis pour cet établissement");
                 }
                 if (!etablissement.getCodeUnique().equals(classeDto.getCodeUnique())) {
-                    throw new SchoolException(SchoolErrorCode.UNAUTHORIZED, "Code unique invalide");
+                    throw new SchoolException(SchoolErrorCode.OPERATION_INTERDITE, "Code unique invalide");
                 }
             }
             
@@ -130,13 +133,7 @@ public class ClassesBusiness {
             contratBusiness.souscrireEtActiverPourClasse(classeDto.getOffreId(), classeDto.getPeriodicite(), savedEntity, souscripteur);
         }
 
-        // Update moderator's moderated classes list
-        if (moderator != null) {
-            if (!moderator.getModeratedClasses().contains(savedEntity)) {
-                moderator.getModeratedClasses().add(savedEntity);
-                daoAccessorService.getRepository(ProfesseursRepository.class).save(moderator);
-            }
-        }
+        // (ProfesseursEntity.moderatedClasses est le côté inverse de classes.moderator_id : rien à synchroniser)
         
         // Send email only if professor created the class
         if (etablissement != null && moderator != null && etablissement.isOptionEnvoiMailNewClasse() && etablissement.getEmail() != null) {
@@ -221,9 +218,7 @@ public class ClassesBusiness {
     }
 
     public boolean isProfessor(String userId) {
-        return daoAccessorService.getRepository(ProfesseursRepository.class)
-                .findById(userId)
-                .isPresent();
+        return userSubtypeService.isProfesseur(userId);
     }
 
     public Classes creerClasse(Classes classes) throws SchoolException {
@@ -232,7 +227,7 @@ public class ClassesBusiness {
         classesEntity.setId(UUID.randomUUID().toString());
 
         EtablissementEntity etablissement = null;
-        ProfesseursEntity moderator = null;
+        UtilisateursEntity moderator = null;
         
         if (classes.getEtablissement() != null && 
             classes.getEtablissement().getId() != null && 
@@ -254,16 +249,10 @@ public class ClassesBusiness {
         // Handle moderator if provided - professor creating the class becomes moderator by default
         if (classes.getModerator() != null && classes.getModerator().getId() != null) {
             log.info("Assigning moderator with ID: {}", classes.getModerator().getId());
-            moderator = daoAccessorService
-                    .getRepository(ProfesseursRepository.class)
-                    .findById(classes.getModerator().getId())
+            moderator = userSubtypeService.findProfesseur(classes.getModerator().getId())
                     .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Modérateur introuvable"));
 
             classesEntity.setModerator(moderator);
-            if (!moderator.getModeratedClasses().contains(classesEntity)) {
-                moderator.getModeratedClasses().add(classesEntity);
-            }
-            daoAccessorService.getRepository(ProfesseursRepository.class).save(moderator);
             log.info("Moderator assigned successfully");
         } else {
             classesEntity.setModerator(null);
@@ -404,8 +393,6 @@ public class ClassesBusiness {
      * Handles moderator assignment, update, and removal logic
      */
     private void updateModerator(ClassesEntity classeExistante, Classes classeModifiee) throws SchoolException {
-        ProfesseursRepository professeurRepository = daoAccessorService.getRepository(ProfesseursRepository.class);
-
         // Case 1: New moderator is provided with valid ID
         if (classeModifiee.getModerator() != null && 
             classeModifiee.getModerator().getId() != null && 
@@ -422,23 +409,15 @@ public class ClassesBusiness {
 
             // Remove old moderator if exists
             if (classeExistante.getModerator() != null) {
-                ProfesseursEntity oldModerator = classeExistante.getModerator();
-                oldModerator.getModeratedClasses().remove(classeExistante);
-                professeurRepository.save(oldModerator);
-                log.info("Ancien modérateur {} retiré de la classe", oldModerator.getId());
+                log.info("Ancien modérateur {} retiré de la classe", classeExistante.getModerator().getId());
             }
 
             // Assign new moderator
-            ProfesseursEntity newModerator = professeurRepository
-                    .findById(newModeratorId)
+            UtilisateursEntity newModerator = userSubtypeService.findProfesseur(newModeratorId)
                     .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND,
                             "Modérateur introuvable avec l'ID: " + newModeratorId));
 
             classeExistante.setModerator(newModerator);
-            if (!newModerator.getModeratedClasses().contains(classeExistante)) {
-                newModerator.getModeratedClasses().add(classeExistante);
-            }
-            professeurRepository.save(newModerator);
             log.info("Nouveau modérateur {} assigné à la classe {}", newModeratorId, classeExistante.getId());
         }
         // Case 2: Moderator field is provided but ID is null or empty (remove moderator)
@@ -446,9 +425,6 @@ public class ClassesBusiness {
                  (classeModifiee.getModerator().getId() == null || 
                   classeModifiee.getModerator().getId().trim().isEmpty())) {
             if (classeExistante.getModerator() != null) {
-                ProfesseursEntity oldModerator = classeExistante.getModerator();
-                oldModerator.getModeratedClasses().remove(classeExistante);
-                professeurRepository.save(oldModerator);
                 classeExistante.setModerator(null);
                 log.info("Modérateur retiré de la classe {}", classeExistante.getId());
             }
@@ -467,7 +443,7 @@ public class ClassesBusiness {
         ClassesEntity classe = classesRepository.findById(idClasse)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe non trouvée"));
 
-        ProfesseursEntity moderator = professeurRepository.findById(idModerator)
+        UtilisateursEntity moderator = userSubtypeService.findProfesseur(idModerator)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Modérateur introuvable"));
 
         // Add to many-to-many table (this allows multiple moderators)
@@ -476,8 +452,6 @@ public class ClassesBusiness {
         // If no main moderator exists, set this as the main moderator
         if (classe.getModerator() == null) {
             classe.setModerator(moderator);
-            moderator.getModeratedClasses().add(classe);
-            professeurRepository.save(moderator);
             classesRepository.save(classe);
         }
 
@@ -502,9 +476,6 @@ public class ClassesBusiness {
             professeurRepository.removeModeratorFromClass(moderatorId, idClasse);
             
             // Remove as main moderator
-            ProfesseursEntity moderator = classe.getModerator();
-            moderator.getModeratedClasses().remove(classe);
-            professeurRepository.save(moderator);
             classe.setModerator(null);
 
             ClassesEntity saved = classesRepository.save(classe);
@@ -695,7 +666,7 @@ public class ClassesBusiness {
         }
         
         if (etablissement.getCodeUnique() == null || !etablissement.getCodeUnique().equals(providedToken)) {
-            throw new SchoolException(SchoolErrorCode.UNAUTHORIZED, 
+            throw new SchoolException(SchoolErrorCode.OPERATION_INTERDITE, 
                 "Code unique invalide pour cet établissement");
         }
     }
@@ -851,7 +822,7 @@ public class ClassesBusiness {
             for (String moderatorId : moderatorIds) {
                 // Avoid duplicates - don't add if already the main moderator
                 if (classe.getModerator() == null || !moderatorId.equals(classe.getModerator().getId())) {
-                    professeursRepository.findById(moderatorId).ifPresent(prof -> {
+                    userSubtypeService.findProfesseur(moderatorId).ifPresent(prof -> {
                         Professeurs moderateur = dozerMapperBean.map(prof, Professeurs.class);
                         moderateurs.add(moderateur);
                     });

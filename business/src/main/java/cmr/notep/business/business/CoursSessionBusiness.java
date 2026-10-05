@@ -3,6 +3,7 @@ package cmr.notep.business.business;
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.JitsiTokenService;
+import cmr.notep.business.services.NotificationService;
 import cmr.notep.interfaces.dto.ChapitreProgressDTO;
 import cmr.notep.interfaces.dto.SessionResponseDTO;
 import cmr.notep.modele.SessionMode;
@@ -37,6 +38,7 @@ public class CoursSessionBusiness {
     private final ProfesseursRepository professeursRepository;
     private final JitsiTokenService jitsiTokenService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final NotificationService notificationService;
 
     @Value("${jitsi.app.id}")
     private String appId;
@@ -85,7 +87,20 @@ public class CoursSessionBusiness {
         log.info("Created new session {} for course {} with professor {} as first participant", saved.getId(), coursId, userId);
 
         // Initialize expected participants based on course programming
-        initializeExpectedParticipants(saved.getId(), coursId);
+        Set<String> expectedParticipants = initializeExpectedParticipants(saved.getId(), coursId);
+
+        // Tell them it's live (LIVE_SESSION_STARTED → clients open the join screen).
+        // Never let a notification failure abort the session start.
+        try {
+            String professorName = utilisateursRepository.findById(userId)
+                    .map(u -> ((u.getPrenom() != null ? u.getPrenom() + " " : "") + (u.getNom() != null ? u.getNom() : "")).trim())
+                    .filter(n -> !n.isEmpty())
+                    .orElse("Votre professeur");
+            notificationService.createLiveSessionStartedNotification(
+                    coursId, cours.getTitre(), userId, professorName, expectedParticipants);
+        } catch (Exception e) {
+            log.error("Could not send live-session notifications for cours {}: {}", coursId, e.getMessage());
+        }
 
         SessionResponseDTO response = buildResponse(saved, userId, userRole);
 
@@ -560,7 +575,8 @@ public class CoursSessionBusiness {
 
     // ─── Attendance tracking methods ──────────────────────────────────────────
 
-    private void initializeExpectedParticipants(String sessionId, String coursId) {
+    /** Creates EXPECTED attendance rows and returns the expected participant ids. */
+    private Set<String> initializeExpectedParticipants(String sessionId, String coursId) {
         log.info("Initializing expected participants for session {} and course {}", sessionId, coursId);
         
         try {
@@ -611,9 +627,11 @@ public class CoursSessionBusiness {
             }
             
             log.info("Initialized {} expected participants for session {}", expectedParticipants.size(), sessionId);
-            
+            return expectedParticipants;
+
         } catch (Exception e) {
             log.error("Error initializing expected participants for session {}: {}", sessionId, e.getMessage());
+            return Collections.emptySet();
         }
     }
     
@@ -623,8 +641,8 @@ public class CoursSessionBusiness {
     }
     
     private boolean isProfessor(String userId) {
-        // Check if user exists in the professeurs table
-        return professeursRepository.existsById(userId);
+        // Professeur dont le profil a été validé par l'administrateur (pas seulement une ligne professeurs)
+        return utilisateursRepository.isProfesseurValide(userId);
     }
     
     private void trackUserJoined(String sessionId, String userId, String coursId) {

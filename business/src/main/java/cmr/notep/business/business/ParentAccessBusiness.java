@@ -1,5 +1,7 @@
 package cmr.notep.business.business;
 
+import cmr.notep.business.security.UserSubtypeService;
+
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.MailServiceInterface;
@@ -26,15 +28,20 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 @Slf4j
 public class ParentAccessBusiness {
 
+    private final UserSubtypeService userSubtypeService;
     private final DaoAccessorService daoAccessorService;
     private final MailServiceInterface mailService;
     private final NotificationService notificationService;
+    private final UtilisateursBusiness utilisateursBusiness;
 
     public ParentAccessBusiness(DaoAccessorService daoAccessorService, MailServiceInterface mailService,
-                                NotificationService notificationService) {
+                                NotificationService notificationService, UtilisateursBusiness utilisateursBusiness,
+            UserSubtypeService userSubtypeService) {
+        this.userSubtypeService = userSubtypeService;
         this.daoAccessorService = daoAccessorService;
         this.mailService = mailService;
         this.notificationService = notificationService;
+        this.utilisateursBusiness = utilisateursBusiness;
     }
 
     public ClasseInfoDto validerTokenEtRecupererInfos(String token, String classeId) throws SchoolException {
@@ -60,9 +67,8 @@ public class ParentAccessBusiness {
         List<EleveInfoDto> eleves = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .findByClasseId(classeId)
                 .stream()
-                .filter(utilisateur -> utilisateur instanceof ElevesEntity)
-                .map(utilisateur -> {
-                    ElevesEntity eleve = (ElevesEntity) utilisateur;
+                .filter(utilisateur -> userSubtypeService.isEleve(utilisateur.getId()))
+                .map(eleve -> {
                     EleveInfoDto dto = new EleveInfoDto();
                     dto.setId(eleve.getId());
                     dto.setNom(eleve.getNom());
@@ -86,18 +92,12 @@ public class ParentAccessBusiness {
                 .findById(request.getParentId())
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur non trouvé"));
 
-        // Check parent row exists (might be added via native SQL for multi-role users)
-        ParentsEntity parent;
-        try {
-            parent = daoAccessorService.getRepository(ParentsRepository.class)
-                    .findById(request.getParentId()).orElse(null);
-        } catch (Exception e) {
-            parent = null;
-        }
+        // Un compte élève ne peut pas devenir parent (profil élève exclusif)
+        utilisateursBusiness.verifierCompatibiliteRole(parentUser, "PARENT");
 
-        // If no JPA parent entity found, create a wrapper that uses the user entity
-        // This handles the case where a professor added parent role via native SQL
-        if (parent == null) {
+        // Ligne parents : vérifiée en natif (compte multi-rôles : ParentsRepository.findById peut
+        // renvoyer vide si le compte est déjà chargé sous un autre sous-type), créée si absente.
+        if (!userSubtypeService.isParent(request.getParentId())) {
             // Verify parent row exists in DB
             try {
                 daoAccessorService.getRepository(UtilisateursRepository.class)

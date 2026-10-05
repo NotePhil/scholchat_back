@@ -23,6 +23,13 @@ public class AuthResponse {
     private java.util.List<String> availableRoles;
     private String selectedRole;
     private boolean multiRole;
+    // Rôles demandés mais pas encore utilisables (ex. PROFESSOR en attente de validation admin)
+    private java.util.List<String> pendingRoles;
+    // Statut de vérification du profil professeur (DOCUMENTS_MANQUANTS, EN_ATTENTE_VALIDATION, VALIDE,
+    // REJETE) pour les comptes ayant un profil professeur ; null sinon. Tant qu'il n'est pas VALIDE, le
+    // jeton porte ROLE_PROFESSOR_PENDING au lieu de ROLE_PROFESSOR et les fonctions professeur sont refusées (403).
+    private String professeurStatutVerification;
+    private String professeurMotifRejet;
     // Parent-children info
     private java.util.List<ChildInfo> children;
     // Classes/etablissements dont l'offre est expiree (professeur/gestionnaire concerne) ;

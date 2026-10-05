@@ -21,7 +21,6 @@ public class Classes implements Serializable {
     private String nom;
     private String niveau;
 
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
     private Date dateCreation;
 
     private String codeActivation;

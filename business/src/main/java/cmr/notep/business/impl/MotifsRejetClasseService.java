@@ -13,10 +13,16 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 public class MotifsRejetClasseService implements MotifsRejetClasseApi {
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.CurrentUserService currentUser;
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.AccessControlService accessControl;
+
     private final MotifsRejetClasseBusiness motifsRejetClasseBusiness;
 
     @Override
     public MotifRejetClasse creerMotifRejetClasse(MotifRejetClasse motifRejetClasse) {
+        currentUser.requireAdmin();
         return motifsRejetClasseBusiness.creerMotifRejetClasse(motifRejetClasse);
     }
 
@@ -27,6 +33,7 @@ public class MotifsRejetClasseService implements MotifsRejetClasseApi {
 
     @Override
     public void supprimerMotifRejetClasse(String id) {
+        currentUser.requireAdmin();
         motifsRejetClasseBusiness.supprimerMotifRejetClasse(id);
     }
 

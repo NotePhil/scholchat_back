@@ -14,11 +14,17 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 public class CanauxService implements CanauxApi {
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.CurrentUserService currentUser;
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.AccessControlService accessControl;
+
 
     private final CanauxBusiness canauxBusiness;
 
     @Override
     public Canal creerCanal(@NonNull Canal canaux) {
+        if (canaux.getClasse() == null || canaux.getClasse().getId() == null) currentUser.requireAdmin(); else accessControl.requireClassTeacher(canaux.getClasse().getId());
         log.info("Tentative de création d'un nouveau canal: {}", canaux);
         Canal nouveauCanal = canauxBusiness.creerCanal(canaux);
         log.info("Canal créé avec succès: {}", nouveauCanal.getId());
@@ -27,6 +33,7 @@ public class CanauxService implements CanauxApi {
 
     @Override
     public Canal modifierCanal(@NonNull String idCanal, @NonNull Canal canalModifie) {
+        accessControl.requireCanalManager(idCanal);
         log.info("Tentative de modification du canal avec l'ID: {}", idCanal);
         canalModifie.setId(idCanal);
         Canal canalMAJ = canauxBusiness.modifierCanal(idCanal, canalModifie);
@@ -36,6 +43,7 @@ public class CanauxService implements CanauxApi {
 
     @Override
     public void supprimerCanal(@NonNull String idCanal) {
+        accessControl.requireCanalManager(idCanal);
         log.info("Tentative de suppression du canal avec l'ID: {}", idCanal);
         canauxBusiness.supprimerCanal(idCanal);
         log.info("Canal supprimé avec succès: {}", idCanal);
@@ -49,6 +57,7 @@ public class CanauxService implements CanauxApi {
 
     @Override
     public List<Canal> obtenirTousLesCanaux() {
+        currentUser.requireAdmin();
         log.info("Récupération de tous les canaux");
         List<Canal> canaux = canauxBusiness.obtenirTousLesCanaux();
         log.info("Récupération de {} canaux", canaux.size());
@@ -57,6 +66,7 @@ public class CanauxService implements CanauxApi {
 
     @Override
     public List<Canal> obtenirCanauxParClasse(@NonNull String idClasse) {
+        accessControl.requireClassMember(idClasse);
         log.info("Récupération des canaux pour la classe avec l'ID: {}", idClasse);
         List<Canal> canaux = canauxBusiness.obtenirCanauxParClasse(idClasse);
         log.info("Récupération de {} canaux pour la classe {}", canaux.size(), idClasse);
@@ -65,6 +75,7 @@ public class CanauxService implements CanauxApi {
 
     @Override
     public List<Canal> obtenirCanauxParProfesseur(@NonNull String idProfesseur) {
+        currentUser.requireSelfOrAdmin(idProfesseur);
         log.info("Récupération des canaux pour le professeur avec l'ID: {}", idProfesseur);
         List<Canal> canaux = canauxBusiness.obtenirCanauxParProfesseur(idProfesseur);
         log.info("Récupération de {} canaux pour le professeur {}", canaux.size(), idProfesseur);

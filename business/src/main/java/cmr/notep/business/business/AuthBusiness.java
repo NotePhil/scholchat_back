@@ -1,5 +1,6 @@
 package cmr.notep.business.business;
 
+import cmr.notep.business.security.ProfesseurVerificationService;
 import cmr.notep.business.config.JwtConfig;
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
@@ -41,6 +42,9 @@ public class AuthBusiness {
     private final PasswordDecryptionService passwordDecryptionService;
     private final ContratBusiness contratBusiness;
 
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private ProfesseurVerificationService professeurVerification;
 
     public AuthBusiness(PasswordEncoder passwordEncoder, UtilisateursBusiness utilisateursBusiness, JwtUtil jwtUtil, JwtConfig jwtConfig, ActivationEmailService activationEmailService, RefreshTokenBusiness refreshTokenBusiness, PasswordResetEmailService passwordResetEmailService,RoleService roleService, UserValidationService userValidationService, PasswordDecryptionService passwordDecryptionService, ContratBusiness contratBusiness) {
         this.passwordEncoder = passwordEncoder;
@@ -87,13 +91,23 @@ public class AuthBusiness {
     }
 
 
-    public void registerPassword(PasswordSetupRequest request) {
+    public void registerPassword(PasswordSetupRequest request, String activationToken) {
         log.info("Processing password setup for: {}", request.getEmail());
 
         // Get user by email
         Utilisateurs user = utilisateursBusiness.avoirUtilisateurParEmail(request.getEmail());
         if (user == null) {
             throw new SchoolException(SchoolErrorCode.NOT_FOUND, "User not found");
+        }
+
+        // Le mot de passe initial ne peut être fixé qu'avec le jeton d'activation envoyé par email
+        // (sinon n'importe qui pouvait fixer le mot de passe de n'importe quel compte).
+        if (activationToken == null || activationToken.isBlank()
+                || user.getActivationToken() == null
+                || !activationToken.equals(user.getActivationToken())
+                || !jwtUtil.validateToken(activationToken)) {
+            throw new SchoolException(SchoolErrorCode.INVALID_TOKEN,
+                    "Lien d'activation invalide ou expiré. Veuillez demander un nouvel email d'activation.");
         }
 
         // Validate password strength
@@ -148,10 +162,54 @@ public class AuthBusiness {
             throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Invalid email or password");
         }
 
+        return buildAuthResponse(existingUser, loginRequest.getSelectedRole());
+    }
+
+    /**
+     * Changement de profil pour l'utilisateur DÉJÀ authentifié (jeton d'accès valide, compte ACTIVE) :
+     * pas besoin de redemander le mot de passe, le jeton porte déjà tous les rôles du compte ; on
+     * renvoie une réponse de connexion complète (nouveau jeton, selectedRole, enfants…) pour le rôle choisi.
+     */
+    public AuthResponse switchRoleForAuthenticatedUser(String email, String requestedRole) {
+        if (requestedRole == null || requestedRole.isBlank()) {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Le profil demandé est requis.");
+        }
+        Utilisateurs user = utilisateursBusiness.avoirUtilisateurParEmail(email);
+        if (user.getEtat() != EtatUtilisateur.ACTIVE) {
+            throw new SchoolException(SchoolErrorCode.INACTIVE_USER, "User account is inactive");
+        }
+        return buildAuthResponse(user, requestedRole);
+    }
+
+    /** Normalise un nom de rôle reçu du client ("ROLE_PROFESSOR", "professeur", "eleve"…). */
+    static String normaliserRole(String raw) {
+        if (raw == null) return null;
+        String r = raw.trim().toUpperCase().replaceFirst("^ROLE_", "");
+        return switch (r) {
+            case "PROFESSEUR" -> "PROFESSOR";
+            case "ELEVE" -> "STUDENT";
+            case "REPETITEUR" -> "TUTOR";
+            default -> r;
+        };
+    }
+
+    private static String libelleRole(String role) {
+        return switch (role) {
+            case "PROFESSOR" -> "professeur";
+            case "STUDENT" -> "élève";
+            case "PARENT" -> "parent";
+            case "TUTOR" -> "répétiteur";
+            case "GESTIONNAIRE" -> "gestionnaire";
+            case "ADMIN" -> "administrateur";
+            default -> role.toLowerCase();
+        };
+    }
+
+    private AuthResponse buildAuthResponse(Utilisateurs existingUser, String requestedRole) {
         // Get all roles: merge user_roles table + JPA type detection
         List<String> dbRoles = utilisateursBusiness.getUserRoles(existingUser.getId());
         List<String> allDbRoleTypes = utilisateursBusiness.getAllUserRoleTypes(existingUser.getId());
-        
+
         List<String> jpaRoles = roleService.determineUserRoles(existingUser).stream()
                 .map(r -> r.replace("ROLE_", ""))
                 .filter(r -> !r.equals("USER"))
@@ -166,14 +224,22 @@ public class AuthBusiness {
         List<String> availableRoles = new java.util.ArrayList<>(allRolesSet);
 
         // Sync missing roles to user_roles table for next login
-        for (String role : availableRoles) {
+        for (String role : jpaRoles) {
             utilisateursBusiness.addRoleToUser(existingUser.getId(), role);
         }
+        List<String> pendingRoles = utilisateursBusiness.getPendingRoles(existingUser.getId());
 
-        // Determine selected role (from request or first available)
-        String selectedRole = loginRequest.getSelectedRole();
+        // Selected role: must be one of the account's ACTIVE roles (never trust the client blindly)
+        String selectedRole = normaliserRole(requestedRole);
         if (selectedRole == null || selectedRole.isEmpty()) {
             selectedRole = availableRoles.isEmpty() ? "USER" : availableRoles.get(0);
+        } else if (!availableRoles.contains(selectedRole)) {
+            if (pendingRoles.contains(selectedRole)) {
+                throw new SchoolException(SchoolErrorCode.INVALID_STATE,
+                        "Votre profil " + libelleRole(selectedRole) + " est en attente de validation par l'administration.");
+            }
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
+                    "Le profil " + libelleRole(selectedRole) + " n'est pas disponible pour ce compte.");
         }
 
         // Generate token with all roles
@@ -194,17 +260,47 @@ public class AuthBusiness {
                 ? new ContratBusiness.AccesUtilisateurInfo(java.util.Collections.emptyList(), true)
                 : contratBusiness.resoudreAccesUtilisateur(existingUser.getId());
 
-        if (!acces.isHasActiveEntity() && !acces.getExpiredEntities().isEmpty()) {
+        // Compte multi-rôles : l'offre ne concerne que les profils professeur/répétiteur/gestionnaire.
+        // On ne bloque que si le profil choisi est l'un d'eux (ou si le compte n'a aucun autre profil) :
+        // un professeur-parent dont l'offre a expiré peut toujours se connecter en tant que parent.
+        java.util.Set<String> rolesSousOffre = java.util.Set.of("PROFESSOR", "TUTOR", "GESTIONNAIRE");
+        boolean aUnProfilHorsOffre = availableRoles.stream().anyMatch(r -> !rolesSousOffre.contains(r));
+        boolean roleExplicite = requestedRole != null && !requestedRole.isBlank();
+        boolean bloquerSiExpire = !aUnProfilHorsOffre || (roleExplicite && rolesSousOffre.contains(selectedRole));
+        boolean toutExpire = !acces.isHasActiveEntity() && !acces.getExpiredEntities().isEmpty();
+        if (toutExpire && bloquerSiExpire) {
             String noms = acces.getExpiredEntities().stream()
                     .map(e -> e.get("nom"))
                     .collect(java.util.stream.Collectors.joining(", "));
             throw new SchoolException(SchoolErrorCode.ABONNEMENT_EXPIRE,
                     "Votre offre a expiré pour : " + noms + ". Veuillez la renouveler pour vous connecter.");
         }
+        if (toutExpire && rolesSousOffre.contains(selectedRole)) {
+            // Connexion sans profil choisi d'un compte multi-rôles dont le profil par défaut est bloqué :
+            // on propose le premier profil non concerné par l'offre.
+            selectedRole = availableRoles.stream().filter(r -> !rolesSousOffre.contains(r)).findFirst().orElse(selectedRole);
+        }
 
         List<java.util.Map<String, String>> expiredEntities = acces.getExpiredEntities();
 
-        String accessToken = jwtUtil.generateAccessToken(existingUser.getEmail(), tokenRoles, expiredEntities);
+        // Profil professeur : ROLE_PROFESSOR seulement si les pièces ont été validées par l'administrateur,
+        // sinon ROLE_PROFESSOR_PENDING (connexion possible pour consulter son statut / déposer ses pièces).
+        // Le filtre JWT recalcule de toute façon ce rôle à chaque requête (refus/validation ultérieurs).
+        String statutProfesseur = null;
+        String motifRejetProfesseur = null;
+        java.util.Optional<cmr.notep.modele.StatutVerificationProfesseur> statutProf =
+                professeurVerification.statut(existingUser.getId());
+        if (statutProf.isPresent()) {
+            statutProfesseur = statutProf.get().name();
+            if (statutProf.get() == cmr.notep.modele.StatutVerificationProfesseur.REJETE) {
+                motifRejetProfesseur = professeurVerification.motifRejet(existingUser.getId());
+            }
+        }
+        if (tokenRoles.contains(ProfesseurVerificationService.ROLE_PROFESSOR)) {
+            tokenRoles = professeurVerification.rolesEffectifs(existingUser.getId(), tokenRoles);
+        }
+
+        String accessToken = jwtUtil.generateAccessToken(existingUser.getEmail(), tokenRoles, expiredEntities, selectedRole);
 
         boolean isMultiRole = availableRoles.size() > 1;
 
@@ -226,6 +322,9 @@ public class AuthBusiness {
                 .availableRoles(availableRoles)
                 .selectedRole(selectedRole)
                 .multiRole(isMultiRole)
+                .pendingRoles(pendingRoles.isEmpty() ? null : pendingRoles)
+                .professeurStatutVerification(statutProfesseur)
+                .professeurMotifRejet(motifRejetProfesseur)
                 .children(children)
                 .expiredEntities(expiredEntities.isEmpty() ? null : expiredEntities)
                 .build();
@@ -341,26 +440,7 @@ public class AuthBusiness {
      * Validates password strength requirements
      */
     private void validatePasswordStrength(String password) {
-        if (password.length() < 8) {
-            throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
-                    "Le mot de passe doit contenir au moins 8 caractères");
-        }
-        if (!password.matches(".*[A-Z].*")) {
-            throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
-                    "Le mot de passe doit contenir au moins une lettre majuscule");
-        }
-        if (!password.matches(".*[a-z].*")) {
-            throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
-                    "Le mot de passe doit contenir au moins une lettre minuscule");
-        }
-        if (!password.matches(".*\\d.*")) {
-            throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
-                    "Le mot de passe doit contenir au moins un chiffre");
-        }
-        if (!password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?].*")) {
-            throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
-                    "Le mot de passe doit contenir au moins un caractère spécial (!@#$%^&*...)");
-        }
+        cmr.notep.business.utils.PasswordPolicy.valider(password);
     }
 
     /**
@@ -419,10 +499,8 @@ public class AuthBusiness {
         log.debug("Stored token: {}", utilisateur.getActivationToken());
 
         // Verify token matches user's token
-        if (!token.equals(utilisateur.getActivationToken())) {
-            throw new SchoolException(SchoolErrorCode.INVALID_TOKEN,
-                    "Token does not match user's token. Received: " + token +
-                            " Expected: " + utilisateur.getActivationToken());
+        if (token == null || !token.equals(utilisateur.getActivationToken())) {
+            throw new SchoolException(SchoolErrorCode.INVALID_TOKEN, "Jeton invalide pour cet utilisateur");
         }
 
         return utilisateur;
@@ -459,8 +537,19 @@ public class AuthBusiness {
         // Get user
         Utilisateurs user = utilisateursBusiness.avoirUtilisateurParEmail(email);
 
-        // Validate passwords match
-        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+        // Le jeton doit être celui émis par la dernière demande de réinitialisation (usage unique) :
+        // un autre JWT valide (jeton d'accès, d'activation…) ne permet pas de changer le mot de passe.
+        if (user.getResetPasswordToken() == null || !user.getResetPasswordToken().equals(request.getToken())) {
+            throw new SchoolException(SchoolErrorCode.INVALID_TOKEN, "Invalid or expired reset token");
+        }
+
+        if (request.getNewPassword() == null || request.getNewPassword().isBlank()) {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Le nouveau mot de passe est requis");
+        }
+
+        // Validate passwords match. La page de réinitialisation (web et mobile) vérifie la confirmation
+        // elle-même et n'envoie que { token, newPassword } : la confirmation n'est comparée que si fournie.
+        if (request.getConfirmPassword() != null && !request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Passwords do not match");
         }
 

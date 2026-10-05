@@ -1,6 +1,7 @@
 package cmr.notep.interfaces.modeles;
 
 import lombok.Data;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -19,4 +20,9 @@ public class MessageDto {
     private boolean lu;
     private boolean favori;
     private Date dateLecture;
+    // pièces jointes
+    private List<Media> medias = new ArrayList<>();
+    // corbeille
+    private boolean supprimePourTous;
+    private String dateSuppression;
 }

@@ -23,7 +23,7 @@
             <li><strong>Offre :</strong> <span th:text="${offreNom}"></span></li>
             <li><strong>Périodicité :</strong> <span th:text="${periodicite}"></span></li>
             <li><strong>Montant payé :</strong> <span th:text="${prixPaye}"></span> FCFA</li>
-            <li><strong>Valide jusqu'au :</strong> <span th:text="${#temporals.format(dateFin, 'dd/MM/yyyy HH:mm')}"></span></li>
+            <li><strong>Valide jusqu'au :</strong> <span th:text="${#temporals.format(dateFin, 'dd/MM/yyyy HH:mm z')}"></span></li>
         </ul>
         <p>Merci de votre confiance.</p>
     </div>

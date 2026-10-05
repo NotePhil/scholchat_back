@@ -1,5 +1,7 @@
 package cmr.notep.business.business;
 
+import cmr.notep.business.security.UserSubtypeService;
+
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.interfaces.dto.ParentSummaryDto;
@@ -9,6 +11,8 @@ import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.ElevesEntity;
 import cmr.notep.ressourcesjpa.dao.ParentsEntity;
 import cmr.notep.ressourcesjpa.repository.ElevesRepository;
+import cmr.notep.ressourcesjpa.repository.ParentEleveRepository;
+import cmr.notep.ressourcesjpa.repository.UtilisateursRepository;
 import cmr.notep.ressourcesjpa.repository.ParentsRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -25,17 +29,19 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 @Component
 @Slf4j
 public class ParentsBusiness {
+    private final UserSubtypeService userSubtypeService;
     private final DaoAccessorService daoAccessorService;
 
-    public ParentsBusiness(DaoAccessorService daoAccessorService) {
+    public ParentsBusiness(DaoAccessorService daoAccessorService,
+            UserSubtypeService userSubtypeService) {
+        this.userSubtypeService = userSubtypeService;
         this.daoAccessorService = daoAccessorService;
     }
 
     public Parents avoirParent(String idParent) {
         log.info("avoirParent called");
         return dozerMapperBean.map(
-                daoAccessorService.getRepository(ParentsRepository.class)
-                        .findById(idParent)
+                userSubtypeService.findSubtype(ParentsEntity.class, idParent)
                         .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND,"Parent introuvable avec l'ID: " + idParent)),
                 Parents.class
         );
@@ -77,7 +83,7 @@ public class ParentsBusiness {
         log.info("modifierParentPartiellement called for ID: {}", idParent);
 
         ParentsRepository repository = daoAccessorService.getRepository(ParentsRepository.class);
-        ParentsEntity existingEntity = repository.findById(idParent)
+        ParentsEntity existingEntity = userSubtypeService.findSubtype(ParentsEntity.class, idParent)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Parent introuvable avec l'ID : " + idParent));
 
         // Update only non-null fields from partialParent
@@ -108,21 +114,38 @@ public class ParentsBusiness {
     }
 
 
-    public void ajouterEnfant(String parentId, String eleveId) throws SchoolException {
-        ParentsEntity parent = daoAccessorService.getRepository(ParentsRepository.class)
-                .findById(parentId)
-                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Parent introuvable"));
+    // Les liens parent/enfant sont lus et écrits directement dans parent_eleve : un parent peut
+    // aussi être professeur ou élève (compte multi-rôles), et Hibernate ne garde qu'un sous-type
+    // par id dans le contexte de persistance — ParentsRepository.findById(id) peut alors renvoyer
+    // vide alors que la ligne parents existe bien.
 
+    private void verifierParent(String parentId) {
+        if (parentId == null || !daoAccessorService.getRepository(UtilisateursRepository.class).hasParentRow(parentId)) {
+            throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Parent introuvable");
+        }
+    }
+
+    private List<ElevesEntity> enfantsDe(String parentId) {
+        List<String> ids = daoAccessorService.getRepository(ParentEleveRepository.class).findEleveIdsByParentId(parentId);
+        if (ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return daoAccessorService.getRepository(ElevesRepository.class).findAllById(ids);
+    }
+
+    public void ajouterEnfant(String parentId, String eleveId) throws SchoolException {
+        verifierParent(parentId);
         ElevesEntity eleve = daoAccessorService.getRepository(ElevesRepository.class)
                 .findById(eleveId)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Élève introuvable"));
 
-        if (parent.getEnfants() == null) {
-            parent.setEnfants(new ArrayList<>());
+        ParentEleveRepository liens = daoAccessorService.getRepository(ParentEleveRepository.class);
+        if (liens.existsByParentIdAndEleveId(parentId, eleveId)) {
+            return;
         }
 
         // Duplicate check: same nom + prenom + niveau (case-insensitive)
-        boolean duplicate = parent.getEnfants().stream().anyMatch(e ->
+        boolean duplicate = enfantsDe(parentId).stream().anyMatch(e ->
                 e.getNom() != null && e.getNom().equalsIgnoreCase(eleve.getNom()) &&
                 e.getPrenom() != null && e.getPrenom().equalsIgnoreCase(eleve.getPrenom()) &&
                 e.getNiveau() != null && e.getNiveau().equalsIgnoreCase(eleve.getNiveau())
@@ -133,25 +156,15 @@ public class ParentsBusiness {
                     " en " + eleve.getNiveau() + " est déjà associé à ce compte.");
         }
 
-        if (!parent.getEnfants().contains(eleve)) {
-            parent.getEnfants().add(eleve);
-            daoAccessorService.getRepository(ParentsRepository.class).save(parent);
-        }
+        liens.insertLien(parentId, eleveId);
     }
 
     public void retirerEnfant(String parentId, String eleveId) throws SchoolException {
-        ParentsEntity parent = daoAccessorService.getRepository(ParentsRepository.class)
-                .findById(parentId)
-                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Parent introuvable"));
-
-        ElevesEntity eleve = daoAccessorService.getRepository(ElevesRepository.class)
-                .findById(eleveId)
-                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Élève introuvable"));
-
-        if (parent.getEnfants() != null && parent.getEnfants().contains(eleve)) {
-            parent.getEnfants().remove(eleve);
-            daoAccessorService.getRepository(ParentsRepository.class).save(parent);
+        verifierParent(parentId);
+        if (!daoAccessorService.getRepository(ElevesRepository.class).existsById(eleveId)) {
+            throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Élève introuvable");
         }
+        daoAccessorService.getRepository(ParentEleveRepository.class).deleteLien(parentId, eleveId);
     }
 
     public List<ParentSummaryDto> avoirParentsPourProfesseur(String professeurId) {
@@ -173,15 +186,8 @@ public class ParentsBusiness {
     }
 
     public List<Eleves> obtenirEnfants(String parentId) throws SchoolException {
-        ParentsEntity parent = daoAccessorService.getRepository(ParentsRepository.class)
-                .findById(parentId)
-                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Parent introuvable"));
-
-        if (parent.getEnfants() == null) {
-            return Collections.emptyList();
-        }
-
-        return parent.getEnfants().stream()
+        verifierParent(parentId);
+        return enfantsDe(parentId).stream()
                 .map(e -> dozerMapperBean.map(e, Eleves.class))
                 .collect(Collectors.toList());
     }

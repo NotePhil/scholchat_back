@@ -15,6 +15,14 @@ public interface CoursRepository extends JpaRepository<CoursEntity, String> {
     List<CoursEntity> findByMatieresId(String matiereId);
     List<CoursEntity> findByEtat(EtatCours etat);
     List<CoursEntity> findByRestriction(String restriction);
-    @Query("SELECT c FROM CoursEntity c WHERE c.restriction = 'PUBLIC' OR c.redacteur.id = :userId")
+    /**
+     * Cours publics, cours rédigés par l'utilisateur, et cours (même PRIVE) programmés pour une classe
+     * à laquelle il a accès ou dont il est participant — sinon l'élève voit la séance sans titre.
+     */
+    @Query("SELECT c FROM CoursEntity c WHERE c.restriction = 'PUBLIC' OR c.redacteur.id = :userId "
+            + "OR EXISTS (SELECT cp.id FROM CoursProgrammerEntity cp JOIN cp.classes cl, AccederEntity a "
+            + "           WHERE cp.cours = c AND a.classeId = cl.id AND a.utilisateurId = :userId) "
+            + "OR EXISTS (SELECT cp2.id FROM CoursProgrammerEntity cp2 JOIN cp2.participants pa "
+            + "           WHERE cp2.cours = c AND pa.id = :userId)")
     List<CoursEntity> findAccessibleCours(@Param("userId") String userId);
 }

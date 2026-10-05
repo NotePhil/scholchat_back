@@ -1,5 +1,7 @@
 package cmr.notep.business.business;
 
+import cmr.notep.business.security.UserSubtypeService;
+
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.interfaces.modeles.Canal;
@@ -25,9 +27,12 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 @Transactional
 public class CanauxBusiness {
 
+    private final UserSubtypeService userSubtypeService;
     private final DaoAccessorService daoAccessorService;
 
-    public CanauxBusiness(DaoAccessorService daoAccessorService) {
+    public CanauxBusiness(DaoAccessorService daoAccessorService,
+            UserSubtypeService userSubtypeService) {
+        this.userSubtypeService = userSubtypeService;
         this.daoAccessorService = daoAccessorService;
     }
 
@@ -87,10 +92,10 @@ public class CanauxBusiness {
     }
 
     public List<Canal> obtenirCanauxParProfesseur(String idProfesseur) throws SchoolException {
-        ProfesseursRepository professeursRepository = daoAccessorService.getRepository(ProfesseursRepository.class);
-        ProfesseursEntity professeurEntity = professeursRepository.findById(idProfesseur)
-                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Professeur non trouvé avec l'ID: " + idProfesseur));
-        return professeurEntity.getCanaux()
+        if (!userSubtypeService.isProfesseur(idProfesseur)) {
+            throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Professeur non trouvé avec l'ID: " + idProfesseur);
+        }
+        return daoAccessorService.getRepository(CanalRepository.class).findByProfesseurId(idProfesseur)
                 .stream()
                 .map(c -> dozerMapperBean.map(c, Canal.class))
                 .collect(Collectors.toList());

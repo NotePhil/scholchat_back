@@ -42,11 +42,14 @@ public class Utilisateurs implements Serializable, IUtilisateurs {
     @NonNull
     private String prenom;
     private String email;
+    // Jetons secrets (le jeton d'activation est un JWT d'accès) : jamais renvoyés dans les réponses JSON.
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String resetPasswordToken;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String passeAccess;
     private String telephone;
     private String adresse;
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String activationToken;
     private EtatUtilisateur etat;
     private LocalDateTime creationDate;
@@ -55,4 +58,12 @@ public class Utilisateurs implements Serializable, IUtilisateurs {
     private List<Messages> messagesRecus;
     @JsonManagedReference
     private List<Etablissement> etablissementsGeres;
+    /**
+     * Réponse de POST /utilisateurs uniquement (jamais persisté, ignoré en entrée) :
+     * CREATED (nouveau compte), ROLE_ADDED (rôle ajouté à un compte existant, utilisable tout de suite),
+     * ROLE_PENDING_VALIDATION (rôle professeur demandé sur un compte existant : pièces + validation admin),
+     * ACTIVATION_REQUIRED (rôle ajouté, le compte doit encore être activé via l'email reçu).
+     */
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private String inscriptionStatut;
 }

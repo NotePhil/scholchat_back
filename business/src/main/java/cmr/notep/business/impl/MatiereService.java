@@ -12,6 +12,11 @@ import java.util.List;
 @RestController
 @Slf4j
 public class MatiereService implements MatiereApi {
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.CurrentUserService currentUser;
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.AccessControlService accessControl;
+
 
     private final MatiereBusiness matiereBusiness;
 
@@ -21,6 +26,8 @@ public class MatiereService implements MatiereApi {
 
     @Override
     public Matiere creerMatiere(@NonNull Matiere matiere) {
+        currentUser.requireAuthenticated();
+        if (!currentUser.isAdmin() && !currentUser.hasRole("PROFESSOR")) throw cmr.notep.business.security.CurrentUserService.forbidden("Seuls les professeurs et administrateurs peuvent créer une matière.");
         log.info("Création d'une nouvelle matière: {}", matiere.getNom());
         return matiereBusiness.creerMatiere(matiere);
     }
@@ -39,12 +46,14 @@ public class MatiereService implements MatiereApi {
 
     @Override
     public Matiere modifierMatiere(@NonNull String id, @NonNull Matiere matiere) {
+        currentUser.requireAdmin();
         log.info("Modification de la matière avec l'ID: {}", id);
         return matiereBusiness.modifierMatiere(id, matiere);
     }
 
     @Override
     public void supprimerMatiere(@NonNull String id) {
+        currentUser.requireAdmin();
         log.info("Suppression de la matière avec l'ID: {}", id);
         matiereBusiness.supprimerMatiere(id);
     }

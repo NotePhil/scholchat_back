@@ -26,6 +26,19 @@ import java.util.Map;
 @Slf4j
 @RequiredArgsConstructor
 public class CoursSessionController {
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.CurrentUserService currentUser;
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.AccessControlService accessControl;
+
+    /** Lecture des données d'un cours en direct : ayants droit du cours (cf. AccessControlService#canAccessCours) ou admin. */
+    private void exigerAccesCours(String coursId) {
+        if (currentUser.isAdmin()) return;
+        if (!accessControl.canAccessCours(coursId, currentUser.requireUserId())) {
+            throw cmr.notep.business.security.CurrentUserService.forbidden("Vous n'avez pas accès à ce cours.");
+        }
+    }
+
 
     private final CoursSessionBusiness sessionBusiness;
     private final UtilisateursRepository utilisateursRepository;
@@ -45,6 +58,7 @@ public class CoursSessionController {
 
     @GetMapping("/{coursId}/session/active")
     public SessionResponseDTO getActiveSession(@PathVariable String coursId) {
+        exigerAccesCours(coursId);
         String userId = getCurrentUserId();
         String userRole = getCurrentUserRole();
         return sessionBusiness.getActiveSession(coursId, userId, userRole);
@@ -62,6 +76,7 @@ public class CoursSessionController {
             @PathVariable String coursId,
             @PathVariable String sessionId,
             @RequestBody Map<String, String> body) {
+        exigerAccesCours(coursId);
         sessionBusiness.changeChapter(coursId, sessionId, body.get("chapitreId"));
     }
 
@@ -83,6 +98,7 @@ public class CoursSessionController {
     public ChapitreProgressDTO saveProgress(
             @PathVariable String coursId,
             @RequestBody Map<String, Object> body) {
+        exigerAccesCours(coursId);
         String chapitreId = (String) body.get("chapitreId");
         boolean completed = Boolean.TRUE.equals(body.get("completed"));
         return sessionBusiness.saveProgress(coursId, chapitreId, completed, getCurrentUserId());
@@ -95,6 +111,7 @@ public class CoursSessionController {
 
     @GetMapping("/{coursId}/sessions")
     public List<SessionResponseDTO> getCourseSessions(@PathVariable String coursId) {
+        exigerAccesCours(coursId);
         return sessionBusiness.getCourseSessionHistory(coursId);
     }
 
@@ -102,6 +119,7 @@ public class CoursSessionController {
     public Map<String, Object> getSessionAttendance(
             @PathVariable String coursId, 
             @PathVariable String sessionId) {
+        exigerAccesCours(coursId);
         return sessionBusiness.getSessionAttendance(sessionId, coursId);
     }
 
@@ -109,6 +127,7 @@ public class CoursSessionController {
     public Map<String, Object> getCurrentSessionParticipants(
             @PathVariable String coursId, 
             @PathVariable String sessionId) {
+        exigerAccesCours(coursId);
         return sessionBusiness.getCurrentSessionParticipants(coursId, sessionId);
     }
 

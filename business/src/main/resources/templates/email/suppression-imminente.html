@@ -27,7 +27,7 @@
             et n'a pas été renouvelée.</p>
         <div class="warning">
             <p>Sans renouvellement, <strong th:text="${nomCible}"></strong> sera <strong>définitivement supprimé(e)</strong>
-                le <strong th:text="${#temporals.format(dateSuppressionPrevue, 'dd/MM/yyyy à HH:mm')}"></strong>.
+                le <strong th:text="${#temporals.format(dateSuppressionPrevue, 'dd/MM/yyyy à HH:mm z')}"></strong>.
                 Cette action sera irréversible.</p>
         </div>
         <p>Renouvelez dès maintenant pour éviter la suppression :</p>

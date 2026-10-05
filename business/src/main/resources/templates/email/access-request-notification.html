@@ -62,7 +62,7 @@
             <p><strong>Classe :</strong> <span th:text="${classe.nom}"></span></p>
             <p><strong>Demandeur :</strong> <span th:text="${demandeur.prenom + ' ' + demandeur.nom}"></span></p>
             <p><strong>Email du demandeur :</strong> <span th:text="${demandeur.email}"></span></p>
-            <p><strong>Date de la demande :</strong> <span th:text="${#dates.format(dateDemande, 'dd/MM/yyyy HH:mm')}"></span></p>
+            <p><strong>Date de la demande :</strong> <span th:text="${#temporals.format(dateDemande, 'dd/MM/yyyy HH:mm z')}"></span></p>
         </div>
 
         <p>Veuillez traiter cette demande dans votre interface modérateur :</p>

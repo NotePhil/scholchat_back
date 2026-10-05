@@ -1,5 +1,7 @@
 package cmr.notep.business.business;
 
+import cmr.notep.business.security.UserSubtypeService;
+
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.NotificationService;
@@ -12,7 +14,7 @@ import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.CoursEntity;
 import cmr.notep.ressourcesjpa.dao.ExerciseEntity;
 import cmr.notep.ressourcesjpa.dao.MatiereEntity;
-import cmr.notep.ressourcesjpa.dao.ProfesseursEntity;
+import cmr.notep.ressourcesjpa.dao.UtilisateursEntity;
 import cmr.notep.ressourcesjpa.repository.CoursRepository;
 import cmr.notep.ressourcesjpa.repository.ExerciseRepository;
 import cmr.notep.ressourcesjpa.repository.MatiereRepository;
@@ -36,13 +38,13 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 @Transactional
 public class ExerciseBusiness {
 
+    private final UserSubtypeService userSubtypeService;
     private final DaoAccessorService daoAccessorService;
     private final NotificationService notificationService;
 
     public Exercise creerExercise(Exercise exercise) {
         log.info("Création d'un nouvel exercice: {}", exercise.getNom());
-        ProfesseursEntity professeur = daoAccessorService.getRepository(ProfesseursRepository.class)
-                .findById(exercise.getRedacteurId())
+        UtilisateursEntity professeur = userSubtypeService.findProfesseur(exercise.getRedacteurId())
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Professeur introuvable"));
         ExerciseEntity entity = dozerMapperBean.map(exercise, ExerciseEntity.class);
         entity.setId(UUID.randomUUID().toString());

@@ -24,4 +24,7 @@ public interface ClassesRepository extends JpaRepository<ClassesEntity, String> 
 
     long countByEtablissementIdAndEtat(String etablissementId, EtatClasse etat);
 
+    /** Classes dont l'utilisateur est le modérateur principal (sans passer par ProfesseursEntity). */
+    List<ClassesEntity> findByModeratorId(String moderatorId);
+
 }

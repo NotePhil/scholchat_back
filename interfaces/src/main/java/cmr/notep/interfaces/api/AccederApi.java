@@ -100,4 +100,14 @@ public interface AccederApi {
     List<DemandeAccesDto> obtenirDemandesAccesPourClasse(
             @PathVariable String classeId
     );
+
+    /** A user's own access requests (all states) — readable by the user, their parent or an admin. */
+    @GetMapping(
+            path = "/utilisateurs/{utilisateurId}/demandes",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.OK)
+    List<DemandeAccesDto> obtenirDemandesAccesDeUtilisateur(
+            @PathVariable String utilisateurId
+    );
 }

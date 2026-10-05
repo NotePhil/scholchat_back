@@ -66,7 +66,8 @@ public interface EtablissementApi {
     )
     @ResponseStatus(HttpStatus.OK)
     void approuverClasseParEtablissement(@NonNull @PathVariable("classeId") String classeId, 
-                                        @NonNull @PathVariable("etablissementId") String etablissementId);
+                                        @NonNull @PathVariable("etablissementId") String etablissementId,
+                                        @RequestParam(value = "token", required = false) String token);
 
     @PostMapping(
             path = "/reject-class/{classeId}/{etablissementId}",
@@ -74,5 +75,6 @@ public interface EtablissementApi {
     )
     @ResponseStatus(HttpStatus.OK)
     void rejeterClasseParEtablissement(@NonNull @PathVariable("classeId") String classeId, 
-                                      @NonNull @PathVariable("etablissementId") String etablissementId);
+                                      @NonNull @PathVariable("etablissementId") String etablissementId,
+                                      @RequestParam(value = "token", required = false) String token);
 }

@@ -1,5 +1,7 @@
 package cmr.notep.business.business;
 
+import cmr.notep.business.security.UserSubtypeService;
+
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.NotificationService;
@@ -27,6 +29,7 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 @RequiredArgsConstructor
 public class ExerciseProgrammerBusiness {
 
+    private final UserSubtypeService userSubtypeService;
     private final DaoAccessorService daoAccessorService;
     private final NotificationService notificationService;
 
@@ -37,8 +40,7 @@ public class ExerciseProgrammerBusiness {
                 .findById(exerciseProgrammer.getExerciseId())
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Exercice source introuvable"));
 
-        ProfesseursEntity professeur = daoAccessorService.getRepository(ProfesseursRepository.class)
-                .findById(exerciseProgrammer.getProgrammeParId())
+        UtilisateursEntity professeur = userSubtypeService.findProfesseur(exerciseProgrammer.getProgrammeParId())
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Professeur programmeur introuvable"));
 
         ExerciseProgrammerEntity entity = new ExerciseProgrammerEntity();
@@ -116,8 +118,7 @@ public class ExerciseProgrammerBusiness {
             }
 
             try {
-                ProfesseursEntity prof = daoAccessorService.getRepository(ProfesseursRepository.class)
-                        .findById(exerciseProgrammer.getProgrammeParId()).orElse(null);
+                UtilisateursEntity prof = userSubtypeService.findProfesseur(exerciseProgrammer.getProgrammeParId()).orElse(null);
                 if (prof != null) {
                     String profName = prof.getPrenom() + " " + prof.getNom();
                     // Use the exercise NAME (not ID) for the notification message

@@ -47,7 +47,7 @@ public class CoursEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "redacteur_id", nullable = false)
-    private ProfesseursEntity redacteur;
+    private UtilisateursEntity redacteur;
 
     @OneToMany(mappedBy = "cours", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ChapitreEntity> chapitres = new ArrayList<>();

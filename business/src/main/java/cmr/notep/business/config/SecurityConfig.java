@@ -1,6 +1,8 @@
 package cmr.notep.business.config;
 
 import cmr.notep.business.security.JwtAuthenticationFilter;
+import cmr.notep.business.security.RestAuthenticationEntryPoint;
+import org.springframework.http.HttpMethod;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -30,6 +32,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
     @Value("${front.endpoint}")
@@ -49,81 +52,93 @@ public class SecurityConfig {
                         .frameOptions(frameOptions -> frameOptions.sameOrigin())
                 )
 
-                // Configure authorization rules
-                .authorizeHttpRequests(auth -> auth
-                        // Public endpoints - add both with and without trailing slash
-                        .requestMatchers(
-                                "/ws/**",
-                                "/cours/*/session/active",
-                                "/cours/*/session/*/join",
-                                "/cours/*/session/*/leave",
-                                "/cours/*/progress",
-                                "/public/jitsi-branding"
-                        ).permitAll()
-                        .requestMatchers(
-                                "/auth/register", "/auth/register/",
-                                "/auth/login", "/auth/login/",
-                                "/auth/switch-role", "/auth/switch-role/",
-                                "/auth/activate", "/auth/activate/",
-                                "/auth/refresh", "/auth/refresh/",
-                                "/utilisateurs", "/utilisateurs/**",
-                                "/auth/reset-password-request",  // Keep this public
-                                "/auth/reset-password",
-                                "/auth/registerPassword", "/auth/registerPassword/",
-                                "/auth/users/byEmail",
-                                "/auth/users/register",
-                                "/etablissements","/etablissements/**",
-                                "/gestionnaires","/gestionnaires/**",
-                                "/reset-password-request",
-                                "/utilisateurs/regenerate-activation",
-                                "/evenements/**",
-                                "/matieres/**",
-                                "/interactions/**",
-                                "/classes","/classes/**",
-                                "/professeurs","/professeurs/**",
-                                "/media/**",
-                                "/canaux","/canaux/**",
-                                "/histo-activations/**",
-                                "/profil-eleves","/profil-eleves/**",
-                                "/histo-activations","/histo-activations/**",
-                                "/acceder/**",
-                                "/parent-access/demande",
-                                "/parent-access/infos-classe",
-                                "/acceder/classes/{classeId}/utilisateurs",
-                                "/acceder/utilisateurs/{utilisateurId}/classes",
-                                "/utilisateurs/professors/{professorId}/validate",
-                                "/utilisateurs/professeurs/{professorId}/rejet",
-                                "/contrats/renouvellement-info", "/contrats/renouvellement-info/",
-                                "/contrats/renouvellement/**"
+                // 401 (jeton absent/invalide/expiré) et 403 (droit insuffisant) en JSON
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(restAuthenticationEntryPoint)
+                        .accessDeniedHandler(restAuthenticationEntryPoint)
+                )
 
+                // Règles d'autorisation. Tout ce qui n'est pas explicitement public exige un JWT valide ;
+                // les contrôles fins (propriétaire, modérateur de classe, auteur…) sont faits dans les
+                // contrôleurs via AccessControlService / CurrentUserService.
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/error").permitAll()
+
+                        // ── Authentification / activation / mot de passe (avant connexion) ──
+                        .requestMatchers(HttpMethod.POST,
+                                "/auth/login", "/auth/switch-role", "/auth/activate",
+                                "/auth/reset-password-request", "/auth/reset-password",
+                                "/auth/registerPassword",          // exige le jeton d'activation (contrôlé dans AuthService)
+                                "/auth/users/register"             // exige le jeton d'activation
                         ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/auth/users/byEmail").permitAll() // exige le jeton d'activation
+                        // Ancien endpoint qui fixait le mot de passe de n'importe quel email : admin uniquement
+                        .requestMatchers("/auth/register").hasRole("ADMIN")
+
+                        // ── Inscription ──
+                        .requestMatchers(HttpMethod.POST, "/utilisateurs").permitAll()                       // types publics seulement (contrôlé)
+                        .requestMatchers(HttpMethod.POST, "/utilisateurs/regenerate-activation").permitAll()
+                        // PATCH anonyme limité au professeur en cours d'inscription (contrôlé dans UtilisateursService)
+                        .requestMatchers(HttpMethod.PATCH, "/utilisateurs/*").permitAll()
+                        // Dépôt des pièces du professeur pendant l'inscription (owner contrôlé dans MediaServiceImpl)
+                        .requestMatchers(HttpMethod.POST, "/media/presigned-url", "/media/proxy-upload").permitAll()
+
+                        // ── Liens reçus par email ──
+                        // Approbation/rejet de classe par l'établissement : jeton signé du mail OU gestionnaire connecté
+                        .requestMatchers(HttpMethod.POST,
+                                "/etablissements/approve-class/*/*", "/etablissements/reject-class/*/*").permitAll()
+                        // Renouvellement d'offre par jeton
+                        .requestMatchers(HttpMethod.POST, "/contrats/renouvellement-info").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/contrats/renouvellement/*").permitAll()
+                        .requestMatchers(HttpMethod.POST,
+                                "/contrats/renouvellement/*/prolonger", "/contrats/renouvellement/*/changer-offre").permitAll()
+                        // Catalogue des offres (non sensible, affiché sur la page de renouvellement)
+                        .requestMatchers(HttpMethod.GET, "/offres", "/offres/*").permitAll()
+
+                        // ── Divers publics ──
+                        .requestMatchers(HttpMethod.GET, "/public/jitsi-branding").permitAll()
+                        // Poignée de main WebSocket/SockJS : l'authentification se fait sur la trame STOMP CONNECT
+                        // (WebSocketAuthInterceptor), pas sur la requête HTTP d'upgrade.
+                        .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
+
+                        // ── Réservé aux administrateurs ──
+                        .requestMatchers("/admin/**", "/test/**", "/actuator/**").hasRole("ADMIN")
                         .requestMatchers(
+                                "/utilisateurs/professors/pending", "/utilisateurs/professors/pending/**",
+                                "/utilisateurs/professors/*/validate",
+                                "/utilisateurs/professeurs/*/rejet",
+                                "/utilisateurs/validerProfesseur/**"
+                        ).hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/utilisateurs").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/motifsRejets", "/motifsRejetClasses").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/motifsRejets/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/motifsRejets/*", "/motifsRejetClasses/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/matieres").hasAnyRole("ADMIN", "PROFESSOR")
+                        .requestMatchers(HttpMethod.PUT, "/matieres/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/matieres/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/etablissements").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/etablissements/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/professeurs", "/parents", "/repetiteurs").hasRole("ADMIN")
+                        // Un parent crée le profil de son enfant (AddChildModal) ; champs sensibles neutralisés dans ElevesService
+                        .requestMatchers(HttpMethod.POST, "/profil-eleves").hasAnyRole("ADMIN", "PARENT")
+                        // NB : GET /profil-eleves et /parents/summary restent ouverts aux connectés mais sont
+                        // filtrés (utilisateurs liés uniquement) pour les non-admins, voir ElevesService/ParentsService.
+                        .requestMatchers(HttpMethod.GET,
+                                "/parents", "/repetiteurs", "/gestionnaires",
+                                "/canaux", "/cours-programmes", "/histo-activations/actives",
+                                "/histo-activations/etat/*", "/classes/by-status").hasRole("ADMIN")
+                        .requestMatchers("/histo-activations", "/histo-activations/*/desactivation").hasRole("ADMIN")
+
+                        // ── Sessions de cours en direct ──
+                        .requestMatchers(HttpMethod.POST,
                                 "/cours/*/session/start",
                                 "/cours/*/session/*/end",
                                 "/cours/*/session/*/chapter"
                         ).hasAnyRole("PROFESSOR", "ADMIN")
-                        .requestMatchers(
-                                "/utilisateurs/professeurs/*/rejet",
-                                "/utilisateurs/validerProfesseur/**",
-                                "/utilisateurs/professors/pending/**",
-                                "/motifsRejets/**"  // Added endpoint for motifs rejets
 
-                        ).hasRole("ADMIN")
-                        // Enable debug logging for matchers
-                        .requestMatchers("/actuator/**").permitAll()
-
-                        // H2 Console endpoints
-                        .requestMatchers("/h2-console/**", "/scholchat/h2-console/**",
-                                "/h2/**", "/scholchat/h2/**").permitAll()
-
-                        // Admin-only endpoints
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-
-                        // Professor validation endpoints - admin only
-                        .requestMatchers("/utilisateurs/validerProfesseur/**").hasRole("ADMIN")
-                        .requestMatchers("/utilisateurs/professors/pending/**").hasRole("ADMIN")
-
-                        // Secure all other endpoints
+                        // ── Tout le reste : utilisateur authentifié ──
                         .anyRequest().authenticated()
                 )
 
@@ -146,7 +161,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(frontEndpoint, "https://scholchat-front-1.onrender.com"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With", "X-Timezone"));
         configuration.setExposedHeaders(Arrays.asList("Authorization"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);

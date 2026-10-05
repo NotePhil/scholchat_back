@@ -19,6 +19,13 @@ public class Professeurs extends Utilisateurs {
     private String selfieUrl;
     private String matriculeProfesseur;
     private boolean hasUploaded;
+    /**
+     * Statut de vérification du profil professeur (DOCUMENTS_MANQUANTS, EN_ATTENTE_VALIDATION, VALIDE,
+     * REJETE), en lecture seule : renseigné par le serveur, jamais lu depuis une requête client.
+     */
+    private String statutVerification;
+    /** Motif du dernier refus des pièces (statut REJETE). */
+    private String motifRejetVerification;
     @JsonIdentityReference(alwaysAsId = true)
     private List<Classes> moderatedClasses;
 

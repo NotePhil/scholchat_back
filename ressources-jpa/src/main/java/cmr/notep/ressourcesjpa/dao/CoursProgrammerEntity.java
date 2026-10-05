@@ -51,7 +51,7 @@ public class CoursProgrammerEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "professeur_id", nullable = false)
-    private ProfesseursEntity professeur;
+    private UtilisateursEntity professeur;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(

@@ -34,7 +34,13 @@ public enum SchoolErrorCode {
     CIBLE_OFFRE_INVALIDE("Cette offre ne correspond pas au type de cible demande (classe/etablissement)"),
     QUOTA_CLASSES_ATTEINT("Le quota de classes de votre forfait est atteint"),
     ABONNEMENT_EXPIRE("Votre offre a expire, veuillez la renouveler pour continuer"),
-    RENOUVELLEMENT_TOKEN_INVALIDE("Lien de renouvellement invalide ou expire");
+    RENOUVELLEMENT_TOKEN_INVALIDE("Lien de renouvellement invalide ou expire"),
+
+    // Professeur dont les pièces justificatives ne sont pas (encore) validées par l'administrateur — HTTP 403
+    PROFIL_PROFESSEUR_NON_VALIDE("Votre profil professeur n'est pas encore valide par l'administrateur"),
+
+    // Combinaison de profils interdite (un compte élève ne peut détenir aucun autre profil) — HTTP 409
+    ROLE_INCOMPATIBLE("Combinaison de profils non autorisee");
     private final String message;
 
     SchoolErrorCode(String message) {

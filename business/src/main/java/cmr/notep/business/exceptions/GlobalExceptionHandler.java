@@ -57,9 +57,12 @@ public class GlobalExceptionHandler {
     private HttpStatus mapSchoolExceptionToHttpStatus(SchoolErrorCode code) {
         return switch (code) {
             case NOT_FOUND -> HttpStatus.NOT_FOUND;
-            case OPERATION_INTERDITE, INVALID_STATE, INACTIVE_USER -> HttpStatus.FORBIDDEN;
+            case OPERATION_INTERDITE, FORBIDDEN, INVALID_STATE, INACTIVE_USER, PROFIL_PROFESSEUR_NON_VALIDE -> HttpStatus.FORBIDDEN;
+            case UNAUTHORIZED -> HttpStatus.UNAUTHORIZED;
             case INTERFACE_NON_RESPECTEE, INVALID_INPUT -> HttpStatus.BAD_REQUEST;
-            case DUPLICATE_RESOURCE -> HttpStatus.CONFLICT;
+            case DUPLICATE_RESOURCE, ROLE_INCOMPATIBLE -> HttpStatus.CONFLICT;
+            // Jeton (activation / réinitialisation) invalide ou expiré : erreur client, pas 500
+            case INVALID_TOKEN, TOKEN_EXPIRED -> HttpStatus.BAD_REQUEST;
             default -> HttpStatus.INTERNAL_SERVER_ERROR;
         };
     }

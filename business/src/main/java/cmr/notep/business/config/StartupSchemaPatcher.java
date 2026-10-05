@@ -32,7 +32,58 @@ public class StartupSchemaPatcher implements ApplicationRunner {
     private static final String[] IDEMPOTENT_STATEMENTS = {
         "ALTER TABLE ressources.media ADD COLUMN IF NOT EXISTS question_id VARCHAR(255)",
         "CREATE INDEX IF NOT EXISTS idx_media_question_id ON ressources.media(question_id)",
+        // UtilisateursEntity mappe reset_password_token (jeton du lien de réinitialisation, usage unique) :
+        // sans cette colonne toute lecture d'utilisateur échouerait.
+        "ALTER TABLE ressources.utilisateurs ADD COLUMN IF NOT EXISTS reset_password_token TEXT",
     };
+
+    /**
+     * Statut de vérification du profil professeur (changeset 22-professeur-statut-verification) :
+     * le bloc n'ajoute la colonne ET ne fait le rattrapage que si la colonne n'existe pas encore,
+     * donc il ne réécrit jamais des décisions de l'administrateur. Même contenu que
+     * db-init/src/main/resources/sql/migration-professeur-statut-verification.sql.
+     */
+    private static final String PROFESSEUR_STATUT_VERIFICATION_SQL = """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                           WHERE table_schema = 'ressources' AND table_name = 'professeurs'
+                             AND column_name = 'statut_verification') THEN
+
+                ALTER TABLE ressources.professeurs
+                    ADD COLUMN statut_verification VARCHAR(30) NOT NULL DEFAULT 'DOCUMENTS_MANQUANTS';
+
+                -- Rattrapage. "Pièces complètes" = les 3 pièces renseignées.
+                UPDATE ressources.professeurs p SET statut_verification = CASE
+                    WHEN u.etat = 'REJECTED' THEN 'REJETE'
+                    WHEN NULLIF(TRIM(p.cni_url_front), '') IS NULL
+                         OR NULLIF(TRIM(p.cni_url_back), '') IS NULL
+                         OR NULLIF(TRIM(p.selfie_url), '') IS NULL
+                        THEN 'DOCUMENTS_MANQUANTS'
+                    -- Pièces complètes, compte en attente de validation : l'administrateur doit encore décider.
+                    WHEN u.etat = 'AWAITING_VALIDATION' THEN 'EN_ATTENTE_VALIDATION'
+                    -- Compte actif (parent, élève…) dont la demande de rôle professeur n'est pas encore validée.
+                    WHEN EXISTS (SELECT 1 FROM ressources.user_roles r
+                                 WHERE r.utilisateur_id = u.id AND r.role_type = 'PROFESSOR' AND r.is_active = false)
+                        THEN 'EN_ATTENTE_VALIDATION'
+                    -- ACTIVE (ou validé en attente de mot de passe, suspendu…) avec pièces complètes : déjà validé.
+                    ELSE 'VALIDE'
+                END
+                FROM ressources.utilisateurs u
+                WHERE u.id = p.professeurs_id;
+
+                -- has_uploaded recalculé à partir des pièces réellement présentes.
+                UPDATE ressources.professeurs SET has_uploaded =
+                    (NULLIF(TRIM(cni_url_front), '') IS NOT NULL AND NULLIF(TRIM(cni_url_back), '') IS NOT NULL
+                     AND NULLIF(TRIM(selfie_url), '') IS NOT NULL);
+            END IF;
+
+            ALTER TABLE ressources.professeurs ADD COLUMN IF NOT EXISTS motif_rejet_verification TEXT;
+            ALTER TABLE ressources.professeurs ADD COLUMN IF NOT EXISTS date_statut_verification TIMESTAMPTZ;
+            CREATE INDEX IF NOT EXISTS idx_professeurs_statut_verification ON ressources.professeurs(statut_verification);
+        END
+        $$;
+        """;
 
     private final DataSource dataSource;
 
@@ -51,6 +102,16 @@ public class StartupSchemaPatcher implements ApplicationRunner {
                 } catch (Exception e) {
                     log.warn("Startup schema patch statement failed (likely fine, already applied): {} — {}", sql, e.getMessage());
                 }
+            }
+
+            // Statut de vérification du professeur (PostgreSQL uniquement : bloc DO plpgsql ;
+            // le schéma H2 déclare déjà les colonnes).
+            try {
+                if ("PostgreSQL".equalsIgnoreCase(conn.getMetaData().getDatabaseProductName())) {
+                    stmt.execute(PROFESSEUR_STATUT_VERIFICATION_SQL);
+                }
+            } catch (Exception e) {
+                log.warn("Startup schema patch (professeurs.statut_verification) failed: {}", e.getMessage());
             }
 
             // FK constraints aren't naturally idempotent in Postgres (no

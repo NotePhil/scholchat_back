@@ -2,6 +2,10 @@ package cmr.notep.business.impl;
 
 import cmr.notep.business.services.MediaService;
 import cmr.notep.business.business.MediaBusiness;
+import cmr.notep.business.exceptions.SchoolException;
+import cmr.notep.business.exceptions.enums.SchoolErrorCode;
+import cmr.notep.business.security.AccessControlService;
+import cmr.notep.business.security.CurrentUserService;
 import cmr.notep.interfaces.dto.MediaDto;
 import cmr.notep.ressourcesjpa.dao.MediaEntity;
 import cmr.notep.ressourcesjpa.repository.MediaRepository;
@@ -28,6 +32,79 @@ public class MediaServiceImpl {
     private final software.amazon.awssdk.services.s3.S3Client s3Client;
 
     @Autowired
+    private CurrentUserService currentUser;
+    @Autowired
+    private AccessControlService accessControl;
+
+    // ─── Contrôles d'accès ───────────────────────────────────────────────────
+
+    /** Segment de chemin S3 sûr (pas de "/", "..", etc.). */
+    private static String safeSegment(String value, String field) {
+        if (value == null) return null;
+        String v = value.trim();
+        if (!v.matches("[A-Za-z0-9_-]{1,64}")) {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Valeur invalide pour " + field);
+        }
+        return v;
+    }
+
+    /**
+     * Qui peut déposer un fichier pour {@code ownerId} : l'utilisateur lui-même ou un admin ;
+     * en anonyme, uniquement le professeur en cours d'inscription (pièces justificatives).
+     */
+    private void requireCanUploadFor(String ownerId) {
+        if (!currentUser.isAuthenticated()) {
+            if (!accessControl.isSignupPendingProfessor(ownerId)) {
+                throw new SchoolException(SchoolErrorCode.UNAUTHORIZED, "Authentification requise. Veuillez vous connecter.");
+            }
+            return;
+        }
+        if (!currentUser.isAdmin() && !currentUser.isSelf(ownerId)) {
+            throw CurrentUserService.forbidden("Vous ne pouvez déposer des fichiers que pour votre propre compte.");
+        }
+    }
+
+    /** Pièces d'identité (CNI) : visibles uniquement par leur propriétaire et les administrateurs. */
+    private static boolean isIdentityDocument(MediaEntity media) {
+        String path = media.getFilePath() != null ? media.getFilePath().toLowerCase() : "";
+        return path.contains("/cni-recto/") || path.contains("/cni-verso/");
+    }
+
+    private boolean canRead(MediaEntity media) {
+        if (!isIdentityDocument(media)) return true;
+        return currentUser.isAdmin() || currentUser.isSelf(media.getOwnerId());
+    }
+
+    private void requireCanRead(MediaEntity media) {
+        currentUser.requireAuthenticated();
+        if (!canRead(media)) {
+            throw CurrentUserService.forbidden("Ce document n'est accessible qu'à son propriétaire.");
+        }
+    }
+
+    /** Résout l'identifiant accepté par download-by-path (chemin, id ou nom) pour le contrôle d'accès. */
+    private Optional<MediaEntity> resolveMediaForCheck(String identifier) {
+        try {
+            Optional<MediaEntity> m = mediaRepository.findById(identifier);
+            if (m.isEmpty()) m = mediaRepository.findByFilePath(identifier);
+            if (m.isEmpty()) m = mediaRepository.findLatestByFileName(identifier);
+            return m;
+        } catch (RuntimeException e) {
+            // plusieurs correspondances : on vérifie chacune
+            List<MediaEntity> all = mediaRepository.findByFileName(identifier);
+            all.forEach(this::requireCanRead);
+            return Optional.empty();
+        }
+    }
+
+    private void requireOwnerOrAdmin(MediaEntity media) {
+        currentUser.requireAuthenticated();
+        if (!currentUser.isAdmin() && !currentUser.isSelf(media.getOwnerId())) {
+            throw CurrentUserService.forbidden("Seul le propriétaire du fichier peut effectuer cette action.");
+        }
+    }
+
+    @Autowired
     public MediaServiceImpl(MediaBusiness mediaBusiness, MediaService mediaService, MediaRepository mediaRepository, software.amazon.awssdk.services.s3.S3Client s3Client) {
         this.mediaBusiness = mediaBusiness;
         this.mediaService = mediaService;
@@ -51,6 +128,15 @@ public class MediaServiceImpl {
             if (request.getOwnerId() == null || request.getOwnerId().trim().isEmpty()) {
                 throw new IllegalArgumentException("Owner ID is required");
             }
+            requireCanUploadFor(request.getOwnerId());
+            request.setMediaType(safeSegment(request.getMediaType(), "mediaType"));
+            request.setDocumentType(request.getDocumentType() == null
+                    ? null : safeSegment(request.getDocumentType(), "documentType"));
+            if (request.getMediaType() == null) {
+                throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "mediaType est requis");
+            }
+            // Professeur dont le profil n'est pas validé : seulement ses pièces justificatives.
+            cmr.notep.business.security.ProfesseurVerificationService.requireTypePieceProfilSiNonValide(request.getDocumentType());
             
             String sanitizedFileName = request.getFileName()
                     .replaceAll("\\s+", "_")
@@ -59,7 +145,8 @@ public class MediaServiceImpl {
             log.info("Sanitized filename: {}", sanitizedFileName);
 
             // Clean up any existing duplicates
-            try { mediaBusiness.cleanupDuplicateMedia(sanitizedFileName); } catch (Exception e) { /* ignore */ }
+            // (plus de nettoyage global par nom de fichier : il supprimait les fichiers homonymes des
+            //  AUTRES utilisateurs ; saveMediaMetadata dédoublonne déjà par chemin.)
 
             String presignedUrl = mediaBusiness.generateUploadUrl(
                     sanitizedFileName,
@@ -77,6 +164,11 @@ public class MediaServiceImpl {
             response.put("mediaType", request.getMediaType());
             response.put("documentType", request.getDocumentType());
             response.put("ownerId", request.getOwnerId());
+            String filePath = mediaBusiness.buildUploadFilePath(sanitizedFileName, request.getOwnerId(),
+                    request.getMediaType(), request.getDocumentType());
+            if (filePath != null) {
+                response.put("filePath", filePath);
+            }
 
             log.info("Response: {}", response);
             log.info("=== UPLOAD URL GENERATION SUCCESS ====");
@@ -95,6 +187,7 @@ public class MediaServiceImpl {
     public ResponseEntity<Map<String, String>> generateDownloadUrl(
             @PathVariable String mediaId) {
         MediaEntity media = mediaBusiness.getMediaById(mediaId);
+        requireCanRead(media);
         String presignedUrl = mediaService.generateDownloadPresignedUrl(media.getFilePath());
 
         // Cache for 50 min in the browser — safe margin under the 55-min server cache TTL
@@ -121,6 +214,8 @@ public class MediaServiceImpl {
         log.info("File path: {}", filePath);
 
         try {
+            currentUser.requireAuthenticated();
+            resolveMediaForCheck(filePath).ifPresent(this::requireCanRead);
             String presignedUrl = mediaBusiness.generateDownloadUrl(filePath);
             log.info("Generated download URL: {}", presignedUrl);
 
@@ -165,14 +260,16 @@ public class MediaServiceImpl {
     @GetMapping("/{mediaId}")
     public ResponseEntity<MediaDto> getMediaById(@PathVariable String mediaId) {
         MediaEntity media = mediaBusiness.getMediaById(mediaId);
+        requireCanRead(media);
         MediaDto mediaDto = convertToDto(media);
         return ResponseEntity.ok(mediaDto);
     }
 
     @GetMapping("/cours/{coursId}")
     public ResponseEntity<List<MediaDto>> getMediaByCoursId(@PathVariable String coursId) {
+        currentUser.requireAuthenticated();
         List<MediaEntity> mediaList = mediaBusiness.getMediaByCoursId(coursId);
-        List<MediaDto> mediaDtoList = mediaList.stream().map(this::convertToDto).collect(Collectors.toList());
+        List<MediaDto> mediaDtoList = mediaList.stream().filter(this::canRead).map(this::convertToDto).collect(Collectors.toList());
         return ResponseEntity.ok(mediaDtoList);
     }
 
@@ -182,8 +279,10 @@ public class MediaServiceImpl {
             return ResponseEntity.ok(List.of());
         }
 
+        currentUser.requireAuthenticated();
         List<MediaEntity> mediaList = mediaBusiness.getMediaByOwnerId(userId);
         List<MediaDto> mediaDtoList = mediaList.stream()
+                .filter(this::canRead)
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(mediaDtoList);
@@ -194,16 +293,19 @@ public class MediaServiceImpl {
             @RequestParam String fileName,
             @RequestParam String ownerId) {
         // Try exact match first
-        Optional<MediaEntity> exact = mediaRepository.findByFileNameAndOwnerId(fileName, ownerId);
+        currentUser.requireAuthenticated();
+        Optional<MediaEntity> exact = mediaRepository.findByFileNameAndOwnerId(fileName, ownerId).filter(this::canRead);
         if (exact.isPresent()) return ResponseEntity.ok(convertToDto(exact.get()));
         // Fall back to partial match (e.g. stored as "timestamp_originalname.mp4")
-        List<MediaEntity> partial = mediaRepository.findByOwnerIdAndFileNameContaining(ownerId, fileName);
+        List<MediaEntity> partial = mediaRepository.findByOwnerIdAndFileNameContaining(ownerId, fileName)
+                .stream().filter(this::canRead).collect(Collectors.toList());
         if (!partial.isEmpty()) return ResponseEntity.ok(convertToDto(partial.get(0)));
         return ResponseEntity.notFound().build();
     }
 
     @DeleteMapping("/{mediaId}")
     public ResponseEntity<Void> deleteMedia(@PathVariable String mediaId) {
+        requireOwnerOrAdmin(mediaBusiness.getMediaById(mediaId));
         mediaBusiness.deleteMedia(mediaId);
         return ResponseEntity.noContent().build();
     }
@@ -212,6 +314,7 @@ public class MediaServiceImpl {
     public ResponseEntity<MediaDto> updateMedia(
             @PathVariable String mediaId,
             @RequestBody MediaUpdateRequest request) {
+        requireOwnerOrAdmin(mediaBusiness.getMediaById(mediaId));
         MediaEntity updatedMedia = mediaBusiness.updateMediaMetadata(
                 mediaId,
                 request.getFileSize(),
@@ -224,6 +327,10 @@ public class MediaServiceImpl {
     public ResponseEntity<MediaDto> transferOwnership(
             @PathVariable String mediaId,
             @RequestParam String newOwnerId) {
+        requireOwnerOrAdmin(mediaBusiness.getMediaById(mediaId));
+        if (!accessControl.userExists(newOwnerId)) {
+            throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable");
+        }
         mediaBusiness.updateMediaOwner(mediaId, newOwnerId);
         MediaEntity media = mediaBusiness.getMediaById(mediaId);
         return ResponseEntity.ok(convertToDto(media));
@@ -232,6 +339,7 @@ public class MediaServiceImpl {
     // New endpoint to clean up duplicates
     @PostMapping("/cleanup-duplicates/{fileName}")
     public ResponseEntity<Map<String, Object>> cleanupDuplicates(@PathVariable String fileName) {
+        currentUser.requireAdmin();
         try {
             mediaBusiness.cleanupDuplicateMedia(fileName);
             return ResponseEntity.ok(Map.of(
@@ -281,6 +389,7 @@ public class MediaServiceImpl {
         try {
             MediaEntity media = mediaBusiness.getMediaById(mediaId);
             if (media == null) return ResponseEntity.notFound().build();
+            requireCanRead(media);
 
             // For images/documents: redirect to presigned URL directly — avoids proxying large files
             String contentType = media.getContentType() != null ? media.getContentType() : "application/octet-stream";
@@ -333,6 +442,7 @@ public class MediaServiceImpl {
                     .body(new org.springframework.core.io.InputStreamResource(stream));
 
         } catch (Exception e) {
+            if (e instanceof SchoolException se) throw se; // refus d'accès : pas de repli
             log.error("Proxy download failed for mediaId {}: {}", mediaId, e.getMessage(), e);
             // Fallback: redirect to presigned URL if proxy fails
             try {
@@ -369,6 +479,18 @@ public class MediaServiceImpl {
             if (filePath.contains("?")) {
                 filePath = filePath.substring(0, filePath.indexOf("?"));
             }
+            filePath = java.net.URLDecoder.decode(filePath, java.nio.charset.StandardCharsets.UTF_8);
+            // Seuls les objets réservés via /media/presigned-url peuvent être écrits, et seulement
+            // par leur propriétaire (ou le professeur en cours d'inscription) : sinon n'importe qui
+            // pouvait écraser n'importe quel fichier du bucket.
+            if (filePath.contains("..")) {
+                throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Chemin de fichier invalide");
+            }
+            MediaEntity cible = mediaRepository.findByFilePath(filePath)
+                    .orElseThrow(() -> new SchoolException(SchoolErrorCode.OPERATION_INTERDITE,
+                            "Aucun dépôt autorisé pour ce fichier. Demandez d'abord une URL de dépôt."));
+            requireCanUploadFor(cible.getOwnerId());
+            cmr.notep.business.security.ProfesseurVerificationService.requireTypePieceProfilSiNonValide(filePath);
 
             String trustedUrl = mediaService.generateUploadPresignedUrl(filePath, contentType);
             log.info("Re-generated trusted presigned URL for path: {}", filePath);
@@ -388,6 +510,7 @@ public class MediaServiceImpl {
                     "fileName", file.getOriginalFilename() != null ? file.getOriginalFilename() : "unknown"
             ));
         } catch (Exception e) {
+            if (e instanceof SchoolException se) throw se;
             log.error("Proxy upload failed: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().body(Map.of(
                     "status", "error",

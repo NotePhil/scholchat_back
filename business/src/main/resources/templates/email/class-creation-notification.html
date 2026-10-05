@@ -33,7 +33,7 @@
         <ul>
             <li><strong>Nom de la classe :</strong> <span th:text="${classe.nom}"></span></li>
             <li><strong>Niveau :</strong> <span th:text="${classe.niveau}"></span></li>
-            <li><strong>Date de création :</strong> <span th:text="${#dates.format(dateCreation, 'dd/MM/yyyy HH:mm')}"></span></li>
+            <li><strong>Date de création :</strong> <span th:text="${#temporals.format(dateCreation, 'dd/MM/yyyy HH:mm z')}"></span></li>
             <li><strong>Établissement :</strong> <span th:text="${etablissement.nom}"></span></li>
         </ul>
 

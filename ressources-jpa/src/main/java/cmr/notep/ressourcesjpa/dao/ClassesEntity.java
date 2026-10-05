@@ -52,7 +52,7 @@ public class ClassesEntity {
     @ManyToOne
     @JoinColumn(name = "moderator_id")
     @Mapping("moderator")
-    private ProfesseursEntity moderator;
+    private UtilisateursEntity moderator;
 
     @Column(name = "creator_id")
     private String creatorId;

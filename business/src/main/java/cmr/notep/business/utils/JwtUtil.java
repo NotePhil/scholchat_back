@@ -49,6 +49,23 @@ public class JwtUtil {
         return createToken(claims, email, accessTokenExpirationMillis);
     }
 
+    /**
+     * Jeton d'accès portant aussi le profil choisi à la connexion ("selectedRole") : sert à savoir si
+     * l'appelant agit en professeur (cf. ProfesseurVerificationService) sur un compte multi-rôles.
+     */
+    public String generateAccessToken(String email, List<String> roles, List<Map<String, String>> expiredEntities,
+                                      String selectedRole) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", roles);
+        if (expiredEntities != null && !expiredEntities.isEmpty()) {
+            claims.put("expiredEntities", expiredEntities);
+        }
+        if (selectedRole != null && !selectedRole.isBlank()) {
+            claims.put("selectedRole", selectedRole);
+        }
+        return createToken(claims, email, accessTokenExpirationMillis);
+    }
+
     // Generate a refresh token (without roles)
     public String generateRefreshToken(String email) {
         Map<String, Object> claims = new HashMap<>();
@@ -101,6 +118,35 @@ public class JwtUtil {
         }
     }
 
+    // Jeton des liens "approuver / rejeter la classe" envoyés à l'établissement : lie le lien
+    // à UNE classe et UN établissement (sans lui, n'importe qui connaissant les deux ids
+    // pouvait approuver une classe sans être connecté).
+    public String generateClassDecisionToken(String classeId, String etablissementId) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("purpose", "class-decision");
+        claims.put("classeId", classeId);
+        claims.put("etablissementId", etablissementId);
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject("class-decision:" + classeId)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 30L * 24 * 3600 * 1000))
+                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public boolean isValidClassDecisionToken(String token, String classeId, String etablissementId) {
+        if (token == null || token.isBlank()) return false;
+        try {
+            Claims claims = Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token).getBody();
+            return "class-decision".equals(claims.get("purpose", String.class))
+                    && classeId != null && classeId.equals(claims.get("classeId", String.class))
+                    && etablissementId != null && etablissementId.equals(claims.get("etablissementId", String.class));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public String getEntityTypeFromRenewalToken(String token) {
         return getClaimFromToken(token, claims -> claims.get("entityType", String.class));
     }
@@ -124,6 +170,15 @@ public class JwtUtil {
 
     public List<String> getRolesFromToken(String token) {
         return getClaimFromToken(token, claims -> claims.get("roles", List.class));
+    }
+
+    /** Profil choisi à la connexion, ou null (jetons antérieurs). */
+    public String getSelectedRoleFromToken(String token) {
+        try {
+            return getClaimFromToken(token, claims -> claims.get("selectedRole", String.class));
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public Date getExpirationDateFromToken(String token) {

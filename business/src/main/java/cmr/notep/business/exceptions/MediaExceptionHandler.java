@@ -45,6 +45,7 @@ public class MediaExceptionHandler {
         switch (code) {
             case NOT_FOUND:
             case RESOURCE_NOT_FOUND:
+            case CONTRAT_INTROUVABLE: // "no contract yet" — clients show an empty state on 404
                 return HttpStatus.NOT_FOUND;
             case INVALID_INPUT:
             case INVALID_TOKEN:
@@ -56,8 +57,13 @@ public class MediaExceptionHandler {
             case DUPLICATE_RESOURCE:
             case ALREADY_EXISTS:
             case CONFLICT:
+            case ROLE_INCOMPATIBLE:
                 return HttpStatus.CONFLICT;
             case OPERATION_INTERDITE:
+            case PROFIL_PROFESSEUR_NON_VALIDE:
+            // Même correspondance que GlobalExceptionHandler (ce handler-ci l'emporte pour SchoolException)
+            case INVALID_STATE:
+            case INACTIVE_USER:
                 return HttpStatus.FORBIDDEN;
             case OPERATION_FAILURE:
             case INIT_ERROR:

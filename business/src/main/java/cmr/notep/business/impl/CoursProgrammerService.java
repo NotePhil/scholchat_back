@@ -12,6 +12,11 @@ import java.util.List;
 @RestController
 @Slf4j
 public class CoursProgrammerService implements CoursProgrammerApi {
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.CurrentUserService currentUser;
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.AccessControlService accessControl;
+
 
     private final CoursProgrammerBusiness coursProgrammerBusiness;
 
@@ -20,17 +25,22 @@ public class CoursProgrammerService implements CoursProgrammerApi {
     }
     @Override
     public List<CoursProgrammer> obtenirProgrammationParProfesseur(@NonNull String professeurId) {
+        currentUser.requireAuthenticated();
         log.info("Récupération de la programmation pour le professeur: {}", professeurId);
         return coursProgrammerBusiness.obtenirProgrammationParProfesseur(professeurId);
     }
 
     @Override
     public List<CoursProgrammer> obtenirProgrammationAccessible(@NonNull String userId) {
+        accessControl.requireSelfOrParentOrAdmin(userId);
         log.info("Récupération de la programmation accessible pour l'utilisateur: {}", userId);
         return coursProgrammerBusiness.obtenirProgrammationAccessible(userId);
     }
     @Override
     public CoursProgrammer programmerCours(@NonNull CoursProgrammer coursProgrammer) {
+        accessControl.requireCoursAuthor(coursProgrammer.getCoursId());
+        if (!currentUser.isAdmin()) coursProgrammer.setProfesseurId(currentUser.requireUserId());
+        if (!currentUser.isAdmin() && coursProgrammer.getClassesIds() != null) coursProgrammer.getClassesIds().forEach(accessControl::requireClassTeacher);
         log.info("Programming course: {} for date: {}",
                 coursProgrammer.getCoursId(), coursProgrammer.getDateCoursPrevue());
         try {
@@ -45,6 +55,9 @@ public class CoursProgrammerService implements CoursProgrammerApi {
 
     @Override
     public CoursProgrammer mettreAJourCoursProgramme(@NonNull String id, @NonNull CoursProgrammer coursProgrammer) {
+        accessControl.requireCoursProgrammeOwner(id);
+        if (!currentUser.isAdmin()) coursProgrammer.setProfesseurId(currentUser.requireUserId());
+        if (!currentUser.isAdmin() && coursProgrammer.getClassesIds() != null) coursProgrammer.getClassesIds().forEach(accessControl::requireClassTeacher);
         log.info("Updating scheduled course with ID: {}", id);
         try {
             CoursProgrammer result = coursProgrammerBusiness.mettreAJourCoursProgramme(id, coursProgrammer);
@@ -58,6 +71,7 @@ public class CoursProgrammerService implements CoursProgrammerApi {
 
     @Override
     public void supprimerCoursProgramme(@NonNull String id) {
+        accessControl.requireCoursProgrammeOwner(id);
         log.info("Deleting scheduled course with ID: {}", id);
         try {
             coursProgrammerBusiness.supprimerCoursProgramme(id);
@@ -83,6 +97,7 @@ public class CoursProgrammerService implements CoursProgrammerApi {
 
     @Override
     public List<CoursProgrammer> obtenirTousLesCoursProgrammes() {
+        currentUser.requireAdmin();
         log.info("Fetching all scheduled courses");
         try {
             List<CoursProgrammer> results = coursProgrammerBusiness.obtenirTousLesCoursProgrammes();
@@ -109,6 +124,7 @@ public class CoursProgrammerService implements CoursProgrammerApi {
 
     @Override
     public List<CoursProgrammer> obtenirProgrammationParClasse(@NonNull String classeId) {
+        accessControl.requireClassMember(classeId);
         log.info("Fetching programming for class: {}", classeId);
         try {
             List<CoursProgrammer> results = coursProgrammerBusiness.obtenirProgrammationParClasse(classeId);
@@ -123,6 +139,7 @@ public class CoursProgrammerService implements CoursProgrammerApi {
 
     @Override
     public List<CoursProgrammer> obtenirProgrammationParParticipant(@NonNull String participantId) {
+        accessControl.requireSelfOrParentOrAdmin(participantId);
         log.info("Fetching programming for participant: {}", participantId);
         try {
             List<CoursProgrammer> results = coursProgrammerBusiness.obtenirProgrammationParParticipant(participantId);

@@ -125,3 +125,32 @@ databaseChangeLog:
         - sqlFile:
             path: sql/migration-add-media-question-id.sql
             relativeToChangelogFile: false
+  - changeSet:
+      id: 19-add-cours-date-publication
+      author: db-init
+      changes:
+        - sqlFile:
+            path: sql/migration-add-cours-date-publication.sql
+            relativeToChangelogFile: false
+  - changeSet:
+      id: 20-messages-media-suppression-par-utilisateur
+      author: db-init
+      changes:
+        - sqlFile:
+            path: sql/migration-messages-media-suppression-par-utilisateur.sql
+            relativeToChangelogFile: false
+  - changeSet:
+      id: 21-add-reset-password-token
+      author: db-init
+      changes:
+        - sqlFile:
+            path: sql/migration-reset-password-token.sql
+            relativeToChangelogFile: false
+  - changeSet:
+      id: 22-professeur-statut-verification
+      author: db-init
+      changes:
+        - sqlFile:
+            path: sql/migration-professeur-statut-verification.sql
+            relativeToChangelogFile: false
+            splitStatements: false

@@ -1,12 +1,14 @@
 package cmr.notep.business.security;
 
 import cmr.notep.business.exceptions.SchoolException;
+import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.utils.JwtUtil;
+import cmr.notep.modele.StatutVerificationProfesseur;
+import cmr.notep.ressourcesjpa.repository.UtilisateursRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -21,117 +23,109 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Authentifie la requête à partir de l'en-tête {@code Authorization: Bearer <jwt>}.
+ *
+ * Le filtre s'exécute sur TOUTES les routes (y compris publiques) : sans jeton, ou avec un
+ * jeton invalide, la requête continue en anonyme et c'est la configuration d'autorisation
+ * (SecurityConfig) qui décide — 401 via {@link RestAuthenticationEntryPoint} sur une route
+ * protégée. La cause d'échec est exposée à l'entry point via l'attribut {@link #JWT_ERROR_ATTR}.
+ *
+ * Seuls les jetons d'accès sont acceptés (claim "roles" présent) et le compte doit être ACTIVE :
+ * un jeton de réinitialisation de mot de passe, de renouvellement ou un refresh token ne vaut
+ * pas authentification.
+ *
+ * Profil professeur : ROLE_PROFESSOR n'est accordé que si les pièces ont été validées par
+ * l'administrateur (sinon ROLE_PROFESSOR_PENDING), et un professeur non validé qui agit en
+ * professeur n'accède qu'à une liste blanche de routes — voir {@link ProfesseurVerificationService}.
+ */
 @Component
-
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    public static final String JWT_ERROR_ATTR = "scholchat.jwt.error";
+
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
+    private final ProfesseurVerificationService professeurVerification;
+    private final UtilisateursRepository utilisateursRepository;
 
-    public JwtAuthenticationFilter(JwtUtil jwtUtil, UserDetailsService userDetailsService) {
+    public JwtAuthenticationFilter(JwtUtil jwtUtil, UserDetailsService userDetailsService,
+                                   ProfesseurVerificationService professeurVerification,
+                                   UtilisateursRepository utilisateursRepository) {
         this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
-    }
-
-    // List of public endpoints that should bypass authentication
-    private final List<String> publicEndpoints = List.of(
-            "/auth/register",
-            "/auth/login",
-            "/auth/activate",
-            "/auth/refresh",
-            "/auth/users/byEmail",
-            "/auth/reset-password-request",
-            "/auth/reset-password",
-            "/auth/users/register",
-            "/h2-console",
-            "/scholchat/h2-console",
-            "/h2",
-            "/scholchat/h2",
-            "/utilisateurs",
-            "/utilisateurs/regenerate-activation",
-            "/scholchat/utilisateurs"
-    );
-
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        String path = request.getServletPath();
-        log.debug("Checking if path should be filtered: {}", path);
-
-        boolean shouldSkip = publicEndpoints.stream().anyMatch(path::startsWith);
-
-        if (shouldSkip) {
-            log.debug("Skipping JWT authentication for public endpoint: {}", path);
-        }
-
-        return shouldSkip;
+        this.professeurVerification = professeurVerification;
+        this.utilisateursRepository = utilisateursRepository;
     }
 
     @Override
-    protected void doFilterInternal(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain
-    ) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
         final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String userEmail;
 
-        log.debug("Processing request: {}", request.getServletPath());
-
-        // Check if Authorization header exists and has the correct format
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            log.debug("No valid authorization header found, continuing filter chain");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")
+                || SecurityContextHolder.getContext().getAuthentication() != null) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Extract token from Authorization header
-        jwt = authHeader.substring(7);
-        log.debug("JWT token extracted from header");
-
+        final String jwt = authHeader.substring(7).trim();
         try {
-            // Extract user email from token
-            userEmail = jwtUtil.getEmailFromToken(jwt);
-            log.debug("Email extracted from token: {}", userEmail);
-
-            // Extract roles from token
+            String userEmail = jwtUtil.getEmailFromToken(jwt); // lève TOKEN_EXPIRED / INVALID_TOKEN
             List<String> roles = jwtUtil.getRolesFromToken(jwt);
-            log.debug("Roles extracted from token: {}", roles);
-
-            // If email exists and user is not already authenticated
-            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                // Load user details
-                UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
-                log.debug("User details loaded for: {}", userEmail);
-
-                // Validate token
-                if (jwtUtil.validateToken(jwt)) {
-                    // Convert roles to SimpleGrantedAuthority
-                    List<SimpleGrantedAuthority> authorities = roles.stream()
+            if (userEmail == null || roles == null) {
+                // Jeton signé mais qui n'est pas un jeton d'accès (reset, renouvellement, refresh…)
+                request.setAttribute(JWT_ERROR_ATTR, "invalid");
+            } else {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+                if (!userDetails.isEnabled()) {
+                    request.setAttribute(JWT_ERROR_ATTR, "inactive");
+                } else {
+                    // Profil professeur : droits recalculés depuis la base à chaque requête
+                    // (ROLE_PROFESSOR seulement si les pièces ont été validées par l'administrateur).
+                    List<String> effectifs = roles;
+                    String userId = null;
+                    if (roles.contains(ProfesseurVerificationService.ROLE_PROFESSOR)
+                            || roles.contains(ProfesseurVerificationService.ROLE_PROFESSOR_PENDING)) {
+                        userId = utilisateursRepository.findIdByEmail(userEmail).orElse(null);
+                        effectifs = professeurVerification.rolesEffectifs(userId, roles);
+                    }
+                    List<SimpleGrantedAuthority> authorities = effectifs.stream()
                             .map(SimpleGrantedAuthority::new)
                             .collect(Collectors.toList());
-
-                    // Create authentication token
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
-                            authorities
-                    );
-
-                    // Set authentication details
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                    // Update security context with authentication
                     SecurityContextHolder.getContext().setAuthentication(authToken);
-                    log.debug("User authenticated: {}", userEmail);
+
+                    // Professeur non validé qui agit en professeur : seules les routes de la liste
+                    // blanche (profil, pièces, notifications, authentification) sont accessibles.
+                    if (ProfesseurVerificationService.agitEnProfesseurNonValide(effectifs, jwtUtil.getSelectedRoleFromToken(jwt))) {
+                        StatutVerificationProfesseur statut = professeurVerification.statut(userId).orElse(null);
+                        request.setAttribute(ProfesseurVerificationService.REQUEST_ATTR_STATUT_NON_VALIDE,
+                                statut != null ? statut : StatutVerificationProfesseur.DOCUMENTS_MANQUANTS);
+                        if (!ProfesseurVerificationService.estRouteAutorisee(request, userId)) {
+                            log.info("Professeur non validé ({}) : accès refusé à {} {}", statut,
+                                    request.getMethod(), request.getRequestURI());
+                            RestAuthenticationEntryPoint.write(response, HttpServletResponse.SC_FORBIDDEN,
+                                    SchoolErrorCode.PROFIL_PROFESSEUR_NON_VALIDE.name(),
+                                    ProfesseurVerificationService.message(statut));
+                            return;
+                        }
+                    }
                 }
             }
         } catch (SchoolException e) {
-            log.error("Authentication error: {}", e.getMessage());
+            request.setAttribute(JWT_ERROR_ATTR,
+                    e.getCode() == SchoolErrorCode.TOKEN_EXPIRED ? "expired" : "invalid");
+            log.debug("JWT rejeté: {}", e.getMessage());
+        } catch (Exception e) {
+            // utilisateur supprimé, claim mal formé, etc.
+            request.setAttribute(JWT_ERROR_ATTR, "invalid");
+            log.debug("JWT rejeté: {}", e.getMessage());
         }
 
-        // Continue with filter chain
         filterChain.doFilter(request, response);
     }
 }

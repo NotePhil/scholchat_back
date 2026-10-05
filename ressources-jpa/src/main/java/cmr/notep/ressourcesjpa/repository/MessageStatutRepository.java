@@ -14,5 +14,14 @@ public interface MessageStatutRepository extends JpaRepository<MessageStatutEnti
 
     List<MessageStatutEntity> findByIdUtilisateurIdAndLuFalse(String utilisateurId);
 
+    List<MessageStatutEntity> findByIdUtilisateurIdAndLuTrue(String utilisateurId);
+
     long countByIdUtilisateurIdAndLuFalse(String utilisateurId);
+
+    /** Messages the user deleted for themself (includes purged ones). */
+    List<MessageStatutEntity> findByIdUtilisateurIdAndSupprimeTrue(String utilisateurId);
+
+    List<MessageStatutEntity> findByIdMessageId(String messageId);
+
+    List<MessageStatutEntity> findByIdUtilisateurId(String utilisateurId);
 }

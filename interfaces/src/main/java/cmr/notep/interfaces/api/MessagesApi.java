@@ -1,17 +1,35 @@
 package cmr.notep.interfaces.api;
 
 import cmr.notep.interfaces.dto.GroupMessageDto;
+import cmr.notep.interfaces.dto.MessageBulkDeleteRequest;
+import cmr.notep.interfaces.dto.MessageClasseDto;
 import cmr.notep.interfaces.dto.MessageStatutDTO;
 import cmr.notep.interfaces.modeles.MessageDto;
 import cmr.notep.interfaces.modeles.Messages;
+import cmr.notep.interfaces.modeles.UtilisateurSimpleDto;
 import lombok.NonNull;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RequestMapping("/messages")
 public interface MessagesApi {
+    /** Utilisateurs à qui l'appelant peut écrire. */
+    @GetMapping(
+            path = "/contacts",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    List<UtilisateurSimpleDto> obtenirContacts();
+
+    /** Classes auxquelles l'appelant peut envoyer un message de groupe. */
+    @GetMapping(
+            path = "/contacts/classes",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    List<MessageClasseDto> obtenirClassesAutorisees();
+
     @GetMapping(
             path = "/{idMessage}",
             produces = MediaType.APPLICATION_JSON_VALUE
@@ -99,7 +117,16 @@ public interface MessagesApi {
             path = "/{messageId}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    void supprimerMessage(@PathVariable String messageId);
+    void supprimerMessage(@PathVariable String messageId,
+                          @RequestParam(name = "scope", required = false, defaultValue = "me") String scope);
+
+    /** Suppression de plusieurs messages (conversation). scope = "me" | "everyone". */
+    @PostMapping(
+            path = "/bulk-delete",
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    Map<String, Integer> supprimerMessages(@RequestBody MessageBulkDeleteRequest request);
     
     @GetMapping(
             path = "/utilisateur/{utilisateurId}/trash",

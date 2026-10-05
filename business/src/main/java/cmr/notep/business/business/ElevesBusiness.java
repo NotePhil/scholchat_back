@@ -7,6 +7,8 @@ import cmr.notep.interfaces.modeles.Parents;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.ElevesEntity;
 import cmr.notep.ressourcesjpa.repository.ElevesRepository;
+import cmr.notep.ressourcesjpa.repository.ParentEleveRepository;
+import cmr.notep.ressourcesjpa.repository.UtilisateursRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -103,15 +105,19 @@ public class ElevesBusiness {
     }
 
     public List<Parents> obtenirParents(String eleveId) throws SchoolException {
-        ElevesEntity eleve = daoAccessorService.getRepository(ElevesRepository.class)
-                .findById(eleveId)
-                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Élève introuvable"));
+        if (!daoAccessorService.getRepository(ElevesRepository.class).existsById(eleveId)) {
+            throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Élève introuvable");
+        }
 
-        if (eleve.getParents() == null) {
+        // Ids lus en natif puis entités de base : un parent peut aussi être professeur (compte
+        // multi-rôles) et déjà chargé sous ce sous-type ; charger ElevesEntity.parents échouerait.
+        List<String> parentIds = daoAccessorService.getRepository(ParentEleveRepository.class)
+                .findParentIdsByEleveId(eleveId);
+        if (parentIds.isEmpty()) {
             return Collections.emptyList();
         }
 
-        return eleve.getParents().stream()
+        return daoAccessorService.getRepository(UtilisateursRepository.class).findAllById(parentIds).stream()
                 .map(p -> dozerMapperBean.map(p, Parents.class))
                 .collect(Collectors.toList());
     }

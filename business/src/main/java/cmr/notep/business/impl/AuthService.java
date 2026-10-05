@@ -39,9 +39,36 @@ public class AuthService implements AuthApi {
         return authBusiness.loginUser(loginDto);
     }
 
+    /**
+     * POST /auth/switch-role (route publique) — deux modes :
+     * <ul>
+     *   <li>avec mot de passe (web, ReAuthModal) : ré-authentification complète, comme /auth/login ;</li>
+     *   <li>sans mot de passe : réservé à l'appelant DÉJÀ authentifié par son jeton d'accès (compte ACTIVE,
+     *       voir JwtAuthenticationFilter) ; le profil est changé pour son propre compte uniquement.
+     *       Le jeton porte déjà tous les rôles actifs du compte, ce mode ne donne donc aucun droit en plus.</li>
+     * </ul>
+     * Dans les deux cas le profil demandé doit être un rôle ACTIF du compte (un rôle professeur en
+     * attente de validation est refusé avec un message explicite).
+     */
     @Override
     public AuthResponse switchRole(@NonNull LoginDto switchRequest) {
         log.info("Switching role for user: {} to {}", switchRequest.getEmail(), switchRequest.getSelectedRole());
+        if (switchRequest.getPassword() == null || switchRequest.getPassword().isBlank()) {
+            org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated()
+                    || auth instanceof org.springframework.security.authentication.AnonymousAuthenticationToken) {
+                throw new cmr.notep.business.exceptions.SchoolException(
+                        cmr.notep.business.exceptions.enums.SchoolErrorCode.UNAUTHORIZED,
+                        "Authentification requise pour changer de profil.");
+            }
+            String email = auth.getName();
+            if (switchRequest.getEmail() != null && !switchRequest.getEmail().isBlank()
+                    && !switchRequest.getEmail().trim().equalsIgnoreCase(email)) {
+                throw cmr.notep.business.security.CurrentUserService.forbidden(
+                        "Vous ne pouvez changer de profil que pour votre propre compte.");
+            }
+            return authBusiness.switchRoleForAuthenticatedUser(email, switchRequest.getSelectedRole());
+        }
         // Re-authenticate and return token for new role
         return authBusiness.loginUser(switchRequest);
     }
@@ -60,7 +87,7 @@ public class AuthService implements AuthApi {
 
     @Override
     public void resetPassword(PasswordResetRequest request) {
-        log.info("Resetting password for user with token: {}", request.getToken());
+        log.info("Resetting password with a reset token");
         authBusiness.resetPassword(request);
     }
 
@@ -85,12 +112,27 @@ public class AuthService implements AuthApi {
     @Override
     public void registerPassword(PasswordSetupRequest request) {
         log.info("Setting initial password for: {}", request.getEmail());
-        authBusiness.registerPassword(request);
+        // Les deux clients envoient le jeton d'activation reçu par email dans l'en-tête Authorization.
+        String activationToken = null;
+        org.springframework.web.context.request.RequestAttributes attrs =
+                org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+        if (attrs instanceof org.springframework.web.context.request.ServletRequestAttributes sra) {
+            String header = sra.getRequest().getHeader("Authorization");
+            if (header != null && header.startsWith("Bearer ")) {
+                activationToken = header.substring(7).trim();
+            }
+        }
+        authBusiness.registerPassword(request, activationToken);
     }
 
     @Override
     public void changePassword(ChangePasswordRequest request) {
-        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth instanceof org.springframework.security.authentication.AnonymousAuthenticationToken) {
+            throw new cmr.notep.business.exceptions.SchoolException(
+                    cmr.notep.business.exceptions.enums.SchoolErrorCode.UNAUTHORIZED, "Authentification requise.");
+        }
+        String userEmail = auth.getName();
         log.info("Changing password for user: {}", userEmail);
         authBusiness.changePassword(userEmail, request);
     }

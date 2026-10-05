@@ -21,4 +21,6 @@ public class Messages implements Serializable {
     private String etat;
     private Utilisateurs expediteur;
     private List<Utilisateurs> destinataires;
+    /** Pièces jointes (en entrée: fileName, filePath, contentType, fileSize). */
+    private List<Media> medias;
 }

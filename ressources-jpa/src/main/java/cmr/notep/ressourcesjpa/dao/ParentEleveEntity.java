@@ -20,11 +20,13 @@ public class ParentEleveEntity {
     @Column(name = "eleve_id")
     private String eleveId;
 
-    @ManyToOne
+    // LAZY : jamais lu (seuls parentId/eleveId servent) et évite de charger un ParentsEntity
+    // pour un compte multi-rôles déjà présent dans le contexte sous un autre sous-type.
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id", insertable = false, updatable = false)
-    private ParentsEntity parent;
+    private UtilisateursEntity parent;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "eleve_id", insertable = false, updatable = false)
     private ElevesEntity eleve;
 }

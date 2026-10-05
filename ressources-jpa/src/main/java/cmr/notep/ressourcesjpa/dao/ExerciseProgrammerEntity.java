@@ -45,7 +45,7 @@ public class ExerciseProgrammerEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "programme_par_id", nullable = false)
-    private ProfesseursEntity programmePar;
+    private UtilisateursEntity programmePar;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "exercise_programmer_classes", schema = "ressources",

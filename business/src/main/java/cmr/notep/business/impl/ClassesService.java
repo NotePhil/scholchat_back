@@ -20,6 +20,11 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 public class ClassesService implements ClassesApi {
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.CurrentUserService currentUser;
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.AccessControlService accessControl;
+
 
     private final ClassesBusiness classesBusiness;
     private final HistoActivationBusiness histoActivationBusiness;
@@ -28,6 +33,10 @@ public class ClassesService implements ClassesApi {
     @Override
     @Deprecated
     public Classes creerClasse(@NonNull Classes classes) {
+        currentUser.requireAuthenticated();
+        if (!currentUser.isAdmin() && !currentUser.hasRole("PROFESSOR") && !currentUser.hasRole("GESTIONNAIRE")) {
+            throw cmr.notep.business.security.CurrentUserService.forbidden("Seuls les professeurs, gestionnaires d'établissement et administrateurs peuvent créer une classe.");
+        }
         log.warn("DEPRECATED: Using old endpoint POST /classes. Use POST /classes/nouvelle instead");
         log.info("Tentative de création d'une nouvelle classe: {}", classes);
         Classes nouvelleClasse = classesBusiness.creerClasse(classes);
@@ -37,11 +46,15 @@ public class ClassesService implements ClassesApi {
 
     @Override
     public ClasseCreationResponseDto creerNouvelleClasse(@NonNull ClasseCreationDto classeDto) {
+        currentUser.requireAuthenticated();
+        if (!currentUser.isAdmin() && !currentUser.hasRole("PROFESSOR") && !currentUser.hasRole("GESTIONNAIRE")) {
+            throw cmr.notep.business.security.CurrentUserService.forbidden("Seuls les professeurs, gestionnaires d'établissement et administrateurs peuvent créer une classe.");
+        }
         log.info("Tentative de création d'une nouvelle classe avec DTO: {}", classeDto);
         
         // Get connected user from security context
-        String connectedUserId = org.springframework.security.core.context.SecurityContextHolder
-                .getContext().getAuthentication().getName();
+        // (le principal porte l'email : on résout l'id applicatif)
+        String connectedUserId = currentUser.requireUserId();
         
         // Check if connected user is a professor
         boolean isProfessor = classesBusiness.isProfessor(connectedUserId);
@@ -67,6 +80,7 @@ public class ClassesService implements ClassesApi {
 
     @Override
     public Classes modifierClasse(@NonNull String idClasse, @NonNull Classes classeModifiee) {
+        accessControl.requireClassManager(idClasse);
         log.info("Tentative de modification de la classe avec l'ID: {}", idClasse);
         classeModifiee.setId(idClasse);
         Classes classeMAJ = classesBusiness.modifierClasse(idClasse, classeModifiee);
@@ -76,6 +90,7 @@ public class ClassesService implements ClassesApi {
 
     @Override
     public Classes approuverClasse(@NonNull String idClasse) {
+        accessControl.requireClassApprover(idClasse);
         log.info("Approbation de la classe avec l'ID: {}", idClasse);
         Classes classeApprouvee = classesBusiness.approuverClasse(idClasse);
         log.info("Classe approuvée avec succès: {}", idClasse);
@@ -84,6 +99,7 @@ public class ClassesService implements ClassesApi {
 
     @Override
     public Classes rejeterClasse(@NonNull String idClasse, @NonNull String motif) {
+        accessControl.requireClassApprover(idClasse);
         log.info("Rejet de la classe avec l'ID: {}", idClasse);
         Classes classeRejetee = classesBusiness.rejeterClasse(idClasse, motif);
         log.info("Classe rejetée avec succès: {}", idClasse);
@@ -92,6 +108,7 @@ public class ClassesService implements ClassesApi {
 
     @Override
     public List<Classes> obtenirClassesParEtat(@NonNull EtatClasse etat) {
+        currentUser.requireAdmin();
         log.info("Récupération des classes avec l'état: {}", etat);
         List<Classes> classes = classesBusiness.obtenirClassesParEtat(etat);
         log.info("Récupération de {} classes avec l'état {}", classes.size(), etat);
@@ -100,6 +117,7 @@ public class ClassesService implements ClassesApi {
 
     @Override
     public void supprimerClasse(@NonNull String idClasse) {
+        accessControl.requireClassManager(idClasse);
         log.info("Tentative de suppression de la classe avec l'ID: {}", idClasse);
         classesBusiness.supprimerClasse(idClasse);
         log.info("Classe supprimée avec succès: {}", idClasse);
@@ -130,18 +148,21 @@ public class ClassesService implements ClassesApi {
 
     @Override
     public Classes modifierDroitPublication(String idClasse, DroitPublication droitPublication) {
+        accessControl.requireClassManager(idClasse);
         log.info("Modification du droit de publication pour la classe: {}", idClasse);
         return classesBusiness.modifierDroitPublication(idClasse, droitPublication);
     }
 
     @Override
     public List<HistoActivation> obtenirHistoriqueActivation(String idClasse) {
+        accessControl.requireClassMember(idClasse);
         log.info("Récupération de l'historique d'activation pour la classe: {}", idClasse);
         return histoActivationBusiness.obtenirHistoriqueParClasse(idClasse);
     }
 
     @Override
     public Classes assignerModerator(@NonNull String idClasse, @NonNull String idModerator) {
+        accessControl.requireClassManager(idClasse);
         log.info("Attribution du modérateur {} à la classe {}", idModerator, idClasse);
         Classes classeMAJ = classesBusiness.assignerModerator(idClasse, idModerator);
         log.info("Modérateur assigné avec succès à la classe: {}", idClasse);
@@ -150,6 +171,7 @@ public class ClassesService implements ClassesApi {
 
     @Override
     public Classes retirerModerator(@NonNull String idClasse) {
+        accessControl.requireClassManager(idClasse);
         log.info("Retrait du modérateur de la classe: {}", idClasse);
         Classes classeMAJ = classesBusiness.retirerModerator(idClasse);
         log.info("Modérateur retiré avec succès de la classe: {}", idClasse);
@@ -166,6 +188,7 @@ public class ClassesService implements ClassesApi {
 
     @Override
     public void approuverClasseParEtablissement(@NonNull String classeId, @NonNull String etablissementId) {
+        accessControl.requireClassDecisionByEtablissement(classeId, etablissementId);
         log.info("Approbation de la classe {} par l'établissement {}", classeId, etablissementId);
         classesBusiness.approuverClasseParEtablissement(classeId, etablissementId);
         log.info("Classe {} approuvée avec succès", classeId);
@@ -173,6 +196,7 @@ public class ClassesService implements ClassesApi {
 
     @Override
     public void rejeterClasseParEtablissement(@NonNull String classeId, @NonNull String etablissementId) {
+        accessControl.requireClassDecisionByEtablissement(classeId, etablissementId);
         log.info("Rejet de la classe {} par l'établissement {}", classeId, etablissementId);
         classesBusiness.rejeterClasseParEtablissement(classeId, etablissementId);
         log.info("Classe {} rejetée avec succès", classeId);

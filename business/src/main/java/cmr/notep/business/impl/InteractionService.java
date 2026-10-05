@@ -14,10 +14,17 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 public class InteractionService implements InteractionApi {
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.CurrentUserService currentUser;
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.AccessControlService accessControl;
+
     private final InteractionBusiness interactionBusiness;
 
     @Override
     public Interaction createInteraction(Interaction interaction) {
+        currentUser.requireAuthenticated();
+        if (!currentUser.isAdmin()) interaction.setCreatedById(currentUser.requireUserId());
         log.info("Creating new interaction of type: {} for user: {}",
                 interaction.getType(), interaction.getCreatedById());
 
@@ -46,6 +53,7 @@ public class InteractionService implements InteractionApi {
 
     @Override
     public List<Interaction> getInteractionsByUser(String userId) {
+        currentUser.requireSelfOrAdmin(userId);
         log.info("Getting interactions for user: {}", userId);
         return interactionBusiness.getInteractionsByUser(userId);
     }
@@ -80,12 +88,14 @@ public class InteractionService implements InteractionApi {
 
     @Override
     public Interaction joinEvent(String eventId, String userId) {
+        currentUser.requireSelfOrAdmin(userId);
         log.info("User {} joining event {}", userId, eventId);
         return interactionBusiness.joinEvent(eventId, userId);
     }
 
     @Override
     public Interaction unjoinEvent(String eventId, String userId) {
+        currentUser.requireSelfOrAdmin(userId);
         log.info("User {} leaving event {}", userId, eventId);
         return interactionBusiness.unjoinEvent(eventId, userId);
     }

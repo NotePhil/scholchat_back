@@ -1,5 +1,7 @@
 package cmr.notep.business.business;
 
+import cmr.notep.business.security.UserSubtypeService;
+
 
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
@@ -33,12 +35,15 @@ public class AccederBusiness {
     private final AccessRejectionEmailService accessRejectionEmailService;
     private final MailServiceInterface mailService;
     private final NotificationService notificationService;
+    private final UserSubtypeService userSubtypeService;
 
     public AccederBusiness(DaoAccessorService daoAccessorService,
                            AccessConfirmationEmailService accessConfirmationEmailService,
                            AccessRejectionEmailService accessRejectionEmailService,
                            MailServiceInterface mailService,
-                           NotificationService notificationService) {
+                           NotificationService notificationService,
+                           UserSubtypeService userSubtypeService) {
+        this.userSubtypeService = userSubtypeService;
         this.daoAccessorService = daoAccessorService;
         this.accessConfirmationEmailService = accessConfirmationEmailService;
         this.accessRejectionEmailService = accessRejectionEmailService;
@@ -68,10 +73,10 @@ public class AccederBusiness {
 
         // For classes WITHOUT "accès majeur" (minor classes): only professors and parents may enroll
         if (!classe.isAccesMajeur()) {
-            UtilisateursEntity requester = daoAccessorService.getRepository(UtilisateursRepository.class)
-                    .findById(utilisateurId).orElse(null);
-            boolean isProfesseur = requester instanceof ProfesseursEntity;
-            boolean isParentUser  = estParent && (requester instanceof ParentsEntity);
+            // Rôles lus dans les tables filles : pour un compte multi-rôles (parent ET professeur),
+            // le sous-type chargé par Hibernate est arbitraire.
+            boolean isProfesseur = userSubtypeService.isProfesseur(utilisateurId);
+            boolean isParentUser  = estParent && userSubtypeService.isParent(utilisateurId);
             if (!isProfesseur && !isParentUser) {
                 throw new SchoolException(SchoolErrorCode.INVALID_OPERATION,
                         "Cette classe est réservée aux mineurs. L'accès se fait via le compte parent.");
@@ -158,17 +163,18 @@ public class AccederBusiness {
         log.info("Obtenir toutes les demandes d'accès pour les classes modérées par {}", moderateurId);
 
         // Vérifier si l'utilisateur est un professeur
-        UtilisateursEntity utilisateur = daoAccessorService.getRepository(UtilisateursRepository.class)
-                .findById(moderateurId)
-                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable"));
+        if (!daoAccessorService.getRepository(UtilisateursRepository.class).existsById(moderateurId)) {
+            throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable");
+        }
 
-        if (!(utilisateur instanceof ProfesseursEntity)) {
+        if (!userSubtypeService.isProfesseur(moderateurId)) {
             throw new SchoolException(SchoolErrorCode.INVALID_OPERATION,
                     "Seuls les professeurs peuvent être modérateurs de classe");
         }
 
         // Récupérer les classes modérées par ce professeur
-        List<ClassesEntity> classesModerees = ((ProfesseursEntity) utilisateur).getModeratedClasses();
+        List<ClassesEntity> classesModerees = daoAccessorService.getRepository(ClassesRepository.class)
+                .findByModeratorId(moderateurId);
         if (classesModerees == null || classesModerees.isEmpty()) {
             return Collections.emptyList();
         }
@@ -198,7 +204,8 @@ public class AccederBusiness {
         accorderAcces(demande.getUtilisateur().getId(), demande.getClasse().getId());
 
         // 2. Si le demandeur est un professeur, lui accorder automatiquement les droits de publication
-        if (demande.getUtilisateur() instanceof ProfesseursEntity) {
+        //    (pas pour une demande faite au titre de parent par un compte aussi professeur)
+        if (!demande.isEstParent() && userSubtypeService.isProfesseur(demande.getUtilisateur().getId())) {
             accorderDroitPublication(demande.getUtilisateur().getId(), demande.getClasse().getId());
         }
 
@@ -214,7 +221,7 @@ public class AccederBusiness {
                 // b. Créer la relation parent-élève
                 creerRelationParentEleve(demande.getUtilisateur().getId(), eleveId);
             }
-        } else if (demande.getUtilisateur() instanceof ElevesEntity) {
+        } else if (userSubtypeService.isEleve(demande.getUtilisateur().getId())) {
             eleveId = demande.getUtilisateur().getId();
         }
 
@@ -315,7 +322,8 @@ public class AccederBusiness {
         }
 
         // Vérifier si l'utilisateur a déjà accès (uniquement pour les non-professeurs)
-        boolean isProfesseur = demande.getUtilisateur() instanceof ProfesseursEntity;
+        boolean isProfesseur = !demande.isEstParent()
+                && userSubtypeService.isProfesseur(demande.getUtilisateur().getId());
         boolean hasAccess = false;
 
         if (!isProfesseur) {
@@ -492,13 +500,14 @@ public class AccederBusiness {
 
 
     private Utilisateurs mapUtilisateursEntityToModele(UtilisateursEntity entity) {
-        if (entity instanceof ProfesseursEntity) {
+        String type = userSubtypeService.typeUtilisateur(entity.getId());
+        if ("PROFESSEUR".equals(type)) {
             return dozerMapperBean.map(entity, Professeurs.class);
-        } else if (entity instanceof ElevesEntity) {
+        } else if ("ELEVE".equals(type)) {
             return dozerMapperBean.map(entity, Eleves.class);
-        } else if (entity instanceof RepetiteursEntity) {
+        } else if ("REPETITEUR".equals(type)) {
             return dozerMapperBean.map(entity, Repetiteurs.class);
-        } else if (entity instanceof ParentsEntity) {
+        } else if ("PARENT".equals(type)) {
             return dozerMapperBean.map(entity, Parents.class);
         } else {
             return dozerMapperBean.map(entity, Utilisateurs.class);
@@ -519,14 +528,22 @@ public class AccederBusiness {
                 .collect(Collectors.toList());
     }
 
+    /** All access requests made by (or for) this user, any state — used for the student's "my classes" view. */
+    public List<DemandeAccesDto> obtenirDemandesAccesDeUtilisateur(String utilisateurId) throws SchoolException {
+        log.info("Obtenir les demandes d'accès de l'utilisateur {}", utilisateurId);
+        return daoAccessorService.getRepository(DemandeAccesRepository.class)
+                .findByUtilisateurId(utilisateurId)
+                .stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
     private DemandeAccesDto convertToDto(DemandeAccesEntity entity) {
         UtilisateursEntity u = entity.getUtilisateur();
-        String type;
-        if (u instanceof ProfesseursEntity) type = "PROFESSEUR";
-        else if (u instanceof ElevesEntity) type = "ELEVE";
-        else if (u instanceof RepetiteursEntity) type = "REPETITEUR";
-        else if (u instanceof ParentsEntity) type = "PARENT";
-        else type = "UTILISATEUR";
+        // Demande faite au titre de parent : type PARENT, même si le compte a aussi un autre rôle.
+        String type = entity.isEstParent() && userSubtypeService.isParent(u.getId())
+                ? "PARENT" : userSubtypeService.typeUtilisateur(u.getId());
+        if (type == null || "GESTIONNAIRE".equals(type)) type = "UTILISATEUR";
 
         return DemandeAccesDto.builder()
                 .id(entity.getId())
@@ -609,11 +626,8 @@ public class AccederBusiness {
         dto.setNom(entity.getNom());
         dto.setPrenom(entity.getPrenom());
         dto.setEmail(entity.getEmail());
-        if (entity instanceof ProfesseursEntity) dto.setTypeUtilisateur("PROFESSEUR");
-        else if (entity instanceof ElevesEntity) dto.setTypeUtilisateur("ELEVE");
-        else if (entity instanceof RepetiteursEntity) dto.setTypeUtilisateur("REPETITEUR");
-        else if (entity instanceof ParentsEntity) dto.setTypeUtilisateur("PARENT");
-        else dto.setTypeUtilisateur("UTILISATEUR");
+        String type = userSubtypeService.typeUtilisateur(entity.getId());
+        dto.setTypeUtilisateur(type == null || "GESTIONNAIRE".equals(type) ? "UTILISATEUR" : type);
         return dto;
     }
 }

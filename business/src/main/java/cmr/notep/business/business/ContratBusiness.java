@@ -1,5 +1,7 @@
 package cmr.notep.business.business;
 
+import cmr.notep.business.security.UserSubtypeService;
+
 import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.ContratEmailService;
@@ -41,6 +43,7 @@ public class ContratBusiness {
 
     public static final String MOTIF_EXPIRATION = "Expiration du contrat";
 
+    private final UserSubtypeService userSubtypeService;
     private final DaoAccessorService daoAccessorService;
     private final PaymentService paymentService;
     private final ContratEmailService contratEmailService;
@@ -76,13 +79,11 @@ public class ContratBusiness {
         // (AccederEntity) a une classe ne doit jamais etre bloque a la connexion pour une offre qu'il
         // ne gere pas - AccederEntity est generique (parents, eleves, professeurs invites...).
         Set<String> classeIds = new LinkedHashSet<>();
-        boolean isProfessor = daoAccessorService.getRepository(ProfesseursRepository.class).findById(utilisateurId)
-                .map(prof -> {
-                    prof.getModeratedClasses().forEach(c -> classeIds.add(c.getId()));
-                    return true;
-                })
-                .orElse(false);
+        // Rôle lu dans la table professeurs (compte multi-rôles : sous-type chargé arbitraire)
+        boolean isProfessor = userSubtypeService.isProfesseur(utilisateurId);
         if (isProfessor) {
+            daoAccessorService.getRepository(ClassesRepository.class).findByModeratorId(utilisateurId)
+                    .forEach(c -> classeIds.add(c.getId()));
             daoAccessorService.getRepository(AccederRepository.class).findByUtilisateurId(utilisateurId)
                     .forEach(a -> classeIds.add(a.getClasseId()));
         }
@@ -527,7 +528,7 @@ public class ContratBusiness {
                 : null;
         histo.setUtilisateur(utilisateur);
         histo.setDateActivation(active ? LocalDateTime.now() : (classe.getDateCreation() != null
-                ? classe.getDateCreation().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime() : LocalDateTime.now()));
+                ? LocalDateTime.ofInstant(classe.getDateCreation().toInstant(), java.time.ZoneOffset.UTC) : LocalDateTime.now()));
         if (!active) {
             histo.setDateDesactivation(LocalDateTime.now());
         }
@@ -660,7 +661,7 @@ public class ContratBusiness {
         boolean aAcces = daoAccessorService.getRepository(AccederRepository.class)
                 .existsByUtilisateurIdAndClasseId(callerUserId, classe.getId());
         if (!estModerateur && !aAcces) {
-            throw new SchoolException(SchoolErrorCode.UNAUTHORIZED,
+            throw new SchoolException(SchoolErrorCode.OPERATION_INTERDITE,
                     "Seuls les enseignants de cette classe peuvent gérer son offre");
         }
     }
@@ -672,7 +673,7 @@ public class ContratBusiness {
         }
         boolean estGestionnaire = etablissement.getGestionnaire() != null && etablissement.getGestionnaire().getId().equals(callerUserId);
         if (!estGestionnaire) {
-            throw new SchoolException(SchoolErrorCode.UNAUTHORIZED,
+            throw new SchoolException(SchoolErrorCode.OPERATION_INTERDITE,
                     "Seul le gestionnaire de cet établissement peut gérer son offre");
         }
     }

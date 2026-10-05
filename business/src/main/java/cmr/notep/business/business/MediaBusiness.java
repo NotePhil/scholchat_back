@@ -276,6 +276,12 @@ public class MediaBusiness {
         return "users/" + ownerId;
     }
 
+    /** Storage key generateUploadUrl uses for these arguments (so clients can reference the uploaded file). */
+    public String buildUploadFilePath(String fileName, String ownerId, String mediaType, String documentType) {
+        if (ownerId == null || mediaType == null || documentType == null) return null;
+        return buildUserMediaPath(ownerId, mediaType, documentType, sanitizeFileName(fileName));
+    }
+
     private String sanitizeFileName(String fileName) {
         if (fileName == null || fileName.trim().isEmpty()) {
             return "unnamed_file_" + System.currentTimeMillis();

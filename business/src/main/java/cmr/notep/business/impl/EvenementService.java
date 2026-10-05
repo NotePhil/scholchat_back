@@ -25,6 +25,36 @@ import java.util.List;
 @RestController
 @Slf4j
 public class EvenementService implements EvenementApi {
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.CurrentUserService currentUser;
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.AccessControlService accessControl;
+
+    /** Visibilité d'un événement : PUBLIC pour tous ; PRIVATE pour l'auteur, les admins et les membres des classes ciblées. */
+    private boolean peutVoir(Evenement e) {
+        if (e == null) return false;
+        if (!"PRIVATE".equals(e.getVisibility())) return true;
+        if (currentUser.isAdmin()) return true;
+        String me = currentUser.requireUserId();
+        if (me.equals(e.getCreateurId())) return true;
+        List<String> classes = e.getClassesIds();
+        if (classes == null || classes.isEmpty()) return true; // comportement existant : privé sans classe = visible
+        return classes.stream().anyMatch(c -> accessControl.isClassMember(c, me));
+    }
+
+    private void exigerVisible(String eventId) {
+        if (!peutVoir(evenementBusiness.obtenirEvenementParId(eventId))) {
+            throw cmr.notep.business.security.CurrentUserService.forbidden("Cet événement est réservé aux membres des classes concernées.");
+        }
+    }
+
+    private void exigerAuteur(String eventId) {
+        Evenement e = evenementBusiness.obtenirEvenementParId(eventId);
+        if (!currentUser.isAdmin() && !currentUser.isSelf(e.getCreateurId())) {
+            throw cmr.notep.business.security.CurrentUserService.forbidden("Seul l'auteur de l'événement peut le modifier.");
+        }
+    }
+
 
     private final EvenementBusiness evenementBusiness;
     private final InteractionBusiness interactionBusiness;
@@ -51,6 +81,11 @@ public class EvenementService implements EvenementApi {
 
     @Override
     public Evenement creerEvenement(@NonNull Evenement evenement) {
+        currentUser.requireAuthenticated();
+        if (!currentUser.isAdmin()) {
+            evenement.setCreateurId(currentUser.requireUserId());
+            if (evenement.getClassesIds() != null) evenement.getClassesIds().forEach(accessControl::requireClassTeacher);
+        }
         log.info("Création d'un nouvel événement: {}", evenement.getTitre());
         return evenementBusiness.creerEvenement(evenement);
     }
@@ -132,18 +167,25 @@ public class EvenementService implements EvenementApi {
     
     @Override
     public Evenement mettreAJourEvenement(@NonNull String id, @NonNull Evenement evenement) {
+        exigerAuteur(id);
+        if (!currentUser.isAdmin()) {
+            evenement.setCreateurId(null);
+            if (evenement.getClassesIds() != null) evenement.getClassesIds().forEach(accessControl::requireClassTeacher);
+        }
         log.info("Mise à jour de l'événement avec ID: {}", id);
         return evenementBusiness.mettreAJourEvenement(id, evenement);
     }
 
     @Override
     public void supprimerEvenement(@NonNull String id) {
+        exigerAuteur(id);
         log.info("Suppression de l'événement avec ID: {}", id);
         evenementBusiness.supprimerEvenement(id);
     }
 
     @Override
     public Evenement obtenirEvenementParId(@NonNull String id) {
+        exigerVisible(id);
         log.info("Récupération de l'événement avec ID: {}", id);
         return evenementBusiness.obtenirEvenementParId(id);
     }
@@ -151,12 +193,15 @@ public class EvenementService implements EvenementApi {
     @Override
     public List<Evenement> obtenirEvenementsParProfesseur(@NonNull String professeurId) {
         log.info("Récupération des événements pour le professeur avec ID: {}", professeurId);
-        return evenementBusiness.obtenirEvenementsParProfesseur(professeurId);
+        return evenementBusiness.obtenirEvenementsParProfesseur(professeurId).stream()
+                .filter(this::peutVoir)
+                .collect(java.util.stream.Collectors.toList());
     }
 
     // Nouveaux endpoints pour les interactions
     @Override
     public void likerEvenement(@NonNull String eventId) {
+        exigerVisible(eventId);
         String userId = getCurrentUserId();
         log.info("Utilisateur {} toggle like pour l'événement {}", userId, eventId);
         
@@ -166,6 +211,7 @@ public class EvenementService implements EvenementApi {
 
     @Override
     public Interaction commenterEvenement(@NonNull String eventId, @NonNull CommentRequest commentRequest) {
+        exigerVisible(eventId);
         String userId = getCurrentUserId();
         String commentContent = commentRequest.getContent();
         log.info("Utilisateur {} commente l'événement {}", userId, eventId);
@@ -183,6 +229,7 @@ public class EvenementService implements EvenementApi {
 
     @Override
     public void rejoindreEvenement(@NonNull String eventId) {
+        exigerVisible(eventId);
         String userId = getCurrentUserId();
         log.info("Utilisateur {} rejoint l'événement {}", userId, eventId);
         interactionBusiness.joinEvent(eventId, userId);
@@ -190,6 +237,7 @@ public class EvenementService implements EvenementApi {
 
     @Override
     public void quitterEvenement(@NonNull String eventId) {
+        currentUser.requireAuthenticated();
         String userId = getCurrentUserId();
         log.info("Utilisateur {} quitte l'événement {}", userId, eventId);
         interactionBusiness.unjoinEvent(eventId, userId);

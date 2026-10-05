@@ -24,7 +24,7 @@ public class CanalEntity {
 
     @ManyToOne
     @JoinColumn(name = "professeur_id", nullable = false)
-    private ProfesseursEntity professeur;
+    private UtilisateursEntity professeur;
 
     @ManyToOne
     @JoinColumn(name = "classe_id", nullable = false)

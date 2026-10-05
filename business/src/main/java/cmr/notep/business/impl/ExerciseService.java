@@ -21,12 +21,24 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 public class ExerciseService implements ExerciseApi {
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.CurrentUserService currentUser;
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.AccessControlService accessControl;
+
 
     private final ExerciseBusiness exerciseBusiness;
     private final ExerciseMapper exerciseMapper;
 
     @Override
     public ExerciseResponseDTO creerExercise(@NonNull ExerciseRequestDTO exerciseRequestDTO) {
+        currentUser.requireAuthenticated();
+        if (!currentUser.isAdmin()) {
+            if (!currentUser.hasRole("PROFESSOR") && !currentUser.hasRole("TUTOR")) {
+                throw cmr.notep.business.security.CurrentUserService.forbidden("Seuls les professeurs peuvent créer du contenu pédagogique.");
+            }
+            exerciseRequestDTO.setRedacteurId(currentUser.requireUserId());
+        }
         log.info("Création d'un nouvel exercice: {}", exerciseRequestDTO.getNom());
         Exercise exercise = exerciseMapper.toEntity(exerciseRequestDTO);
         Exercise createdExercise = exerciseBusiness.creerExercise(exercise);
@@ -35,12 +47,14 @@ public class ExerciseService implements ExerciseApi {
     }
     @Override
     public ExerciseResponseDTO lierExerciseAMatiere(@NonNull String exerciseId, @NonNull String matiereId) {
+        accessControl.requireExerciseAuthor(exerciseId);
         log.info("Liaison de l'exercice {} à la matière {}", exerciseId, matiereId);
         ExerciseEntity exerciseEntity = exerciseBusiness.lierExerciseAMatiere(exerciseId, matiereId);
         return exerciseMapper.toResponseDTO(exerciseEntity);
     }
     @Override
     public ExerciseResponseDTO delierExerciseDeMatiere(@NonNull String exerciseId, @NonNull String matiereId) {
+        accessControl.requireExerciseAuthor(exerciseId);
         log.info("Déliaison de l'exercice {} de la matière {}", exerciseId, matiereId);
         ExerciseEntity exerciseEntity = exerciseBusiness.delierExerciseDeMatiere(exerciseId, matiereId);
         return exerciseMapper.toResponseDTO(exerciseEntity);
@@ -48,6 +62,8 @@ public class ExerciseService implements ExerciseApi {
 
     @Override
     public ExerciseResponseDTO mettreAJourExercise(@NonNull String exerciseId, @NonNull ExerciseRequestDTO exerciseRequestDTO) {
+        accessControl.requireExerciseAuthor(exerciseId);
+        if (!currentUser.isAdmin()) exerciseRequestDTO.setRedacteurId(null);
         log.info("Mise à jour de l'exercice: {}", exerciseId);
         Exercise exercise = exerciseMapper.toEntity(exerciseRequestDTO);
         Exercise updatedExercise = exerciseBusiness.mettreAJourExercise(exerciseId, exercise);
@@ -57,6 +73,7 @@ public class ExerciseService implements ExerciseApi {
 
     @Override
     public void supprimerExercise(@NonNull String exerciseId) {
+        accessControl.requireExerciseAuthor(exerciseId);
         log.info("Suppression de l'exercice: {}", exerciseId);
         exerciseBusiness.supprimerExercise(exerciseId);
     }
@@ -86,6 +103,7 @@ public class ExerciseService implements ExerciseApi {
 
     @Override
     public List<ExerciseResponseDTO> obtenirExercisesAccessibles(@NonNull String userId) {
+        accessControl.requireSelfOrParentOrAdmin(userId);
         log.info("Récupération des exercices accessibles pour l'utilisateur: {}", userId);
         return exerciseBusiness.obtenirExercisesEntityAccessibles(userId).stream()
                 .map(exerciseMapper::toResponseDTO)
@@ -102,6 +120,8 @@ public class ExerciseService implements ExerciseApi {
 
     @Override
     public ExerciseResponseDTO lierExerciseACours(@NonNull String exerciseId, @NonNull String coursId) {
+        accessControl.requireExerciseAuthor(exerciseId);
+        accessControl.requireCoursAuthor(coursId);
         log.info("Liaison de l'exercice {} au cours {}", exerciseId, coursId);
         ExerciseEntity exerciseEntity = exerciseBusiness.lierExerciseACours(exerciseId, coursId);
         return exerciseMapper.toResponseDTO(exerciseEntity);
@@ -109,6 +129,7 @@ public class ExerciseService implements ExerciseApi {
 
     @Override
     public ExerciseResponseDTO delierExerciseDeCours(@NonNull String exerciseId, @NonNull String coursId) {
+        accessControl.requireExerciseAuthor(exerciseId);
         log.info("Déliaison de l'exercice {} du cours {}", exerciseId, coursId);
         ExerciseEntity exerciseEntity = exerciseBusiness.delierExerciseDeCours(exerciseId, coursId);
         return exerciseMapper.toResponseDTO(exerciseEntity);

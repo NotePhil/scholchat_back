@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS ressources.utilisateurs (
     activation_token VARCHAR(255) UNIQUE,
     creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_admin BOOLEAN DEFAULT FALSE,
+    reset_password_token VARCHAR(2000),
     CONSTRAINT pk_utilisateurs PRIMARY KEY (id)
 );
 
@@ -40,6 +41,9 @@ CREATE TABLE IF NOT EXISTS ressources.professeurs (
     selfie_url VARCHAR(255),
     matricule_professeur VARCHAR(255) UNIQUE,
     has_uploaded BOOLEAN DEFAULT FALSE,
+    statut_verification VARCHAR(30) DEFAULT 'DOCUMENTS_MANQUANTS' NOT NULL,
+    motif_rejet_verification TEXT,
+    date_statut_verification TIMESTAMP WITH TIME ZONE,
     PRIMARY KEY (professeurs_id)
 );
 
