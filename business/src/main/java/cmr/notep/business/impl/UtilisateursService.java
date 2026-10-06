@@ -24,13 +24,16 @@ public class UtilisateursService implements UtilisateursApi {
     private final ActivationService activationService;
     private final CurrentUserService currentUser;
     private final AccessControlService accessControl;
+    private final cmr.notep.business.utils.JwtUtil jwtUtil;
 
     public UtilisateursService(UtilisateursBusiness utilisateursBusiness, ActivationService activationService,
-                               CurrentUserService currentUser, AccessControlService accessControl) {
+                               CurrentUserService currentUser, AccessControlService accessControl,
+                               cmr.notep.business.utils.JwtUtil jwtUtil) {
         this.utilisateursBusiness = utilisateursBusiness;
         this.activationService = activationService;
         this.currentUser = currentUser;
         this.accessControl = accessControl;
+        this.jwtUtil = jwtUtil;
     }
 
     @Override
@@ -41,8 +44,9 @@ public class UtilisateursService implements UtilisateursApi {
 
     /**
      * PATCH /utilisateurs/{id}
-     * - anonyme : uniquement pour joindre matricule / CNI / selfie au compte professeur
-     *   tout juste créé par l'inscription (voir AccessControlService#isSignupPendingProfessor) ;
+     * - anonyme : uniquement pour joindre matricule / CNI / selfie au compte professeur tout juste créé
+     *   par l'inscription, avec le jeton de dépôt renvoyé par POST /utilisateurs (en-tête X-Upload-Token,
+     *   voir AccessControlService#hasSignupUploadAccess) ;
      * - connecté : soi-même, un parent pour son enfant, ou un administrateur ;
      *   seul un administrateur peut changer l'état (activation) ou l'email (sujet du JWT).
      */
@@ -50,7 +54,9 @@ public class UtilisateursService implements UtilisateursApi {
     public Utilisateurs patcherUtilisateur(@NonNull String idUtilisateur, @NonNull Utilisateurs partialUpdate) {
         log.info("Patching user with ID: {}", idUtilisateur);
         if (!currentUser.isAuthenticated()) {
-            if (!(partialUpdate instanceof Professeurs docs) || !accessControl.isSignupPendingProfessor(idUtilisateur)) {
+            // Jeton de dépôt renvoyé par l'inscription (en-tête X-Upload-Token), émis pour CE compte,
+            // et compte encore en cours d'inscription : connaître l'id ne suffit pas.
+            if (!(partialUpdate instanceof Professeurs docs) || !accessControl.hasSignupUploadAccess(idUtilisateur)) {
                 throw new cmr.notep.business.exceptions.SchoolException(
                         cmr.notep.business.exceptions.enums.SchoolErrorCode.UNAUTHORIZED,
                         "Authentification requise. Veuillez vous connecter.");
@@ -118,7 +124,15 @@ public class UtilisateursService implements UtilisateursApi {
             }
         }
         Utilisateurs cree = utilisateursBusiness.posterUtilisateur(utilisateur);
-        return admin ? cree : vueMinimale(cree);
+        if (admin) return cree;
+        Utilisateurs vue = vueMinimale(cree);
+        // Inscription professeur : jeton de courte durée pour déposer les pièces sans être connecté
+        // (étape "pièces justificatives" des clients web et mobile).
+        if (utilisateur instanceof Professeurs && cree.getId() != null
+                && accessControl.isSignupPendingProfessor(cree.getId())) {
+            vue.setUploadToken(jwtUtil.generateProfessorDocumentsUploadToken(cree.getId()));
+        }
+        return vue;
     }
 
     /** Réponse réduite pour les appels non-admin d'inscription : ne divulgue pas le profil d'un compte existant. */

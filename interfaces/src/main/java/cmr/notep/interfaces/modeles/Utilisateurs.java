@@ -66,4 +66,13 @@ public class Utilisateurs implements Serializable, IUtilisateurs {
      */
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private String inscriptionStatut;
+    /**
+     * Réponse de POST /utilisateurs uniquement, pour une inscription PROFESSEUR (jamais persisté, ignoré
+     * en entrée) : jeton signé de courte durée qui autorise, sans être connecté, le dépôt des pièces
+     * justificatives de CE compte (en-tête X-Upload-Token sur PATCH /utilisateurs/{id},
+     * POST /media/presigned-url et POST /media/proxy-upload).
+     */
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private String uploadToken;
 }

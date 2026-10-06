@@ -40,6 +40,9 @@ public class EmailTemplateService {
     @Value("${app.renewal-url}")
     private String renewalUrl;
 
+    @Value("${front.endpoint}")
+    private String frontEndpoint;
+
     /** Dates are stored in UTC; e-mails render them in the users' zone (with the zone name). */
     @Value("${app.display-timezone:Africa/Douala}")
     private String displayTimezone;
@@ -100,6 +103,20 @@ public class EmailTemplateService {
 
         return templateEngine.process("email/professor-awaiting-validation", context);
     }
+    /**
+     * Profil professeur validé par l'administrateur (pièces justificatives acceptées) sur un compte déjà
+     * actif. {@code roleSupplementaire} : compte parent/élève… qui vient d'obtenir le rôle professeur.
+     */
+    public String generateProfessorVerificationValidatedEmail(Utilisateurs utilisateur, boolean roleSupplementaire) {
+        Context context = new Context();
+        context.setVariable("userName", utilisateur.getNom());
+        context.setVariable("userEmail", utilisateur.getEmail());
+        context.setVariable("roleSupplementaire", roleSupplementaire);
+        String base = frontEndpoint == null ? "" : frontEndpoint.replaceAll("/+$", "");
+        context.setVariable("loginUrl", base + "/schoolchat/login");
+        return templateEngine.process("email/professor-verification-validated", context);
+    }
+
     public String generateClassCreationNotificationEmail(Classes classe, Professeurs professeur, String validationUrl) {
         Context context = new Context();
         context.setVariable("classe", classe);

@@ -69,6 +69,9 @@ public class UtilisateursBusiness {
     @Autowired
     private cmr.notep.business.security.ProfesseurVerificationService professeurVerification;
 
+    @Autowired
+    private ProfessorVerificationEmailService professorVerificationEmailService;
+
     public UtilisateursBusiness(DaoAccessorService daoAccessorService,
                                 ActivationEmailService activationEmailService,
                                 JwtUtil jwtUtil,
@@ -797,6 +800,11 @@ public class UtilisateursBusiness {
                 }
             }
             Utilisateurs valide = mapUtilisateursEntityToModele(userEntity);
+            // E-mail "profil validé" : seulement ici (compte déjà actif). La première validation d'un
+            // compte AWAITING_VALIDATION (plus bas) envoie déjà l'e-mail d'activation : pas de doublon.
+            if (nouveauStatut == StatutVerificationProfesseur.VALIDE && professorVerificationEmailService != null) {
+                professorVerificationEmailService.sendProfileValidatedEmail(valide, !roleActif);
+            }
             log.info("PROFESSOR profile of active account {} -> {}", professorId, nouveauStatut);
             return professeurVerification.enrichir(valide);
         }

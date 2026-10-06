@@ -79,9 +79,12 @@ public class SecurityConfig {
                         // ── Inscription ──
                         .requestMatchers(HttpMethod.POST, "/utilisateurs").permitAll()                       // types publics seulement (contrôlé)
                         .requestMatchers(HttpMethod.POST, "/utilisateurs/regenerate-activation").permitAll()
-                        // PATCH anonyme limité au professeur en cours d'inscription (contrôlé dans UtilisateursService)
+                        // PATCH anonyme limité aux pièces du professeur en cours d'inscription, avec le jeton de
+                        // dépôt (X-Upload-Token) renvoyé par POST /utilisateurs — contrôlé dans UtilisateursService
+                        // (AccessControlService#hasSignupUploadAccess). Connecté : soi-même / parent / admin.
                         .requestMatchers(HttpMethod.PATCH, "/utilisateurs/*").permitAll()
-                        // Dépôt des pièces du professeur pendant l'inscription (owner contrôlé dans MediaServiceImpl)
+                        // Dépôt des pièces pendant l'inscription : anonyme seulement avec le jeton de dépôt et pour
+                        // cni-recto / cni-verso / selfie (contrôlé dans MediaServiceImpl) ; sinon utilisateur connecté.
                         .requestMatchers(HttpMethod.POST, "/media/presigned-url", "/media/proxy-upload").permitAll()
 
                         // ── Liens reçus par email ──
@@ -161,7 +164,8 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(frontEndpoint, "https://scholchat-front-1.onrender.com"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With", "X-Timezone"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With", "X-Timezone",
+                "X-Upload-Token"));
         configuration.setExposedHeaders(Arrays.asList("Authorization"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);

@@ -41,6 +41,7 @@ public class AccessControlService {
     private final CanalRepository canalRepository;
     private final ParticiperExoRepository participerExoRepository;
     private final UserRoleRepository userRoleRepository;
+    private final cmr.notep.business.utils.JwtUtil jwtUtil;
 
     // ─── Utilisateurs / parents ───────────────────────────────────────────────
 
@@ -469,8 +470,41 @@ public class AccessControlService {
      * Vrai si {@code userId} est un compte professeur en cours d'inscription : jamais activé,
      * pièces justificatives pas encore toutes déposées, créé il y a moins de 24 h.
      * C'est la seule cible autorisée pour les appels ANONYMES de l'inscription
-     * (PATCH /utilisateurs/{id}, POST /media/presigned-url, POST /media/proxy-upload).
+     * (PATCH /utilisateurs/{id}, POST /media/presigned-url, POST /media/proxy-upload), qui exigent EN PLUS
+     * le jeton de dépôt émis pour ce compte (voir {@link #hasSignupUploadAccess}).
      */
+    /** En-tête portant le jeton de dépôt des pièces renvoyé par l'inscription professeur (POST /utilisateurs). */
+    public static final String UPLOAD_TOKEN_HEADER = "X-Upload-Token";
+
+    /**
+     * Dépôt ANONYME des pièces justificatives d'un professeur pendant l'inscription : exige le jeton signé
+     * renvoyé par POST /utilisateurs (en-tête {@value #UPLOAD_TOKEN_HEADER}, ou {@code Authorization: Bearer}
+     * avec ce jeton), émis pour CE compte et non expiré, ET un compte encore en cours d'inscription
+     * ({@link #isSignupPendingProfessor}) dont le profil n'est pas validé. Connaître l'id du compte ne suffit plus.
+     */
+    public boolean hasSignupUploadAccess(String userId) {
+        if (userId == null) return false;
+        String token = uploadTokenFromCurrentRequest();
+        if (!jwtUtil.isValidProfessorDocumentsUploadToken(token, userId)) return false;
+        if (!isSignupPendingProfessor(userId)) return false;
+        return utilisateursRepository.findStatutVerificationProfesseur(userId)
+                .map(cmr.notep.modele.StatutVerificationProfesseur::parse)
+                .map(st -> st != cmr.notep.modele.StatutVerificationProfesseur.VALIDE)
+                .orElse(true);
+    }
+
+    private static String uploadTokenFromCurrentRequest() {
+        org.springframework.web.context.request.RequestAttributes attrs =
+                org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+        if (!(attrs instanceof org.springframework.web.context.request.ServletRequestAttributes sra)) return null;
+        jakarta.servlet.http.HttpServletRequest request = sra.getRequest();
+        String token = request.getHeader(UPLOAD_TOKEN_HEADER);
+        if (token != null && !token.isBlank()) return token.trim();
+        String auth = request.getHeader("Authorization");
+        if (auth != null && auth.startsWith("Bearer ")) return auth.substring(7).trim();
+        return null;
+    }
+
     public boolean isSignupPendingProfessor(String userId) {
         if (userId == null) return false;
         // Requêtes scalaires/natives : le compte peut avoir plusieurs sous-types (multi-rôles).

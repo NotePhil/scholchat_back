@@ -50,18 +50,30 @@ public class MediaServiceImpl {
 
     /**
      * Qui peut déposer un fichier pour {@code ownerId} : l'utilisateur lui-même ou un admin ;
-     * en anonyme, uniquement le professeur en cours d'inscription (pièces justificatives).
+     * en anonyme, uniquement le professeur en cours d'inscription, avec le jeton de dépôt renvoyé par
+     * l'inscription (en-tête X-Upload-Token), et seulement ses pièces justificatives
+     * ({@code documentTypeOuChemin} : cni-recto, cni-verso ou selfie).
      */
-    private void requireCanUploadFor(String ownerId) {
+    private void requireCanUploadFor(String ownerId, String documentTypeOuChemin) {
         if (!currentUser.isAuthenticated()) {
-            if (!accessControl.isSignupPendingProfessor(ownerId)) {
+            if (!accessControl.hasSignupUploadAccess(ownerId)) {
                 throw new SchoolException(SchoolErrorCode.UNAUTHORIZED, "Authentification requise. Veuillez vous connecter.");
+            }
+            if (!estPieceProfil(documentTypeOuChemin)) {
+                throw CurrentUserService.forbidden("Seules les pièces justificatives (CNI recto/verso, selfie) "
+                        + "peuvent être déposées avant la connexion.");
             }
             return;
         }
         if (!currentUser.isAdmin() && !currentUser.isSelf(ownerId)) {
             throw CurrentUserService.forbidden("Vous ne pouvez déposer des fichiers que pour votre propre compte.");
         }
+    }
+
+    private static boolean estPieceProfil(String documentTypeOuChemin) {
+        String v = documentTypeOuChemin == null ? "" : documentTypeOuChemin.toLowerCase(java.util.Locale.ROOT);
+        java.util.Set<String> types = cmr.notep.business.security.ProfesseurVerificationService.TYPES_PIECES_PROFIL;
+        return types.contains(v) || types.stream().anyMatch(t -> v.contains("/" + t + "/"));
     }
 
     /** Pièces d'identité (CNI) : visibles uniquement par leur propriétaire et les administrateurs. */
@@ -128,7 +140,7 @@ public class MediaServiceImpl {
             if (request.getOwnerId() == null || request.getOwnerId().trim().isEmpty()) {
                 throw new IllegalArgumentException("Owner ID is required");
             }
-            requireCanUploadFor(request.getOwnerId());
+            requireCanUploadFor(request.getOwnerId(), request.getDocumentType());
             request.setMediaType(safeSegment(request.getMediaType(), "mediaType"));
             request.setDocumentType(request.getDocumentType() == null
                     ? null : safeSegment(request.getDocumentType(), "documentType"));
@@ -489,7 +501,7 @@ public class MediaServiceImpl {
             MediaEntity cible = mediaRepository.findByFilePath(filePath)
                     .orElseThrow(() -> new SchoolException(SchoolErrorCode.OPERATION_INTERDITE,
                             "Aucun dépôt autorisé pour ce fichier. Demandez d'abord une URL de dépôt."));
-            requireCanUploadFor(cible.getOwnerId());
+            requireCanUploadFor(cible.getOwnerId(), filePath);
             cmr.notep.business.security.ProfesseurVerificationService.requireTypePieceProfilSiNonValide(filePath);
 
             String trustedUrl = mediaService.generateUploadPresignedUrl(filePath, contentType);
@@ -501,7 +513,9 @@ public class MediaServiceImpl {
                     new org.springframework.http.HttpEntity<>(file.getBytes(), headers);
 
             org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
-            restTemplate.exchange(trustedUrl, org.springframework.http.HttpMethod.PUT, requestEntity, String.class);
+            // URI (pas String) : RestTemplate traite une String comme un gabarit d'URI et ré-encode la query
+            // déjà encodée de l'URL présignée (%3B -> %253B), ce qui invalide la signature S3/MinIO.
+            restTemplate.exchange(java.net.URI.create(trustedUrl), org.springframework.http.HttpMethod.PUT, requestEntity, String.class);
 
             log.info("=== PROXY UPLOAD SUCCESS ===");
             return ResponseEntity.ok(Map.of(

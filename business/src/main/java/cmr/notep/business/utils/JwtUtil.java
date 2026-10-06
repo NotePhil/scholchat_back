@@ -147,6 +147,41 @@ public class JwtUtil {
         }
     }
 
+    /** Finalité du jeton de dépôt des pièces justificatives d'un professeur pendant l'inscription. */
+    public static final String PURPOSE_PROFESSOR_DOCUMENTS = "PROFESSOR_DOCUMENTS";
+    /** Durée de validité du jeton de dépôt des pièces (2 h). */
+    public static final long PROFESSOR_DOCUMENTS_TOKEN_MILLIS = 2L * 3600 * 1000;
+
+    /**
+     * Jeton renvoyé par l'inscription publique d'un professeur : autorise, sans connexion, le dépôt de
+     * SES pièces (CNI recto/verso, selfie) pendant 2 h. Sans claim "roles" : il ne vaut jamais
+     * authentification (JwtAuthenticationFilter le refuse comme jeton d'accès).
+     */
+    public String generateProfessorDocumentsUploadToken(String userId) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("purpose", PURPOSE_PROFESSOR_DOCUMENTS);
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject(userId)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + PROFESSOR_DOCUMENTS_TOKEN_MILLIS))
+                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    /** Vrai si {@code token} est un jeton de dépôt des pièces valide (signature, expiration) émis pour {@code userId}. */
+    public boolean isValidProfessorDocumentsUploadToken(String token, String userId) {
+        if (token == null || token.isBlank() || userId == null) return false;
+        try {
+            Claims claims = Jwts.parserBuilder().setSigningKey(secretKey).build()
+                    .parseClaimsJws(token.trim()).getBody();
+            return PURPOSE_PROFESSOR_DOCUMENTS.equals(claims.get("purpose", String.class))
+                    && userId.equals(claims.getSubject());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public String getEntityTypeFromRenewalToken(String token) {
         return getClaimFromToken(token, claims -> claims.get("entityType", String.class));
     }

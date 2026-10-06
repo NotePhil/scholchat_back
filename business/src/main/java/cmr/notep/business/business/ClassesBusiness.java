@@ -243,6 +243,10 @@ public class ClassesBusiness {
             classesEntity.setEtablissement(etablissement);
             classesEntity.setPaymentRequired(false);
         } else {
+            // Les clients envoient parfois "etablissement": {"id": null} pour "aucun établissement" :
+            // Dozer en fait une EtablissementEntity vide (transiente) qui faisait échouer la sauvegarde
+            // ("unsaved transient instance ClassesEntity.etablissement"). Pas d'id = pas d'établissement.
+            classesEntity.setEtablissement(null);
             classesEntity.setPaymentRequired(true);
         }
 
@@ -366,7 +370,9 @@ public class ClassesBusiness {
         classeExistante.setAccesMajeur(classeModifiee.isAccesMajeur());
 
         // Etablissement Update
-        if (classeModifiee.getEtablissement() != null) {
+        // (un établissement sans id — "etablissement": {"id": null} — ne change rien)
+        if (classeModifiee.getEtablissement() != null && classeModifiee.getEtablissement().getId() != null
+                && !classeModifiee.getEtablissement().getId().isBlank()) {
             EtablissementEntity etablissement = daoAccessorService
                     .getRepository(EtablissementRepository.class)
                     .findById(classeModifiee.getEtablissement().getId())
