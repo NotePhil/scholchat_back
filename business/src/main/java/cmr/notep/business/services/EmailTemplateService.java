@@ -117,6 +117,63 @@ public class EmailTemplateService {
         return templateEngine.process("email/professor-verification-validated", context);
     }
 
+    private String loginUrl() {
+        String base = frontEndpoint == null ? "" : frontEndpoint.replaceAll("/+$", "");
+        return base + "/schoolchat/login";
+    }
+
+    /** Inscription par code de classe approuvée : identifiants (e-mail + mot de passe temporaire). */
+    public String generateInscriptionClasseApprouveeEmail(String email, String nomComplet, String classeNom,
+                                                          String motDePasseTemporaire) {
+        Context context = new Context();
+        context.setVariable("userName", nomComplet);
+        context.setVariable("userEmail", email);
+        context.setVariable("classeNom", classeNom);
+        context.setVariable("motDePasse", motDePasseTemporaire);
+        context.setVariable("loginUrl", loginUrl());
+        return templateEngine.process("email/inscription-classe-approuvee", context);
+    }
+
+    /** Profil élève ajouté à un compte existant, validé par l'approbation de la demande d'accès à la classe. */
+    public String generateProfilEleveValideEmail(String email, String nomComplet, String classeNom) {
+        Context context = new Context();
+        context.setVariable("userName", nomComplet);
+        context.setVariable("userEmail", email);
+        context.setVariable("classeNom", classeNom);
+        context.setVariable("loginUrl", loginUrl());
+        return templateEngine.process("email/role-eleve-valide", context);
+    }
+
+    /** Code de vérification du compte (bouton « Vérifier mon compte » de la page de connexion). */
+    public String generateCodeVerificationCompteEmail(String email, String nomComplet, String code, int validiteMinutes) {
+        Context context = new Context();
+        context.setVariable("userName", nomComplet);
+        context.setVariable("userEmail", email);
+        context.setVariable("code", code);
+        context.setVariable("validiteMinutes", validiteMinutes);
+        return templateEngine.process("email/code-verification-compte", context);
+    }
+
+    /** E-mail de notification simple (titre + paragraphes + liste éventuelle) aux couleurs de ScholChat. */
+    public String generateNotificationGeneriqueEmail(String titre, List<String> paragraphes, List<String> elements) {
+        Context context = new Context();
+        context.setVariable("titre", titre);
+        context.setVariable("paragraphes", paragraphes);
+        context.setVariable("elements", elements == null || elements.isEmpty() ? null : elements);
+        context.setVariable("loginUrl", loginUrl());
+        return templateEngine.process("email/notification-generique", context);
+    }
+
+    /** Inscription par code de classe refusée par le responsable de la classe. */
+    public String generateInscriptionClasseRefuseeEmail(String email, String nomComplet, String classeNom, String motif) {
+        Context context = new Context();
+        context.setVariable("userName", nomComplet);
+        context.setVariable("userEmail", email);
+        context.setVariable("classeNom", classeNom);
+        context.setVariable("motif", motif != null && !motif.isBlank() ? motif.trim() : null);
+        return templateEngine.process("email/inscription-classe-refusee", context);
+    }
+
     public String generateClassCreationNotificationEmail(Classes classe, Professeurs professeur, String validationUrl) {
         Context context = new Context();
         context.setVariable("classe", classe);
@@ -139,7 +196,14 @@ public class EmailTemplateService {
     }
 
     public String generateRejectionEmail(ProfesseursEntity professeur, MotifRejetEntity motif, String motifSupplementaire) {
+        return generateRejectionEmail(professeur, motif, motifSupplementaire, false);
+    }
+
+    public String generateRejectionEmail(ProfesseursEntity professeur, MotifRejetEntity motif, String motifSupplementaire,
+                                         boolean compteActif) {
         Context context = new Context();
+        context.setVariable("compteActif", compteActif);
+        context.setVariable("loginUrl", loginUrl());
         if (professeur == null) {
             throw new IllegalArgumentException("ProfesseurEntity cannot be null");
         }
@@ -150,8 +214,10 @@ public class EmailTemplateService {
         context.setVariable("motif", motif.getDescriptif());
         context.setVariable("motifSupplementaire", motifSupplementaire);
         // Construisez l'URL directement dans le service
-        String updateUrl = "http://localhost:3000/schoolchat/signup?email=" +
-                professeur.getEmail() + "&token=" + professeur.getActivationToken();
+        String base = frontEndpoint == null ? "" : frontEndpoint.replaceAll("/+$", "");
+        String updateUrl = base + "/schoolchat/signup?email=" +
+                java.net.URLEncoder.encode(String.valueOf(professeur.getEmail()), java.nio.charset.StandardCharsets.UTF_8)
+                + "&token=" + professeur.getActivationToken();
         context.setVariable("updateUrl", updateUrl);
         return templateEngine.process("email/professor-rejection", context);
     }

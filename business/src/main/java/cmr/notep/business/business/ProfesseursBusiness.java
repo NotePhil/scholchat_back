@@ -153,7 +153,7 @@ public class ProfesseursBusiness {
             List<String> roles = new ArrayList<>();
             roles.add("ROLE_PROFESSOR");
 
-            String activationToken = jwtUtil.generateAccessToken(existingProfesseur.getEmail(), roles);
+            String activationToken = jwtUtil.generateActivationToken(existingProfesseur.getEmail(), roles);
             existingProfesseur.setActivationToken(activationToken);
 
             // Update entity with activation token

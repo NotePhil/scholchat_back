@@ -37,6 +37,12 @@ public class AccederBusiness {
     private final NotificationService notificationService;
     private final UserSubtypeService userSubtypeService;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.services.InscriptionClasseService inscriptionClasseService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.services.EmailTemplateService emailTemplateService;
+
     public AccederBusiness(DaoAccessorService daoAccessorService,
                            AccessConfirmationEmailService accessConfirmationEmailService,
                            AccessRejectionEmailService accessRejectionEmailService,
@@ -94,26 +100,35 @@ public class AccederBusiness {
                 .findById(utilisateurId)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable"));
 
+        // Demande d'un parent pour son enfant : c'est l'accès de l'ENFANT qui compte (le parent peut déjà être
+        // membre de la classe, ex. compte parent inscrit avec le code de la classe, ou un autre enfant inscrit).
+        boolean pourEnfant = estParent && eleveAssocieId != null && !eleveAssocieId.isBlank();
+        String beneficiaireId = pourEnfant ? eleveAssocieId : utilisateurId;
+
         // Check if access already exists
         if (daoAccessorService.getRepository(AccederRepository.class)
-                .existsByUtilisateurIdAndClasseId(utilisateurId, classeId)) {
+                .existsByUtilisateurIdAndClasseId(beneficiaireId, classeId)) {
             throw new SchoolException(SchoolErrorCode.ALREADY_EXISTS,
-                    "L'utilisateur a déjà accès à cette classe");
+                    pourEnfant ? "Cet enfant a déjà accès à cette classe" : "L'utilisateur a déjà accès à cette classe");
         }
 
-        // Check if there's already a pending request
-        Optional<DemandeAccesEntity> existingRequest = daoAccessorService.getRepository(DemandeAccesRepository.class)
-                .findByUtilisateurIdAndClasseId(utilisateurId, classeId);
+        // Demandes précédentes de ce demandeur pour cette classe ET ce bénéficiaire (enfant ou lui-même)
+        List<DemandeAccesEntity> demandesPrecedentes = daoAccessorService.getRepository(DemandeAccesRepository.class)
+                .findAllByUtilisateurIdAndClasseId(utilisateurId, classeId).stream()
+                .filter(d -> Objects.equals(pourEnfant ? eleveAssocieId : null,
+                        d.getEleveAssocieId() == null || d.getEleveAssocieId().isBlank() ? null : d.getEleveAssocieId()))
+                .collect(Collectors.toList());
 
-        if (existingRequest.isPresent() && existingRequest.get().getEtat() == EtatDemandeAcces.EN_ATTENTE) {
+        // Check if there's already a pending request
+        if (demandesPrecedentes.stream().anyMatch(d -> d.getEtat() == EtatDemandeAcces.EN_ATTENTE)) {
             throw new SchoolException(SchoolErrorCode.ALREADY_EXISTS,
                     "Une demande d'accès est déjà en attente pour cette classe");
         }
 
         // Delete any previous rejected request so the new one starts clean
-        if (existingRequest.isPresent() && existingRequest.get().getEtat() == EtatDemandeAcces.REJETEE) {
-            daoAccessorService.getRepository(DemandeAccesRepository.class).delete(existingRequest.get());
-        }
+        demandesPrecedentes.stream()
+                .filter(d -> d.getEtat() == EtatDemandeAcces.REJETEE)
+                .forEach(d -> daoAccessorService.getRepository(DemandeAccesRepository.class).delete(d));
 
         // Create new access request (pending moderator approval)
         // Note: accesMajeur only means the student can self-register;
@@ -146,11 +161,15 @@ public class AccederBusiness {
                 Classes classeDto = dozerMapperBean.map(classe, Classes.class);
                 Utilisateurs demandeur = dozerMapperBean.map(utilisateur, Utilisateurs.class);
 
-                // Créer le contenu de l'email
+                // Créer le contenu de l'email (gabarit aux couleurs de ScholChat)
                 String subject = "Nouvelle demande d'accès à votre classe " + classe.getNom();
-                String content = "L'utilisateur " + demandeur.getPrenom() + " " + demandeur.getNom() +
-                        " a demandé l'accès à votre classe " + classe.getNom() +
-                        ". Veuillez traiter cette demande dans votre interface modérateur.";
+                String content = emailTemplateService.generateNotificationGeneriqueEmail(
+                        "Nouvelle demande d'accès",
+                        List.of("Bonjour " + (moderateur.getPrenom() == null ? "" : moderateur.getPrenom()) + ",",
+                                demandeur.getPrenom() + " " + demandeur.getNom() + " a demandé l'accès à votre classe "
+                                        + classe.getNom() + ".",
+                                "Veuillez traiter cette demande depuis votre interface modérateur."),
+                        null);
 
                 mailService.sendEmail(moderateur.getEmail(), subject, content);
                 log.info("Notification envoyée au modérateur {}", moderateur.getEmail());
@@ -200,12 +219,20 @@ public class AccederBusiness {
                     "La demande n'est pas en état EN_ATTENTE");
         }
 
+        // 0. Compte créé par l'inscription avec code de classe (parent / élève majeur) jamais approuvé :
+        //    mot de passe temporaire, activation du compte, e-mail des identifiants.
+        inscriptionClasseService.activerSiInscriptionClasse(demande.getUtilisateur(), demande.getClasse());
+        //    Profil élève demandé par un compte existant (ajout de profil + code de classe) : rôle activé.
+        boolean demandeProfilEleve = !demande.isEstParent()
+                && inscriptionClasseService.activerRoleEleveSiDemande(demande.getUtilisateur(), demande.getClasse());
+
         // 1. Accorder l'accès principal
         accorderAcces(demande.getUtilisateur().getId(), demande.getClasse().getId());
 
         // 2. Si le demandeur est un professeur, lui accorder automatiquement les droits de publication
-        //    (pas pour une demande faite au titre de parent par un compte aussi professeur)
-        if (!demande.isEstParent() && userSubtypeService.isProfesseur(demande.getUtilisateur().getId())) {
+        //    (pas pour une demande faite au titre de parent, ni au titre d'élève, par un compte aussi professeur)
+        if (!demande.isEstParent() && !demandeProfilEleve
+                && userSubtypeService.isProfesseur(demande.getUtilisateur().getId())) {
             accorderDroitPublication(demande.getUtilisateur().getId(), demande.getClasse().getId());
         }
 
@@ -325,10 +352,14 @@ public class AccederBusiness {
         boolean isProfesseur = !demande.isEstParent()
                 && userSubtypeService.isProfesseur(demande.getUtilisateur().getId());
         boolean hasAccess = false;
+        // Demande d'un parent pour son enfant : c'est l'accès de l'enfant qui compte
+        String beneficiaireId = demande.isEstParent() && demande.getEleveAssocieId() != null
+                && !demande.getEleveAssocieId().isBlank()
+                ? demande.getEleveAssocieId() : demande.getUtilisateur().getId();
 
         if (!isProfesseur) {
             hasAccess = daoAccessorService.getRepository(AccederRepository.class)
-                    .existsByUtilisateurIdAndClasseId(demande.getUtilisateur().getId(), demande.getClasse().getId());
+                    .existsByUtilisateurIdAndClasseId(beneficiaireId, demande.getClasse().getId());
         } else {
             // Pour les professeurs, vérifier s'ils ont des droits de publication
             hasAccess = daoAccessorService.getRepository(DroitPublicationRepository.class)
@@ -346,12 +377,20 @@ public class AccederBusiness {
         demande.setMotifRejet(motifRejet);
         daoAccessorService.getRepository(DemandeAccesRepository.class).save(demande);
 
-        // Send rejection email
-        accessRejectionEmailService.sendRejectionEmail(
-                dozerMapperBean.map(demande.getUtilisateur(), Utilisateurs.class),
-                dozerMapperBean.map(demande.getClasse(), Classes.class),
-                motifRejet
-        );
+        // Send rejection email — compte créé par l'inscription avec code de classe : e-mail dédié (le compte
+        // reste en attente, sans mot de passe ; une nouvelle inscription avec le même e-mail reste possible).
+        if (inscriptionClasseService.estEnAttenteInscriptionClasse(demande.getUtilisateur())) {
+            inscriptionClasseService.notifierRefus(demande.getUtilisateur(), demande.getClasse(), motifRejet);
+        } else {
+            if (!demande.isEstParent()) {
+                inscriptionClasseService.notifierRefusRoleEleveSiDemande(demande.getUtilisateur(), motifRejet);
+            }
+            accessRejectionEmailService.sendRejectionEmail(
+                    dozerMapperBean.map(demande.getUtilisateur(), Utilisateurs.class),
+                    dozerMapperBean.map(demande.getClasse(), Classes.class),
+                    motifRejet
+            );
+        }
 
         // Send rejection notification to the student
         try {

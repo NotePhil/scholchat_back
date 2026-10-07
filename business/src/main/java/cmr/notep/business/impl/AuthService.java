@@ -21,10 +21,18 @@ public class AuthService implements AuthApi {
 
     private final AuthBusiness authBusiness;
     private final ActivationService activationService;
+    private final cmr.notep.business.security.CurrentUserService currentUser;
 
-    public AuthService(AuthBusiness authBusiness, ActivationService activationService) {
+    /** Session ouverte avec le profil élève : ni changement ni ajout de profil (déconnexion puis reconnexion). */
+    public static final String MSG_CHANGEMENT_PROFIL_INTERDIT_ELEVE =
+            "Vous êtes connecté avec votre profil élève : le changement de profil n'est pas possible depuis ce "
+                    + "profil. Déconnectez-vous puis reconnectez-vous en choisissant le profil souhaité.";
+
+    public AuthService(AuthBusiness authBusiness, ActivationService activationService,
+                       cmr.notep.business.security.CurrentUserService currentUser) {
         this.authBusiness = authBusiness;
         this.activationService = activationService;
+        this.currentUser = currentUser;
     }
 
     @Override
@@ -53,6 +61,13 @@ public class AuthService implements AuthApi {
     @Override
     public AuthResponse switchRole(@NonNull LoginDto switchRequest) {
         log.info("Switching role for user: {} to {}", switchRequest.getEmail(), switchRequest.getSelectedRole());
+        // Session élève (jeton d'accès dont le profil choisi est STUDENT) : changement de profil interdit,
+        // avec ou sans mot de passe. L'élève se déconnecte puis se reconnecte en choisissant son profil.
+        if (currentUser.sessionEleve()) {
+            throw new cmr.notep.business.exceptions.SchoolException(
+                    cmr.notep.business.exceptions.enums.SchoolErrorCode.CHANGEMENT_PROFIL_INTERDIT_ELEVE,
+                    MSG_CHANGEMENT_PROFIL_INTERDIT_ELEVE);
+        }
         if (switchRequest.getPassword() == null || switchRequest.getPassword().isBlank()) {
             org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth == null || !auth.isAuthenticated()

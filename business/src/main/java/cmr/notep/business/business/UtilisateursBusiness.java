@@ -11,11 +11,14 @@ import cmr.notep.business.exceptions.SchoolException;
 import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.utils.JwtUtil;
 import cmr.notep.interfaces.modeles.*;
+import cmr.notep.modele.EtatDemandeAcces;
 import cmr.notep.modele.EtatUtilisateur;
 import cmr.notep.modele.StatutVerificationProfesseur;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.*;
 import cmr.notep.ressourcesjpa.repository.UtilisateursRepository;
+import cmr.notep.ressourcesjpa.repository.AccederRepository;
+import cmr.notep.ressourcesjpa.repository.DemandeAccesRepository;
 import jakarta.mail.MessagingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -71,6 +74,13 @@ public class UtilisateursBusiness {
 
     @Autowired
     private ProfessorVerificationEmailService professorVerificationEmailService;
+
+    @Autowired
+    private InscriptionClasseService inscriptionClasseService;
+
+    @Autowired
+    @org.springframework.context.annotation.Lazy
+    private AccederBusiness accederBusiness;
 
     public UtilisateursBusiness(DaoAccessorService daoAccessorService,
                                 ActivationEmailService activationEmailService,
@@ -403,24 +413,127 @@ public class UtilisateursBusiness {
     }
 
 
+    /** Création par un administrateur (aucun code de classe exigé). */
     public Utilisateurs posterUtilisateur(Utilisateurs utilisateur) {
+        return posterUtilisateur(utilisateur, false);
+    }
+
+    /**
+     * @param inscriptionPublique vrai pour l'inscription publique (non-admin) : un NOUVEAU compte parent ou
+     *                            élève exige alors un code de classe (codeClasse), voir {@link InscriptionClasseService}.
+     */
+    public Utilisateurs posterUtilisateur(Utilisateurs utilisateur, boolean inscriptionPublique) {
+        return posterUtilisateur(utilisateur, inscriptionPublique, null);
+    }
+
+    public static final String MSG_EMAIL_DEJA_UTILISE =
+            "Un compte existe déjà avec cet e-mail. Connectez-vous puis ajoutez ce profil depuis votre compte.";
+
+    /**
+     * @param emailSession e-mail de l'utilisateur authentifié qui fait l'appel (null si anonyme). Pour une
+     *                     inscription publique avec l'e-mail d'un compte ACTIF existant, l'ajout de profil n'est
+     *                     accepté que depuis une session de CE compte (sinon 409 EMAIL_DEJA_UTILISE).
+     */
+    public Utilisateurs posterUtilisateur(Utilisateurs utilisateur, boolean inscriptionPublique, String emailSession) {
+        return posterUtilisateur(utilisateur, inscriptionPublique, emailSession, null);
+    }
+
+    public static final String MSG_COMPTE_NON_ACTIVE =
+            "Un compte existe déjà avec cet e-mail mais il n'est pas encore activé. Utilisez « Vérifier mon compte ? » "
+                    + "sur la page de connexion pour l'activer.";
+    public static final String MSG_COMPTE_EN_ATTENTE_VALIDATION =
+            "Un compte existe déjà avec cet e-mail mais il est en attente de validation. Vous recevrez un e-mail dès "
+                    + "qu'il sera validé.";
+
+    /**
+     * @param uploadToken jeton de dépôt des pièces (en-tête X-Upload-Token) renvoyé par une première inscription
+     *                    professeur : seul moyen, sans session, de reprendre cette inscription inachevée (pièces
+     *                    non déposées) avec le même e-mail.
+     */
+    public Utilisateurs posterUtilisateur(Utilisateurs utilisateur, boolean inscriptionPublique, String emailSession,
+                                          String uploadToken) {
         log.info("Creating new user: {}", utilisateur.getEmail());
+        boolean parentOuEleve = utilisateur.getClass() == Parents.class || utilisateur.getClass() == Eleves.class;
+        String codeClasse = utilisateur.getCodeClasse() == null || utilisateur.getCodeClasse().isBlank()
+                ? null : utilisateur.getCodeClasse().trim();
         // Check if email already exists - if so, add the new role to existing user
         Optional<UtilisateursEntity> existingUserOpt = utilisateur.getEmail() == null || utilisateur.getEmail().isBlank()
                 ? Optional.empty()
                 : daoAccessorService.getRepository(UtilisateursRepository.class).findByEmail(utilisateur.getEmail());
         if (existingUserOpt.isPresent()) {
+            UtilisateursEntity existant = existingUserOpt.get();
+            // Compte créé par une inscription avec code de classe, pas encore approuvé : pas d'ajout de profil
+            // (le compte n'a ni mot de passe ni accès) ; une nouvelle inscription du même type avec un code de
+            // classe ajoute une demande d'accès (ex. après un refus).
+            if (inscriptionClasseService.estEnAttenteInscriptionClasse(existant)) {
+                return annulerSiErreur(() -> nouvelleDemandeCompteEnAttente(existant, utilisateur, codeClasse));
+            }
+            // Compte actif : ajout de profil uniquement depuis une session authentifiée de ce même compte
+            // (sans cela, n'importe qui pouvait rattacher un profil au compte d'un tiers en connaissant son e-mail).
+            if (inscriptionPublique && existant.getEtat() == EtatUtilisateur.ACTIVE
+                    && (emailSession == null || existant.getEmail() == null
+                        || !emailSession.trim().equalsIgnoreCase(existant.getEmail().trim()))) {
+                throw new SchoolException(SchoolErrorCode.EMAIL_DEJA_UTILISE, MSG_EMAIL_DEJA_UTILISE);
+            }
+            // Compte NON actif (jamais activé, professeur en attente de validation, refusé…) : une inscription
+            // anonyme ne le modifie plus (ni profil ajouté, ni e-mail d'activation, ni demande d'accès). Seule
+            // exception : la reprise d'une inscription professeur inachevée par le navigateur / l'appareil qui
+            // l'a commencée (jeton de dépôt des pièces émis pour CE compte).
+            if (inscriptionPublique && existant.getEtat() != EtatUtilisateur.ACTIVE
+                    && !sessionDuCompte(existant, emailSession)
+                    && !repriseInscriptionProfesseur(existant, utilisateur, uploadToken)) {
+                if (existant.getEtat() == EtatUtilisateur.AWAITING_VALIDATION) {
+                    throw new SchoolException(SchoolErrorCode.COMPTE_EN_ATTENTE_VALIDATION, MSG_COMPTE_EN_ATTENTE_VALIDATION);
+                }
+                throw new SchoolException(SchoolErrorCode.COMPTE_NON_ACTIVE, MSG_COMPTE_NON_ACTIVE);
+            }
+            // Ajout du profil élève : code d'une classe ACTIVE ouverte aux majeurs obligatoire (sauf si le profil
+            // élève est déjà actif : l'ajout est alors refusé plus loin comme doublon).
+            boolean ajoutEleve = utilisateur.getClass() == Eleves.class;
+            boolean eleveDejaActif = ajoutEleve && daoAccessorService.getRepository(UserRoleRepository.class)
+                    .findByUtilisateurIdAndRoleType(existant.getId(), "STUDENT")
+                    .map(r -> Boolean.TRUE.equals(r.getIsActive())).orElse(false);
+            // Code de classe fourni pour un compte existant : validé AVANT l'ajout du profil.
+            ClassesEntity classeDemandee = parentOuEleve && (codeClasse != null || (ajoutEleve && !eleveDejaActif))
+                    ? inscriptionClasseService.resoudreClasse(codeClasse, ajoutEleve) : null;
             // Ajout d'un profil à un compte existant : seules les coordonnées déjà enregistrées comptent
             // (ajouterRoleACompteExistant ne lit ni le téléphone ni l'adresse envoyés). Un numéro
             // enregistré avant la validation actuelle (ex. "0123456789") ne doit pas bloquer l'ajout
-            // ("Invalid phone number format").
+            // ("Invalid phone number format"). Nom / prénom : repris du compte s'ils ne sont pas ressaisis.
             utilisateur.setTelephone(null);
+            if (utilisateur.getNom() == null || utilisateur.getNom().isBlank()) {
+                if (existant.getNom() != null) utilisateur.setNom(existant.getNom());
+            }
+            if (utilisateur.getPrenom() == null || utilisateur.getPrenom().isBlank()) {
+                if (existant.getPrenom() != null) utilisateur.setPrenom(existant.getPrenom());
+            }
             userValidationService.validateUserData(utilisateur);
-            return ajouterRoleACompteExistant(existingUserOpt.get(), utilisateur);
+            ClassesEntity classeEleve = ajoutEleve ? classeDemandee : null;
+            Utilisateurs vue = annulerSiErreur(() -> ajouterRoleACompteExistant(existant, utilisateur, classeEleve));
+            if (classeDemandee != null) {
+                vue.setClasseId(classeDemandee.getId());
+                vue.setClasseNom(classeDemandee.getNom());
+                vue.setStatutInscription(vue.getInscriptionStatut());
+                vue.setDemandeAccesCreee(ajoutEleve
+                        ? Boolean.valueOf(classeEleve != null && !eleveDejaActif)
+                        : demanderAccesSiPossible(existant, classeDemandee, utilisateur instanceof Parents));
+            }
+            return vue;
         }
 
         // Validation des données
         userValidationService.validateUserData(utilisateur);
+
+        // Inscription publique d'un nouveau parent / élève : code de classe obligatoire, compte sans mot de
+        // passe en attente d'approbation de la demande d'accès (aucun e-mail d'activation).
+        if (inscriptionPublique && parentOuEleve) {
+            ClassesEntity classe = inscriptionClasseService.resoudreClasse(codeClasse, utilisateur instanceof Eleves);
+            // L'élève ne saisit plus son niveau : c'est celui de la classe rejointe.
+            if (utilisateur instanceof Eleves eleve) {
+                eleve.setNiveau(classe.getNiveau());
+            }
+            return annulerSiErreur(() -> creerCompteEnAttenteInscriptionClasse(utilisateur, classe));
+        }
 
         // Configuration par défaut
         utilisateur.setAdmin(false);
@@ -472,7 +585,7 @@ public class UtilisateursBusiness {
         if (!(savedUserEntity instanceof ProfesseursEntity professeurEntity)) {
             // For non-professors, send activation email immediately
             List<String> roles = roleService.determineUserRoles(mapUtilisateursEntityToModele(savedUserEntity));
-            String activationToken = jwtUtil.generateAccessToken(savedUserEntity.getEmail(), roles);
+            String activationToken = jwtUtil.generateActivationToken(savedUserEntity.getEmail(), roles);
             savedUserEntity.setActivationToken(activationToken);
             savedUserEntity = daoAccessorService.getRepository(UtilisateursRepository.class).save(savedUserEntity);
             activationEmailService.sendActivationEmail(
@@ -482,7 +595,7 @@ public class UtilisateursBusiness {
         } else if (Boolean.TRUE.equals(professeurEntity.getHasUploaded())) {
             // For professors who already have uploaded documents during creation
             List<String> roles = roleService.determineUserRoles(mapUtilisateursEntityToModele(savedUserEntity));
-            String activationToken = jwtUtil.generateAccessToken(savedUserEntity.getEmail(), roles);
+            String activationToken = jwtUtil.generateActivationToken(savedUserEntity.getEmail(), roles);
             savedUserEntity.setActivationToken(activationToken);
             savedUserEntity = daoAccessorService.getRepository(UtilisateursRepository.class).save(savedUserEntity);
             activationEmailService.sendActivationEmail(
@@ -498,6 +611,136 @@ public class UtilisateursBusiness {
     }
 
     public static final String STATUT_CREATED = "CREATED";
+
+    private static boolean sessionDuCompte(UtilisateursEntity compte, String emailSession) {
+        return emailSession != null && compte.getEmail() != null
+                && emailSession.trim().equalsIgnoreCase(compte.getEmail().trim());
+    }
+
+    /**
+     * Reprise (sans session) d'une inscription professeur inachevée : demande de type professeur, jeton de dépôt
+     * des pièces signé pour ce compte (même expiré : la fenêtre d'inscription est bornée par
+     * AccessControlService#isSignupPendingProfessor, 24 h), rôle PROFESSOR inactif et pièces non déposées.
+     */
+    private boolean repriseInscriptionProfesseur(UtilisateursEntity compte, Utilisateurs demande, String uploadToken) {
+        if (demande.getClass() != Professeurs.class || compte.getEtat() != EtatUtilisateur.AWAITING_VALIDATION
+                || !jwtUtil.isSignedProfessorDocumentsUploadToken(uploadToken, compte.getId())) {
+            return false;
+        }
+        UtilisateursRepository repo = daoAccessorService.getRepository(UtilisateursRepository.class);
+        if (!repo.hasProfesseurRow(compte.getId()) || repo.professeurHasUploaded(compte.getId())) return false;
+        LocalDateTime limite = LocalDateTime.now().minusHours(cmr.notep.business.security.AccessControlService.SIGNUP_WINDOW_HOURS);
+        if (compte.getCreationDate() == null || !compte.getCreationDate().isAfter(limite)) return false;
+        return daoAccessorService.getRepository(UserRoleRepository.class)
+                .findByUtilisateurIdAndRoleType(compte.getId(), "PROFESSOR")
+                .map(r -> !Boolean.TRUE.equals(r.getIsActive())).orElse(false);
+    }
+
+    /**
+     * La classe est @Transactional(noRollbackFor = SchoolException) : pour l'inscription par code de classe, rien
+     * ne doit rester en base si une étape échoue (compte sans demande). Le marquage local "rollback-only" annule
+     * la transaction sans masquer l'erreur métier renvoyée au client.
+     */
+    private static <T> T annulerSiErreur(java.util.function.Supplier<T> action) {
+        try {
+            return action.get();
+        } catch (RuntimeException e) {
+            try {
+                org.springframework.transaction.interceptor.TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            } catch (org.springframework.transaction.NoTransactionException ignored) {
+                // pas de transaction (tests) : rien à annuler
+            }
+            throw e;
+        }
+    }
+
+    /** Nouveau compte parent / élève majeur, inactif et sans mot de passe, + demande d'accès à la classe. */
+    private Utilisateurs creerCompteEnAttenteInscriptionClasse(Utilisateurs utilisateur, ClassesEntity classe) {
+        utilisateur.setAdmin(false);
+        utilisateur.setPasseAccess(null);
+        utilisateur.setActivationToken(null);
+        utilisateur.setResetPasswordToken(null);
+        utilisateur.setMustChangePassword(false);
+        utilisateur.setEtat(EtatUtilisateur.AWAITING_VALIDATION);
+        utilisateur.setCreationDate(LocalDateTime.now());
+
+        UtilisateursEntity userEntity = mapUtilisateursModeleToEntity(utilisateur);
+        userEntity.setId(UUID.randomUUID().toString());
+        UtilisateursEntity saved = daoAccessorService.getRepository(UtilisateursRepository.class).save(userEntity);
+        // Rôle inactif jusqu'à l'approbation (activé par InscriptionClasseService#activerSiInscriptionClasse)
+        addRoleToUser(saved.getId(), mapTypeToRole(utilisateur), false);
+
+        accederBusiness.demanderAcces(saved.getId(), classe.getId(), classe.getCodeActivation(),
+                utilisateur instanceof Parents, null);
+        log.info("Class sign-up: account {} created (awaiting approval) with access request to class {}",
+                saved.getId(), classe.getId());
+
+        Utilisateurs cree = mapUtilisateursEntityToModele(saved);
+        cree.setInscriptionStatut(InscriptionClasseService.STATUT_EN_ATTENTE_APPROBATION_CLASSE);
+        cree.setStatutInscription(InscriptionClasseService.STATUT_EN_ATTENTE_APPROBATION_CLASSE);
+        cree.setClasseId(classe.getId());
+        cree.setClasseNom(classe.getNom());
+        cree.setDemandeAccesCreee(true);
+        return cree;
+    }
+
+    /**
+     * Nouvelle inscription avec l'e-mail d'un compte encore en attente d'approbation : seule une inscription du
+     * même type (parent / élève) avec un code de classe est acceptée, et ajoute une demande d'accès à cette
+     * classe (les informations du compte ne sont pas modifiées).
+     */
+    private Utilisateurs nouvelleDemandeCompteEnAttente(UtilisateursEntity existant, Utilisateurs demande, String codeClasse) {
+        UtilisateursRepository repo = daoAccessorService.getRepository(UtilisateursRepository.class);
+        boolean memeType = (demande.getClass() == Parents.class && repo.hasParentRow(existant.getId()))
+                || (demande.getClass() == Eleves.class && repo.hasEleveRow(existant.getId()));
+        if (!memeType || codeClasse == null) {
+            throw new SchoolException(SchoolErrorCode.INSCRIPTION_EN_ATTENTE,
+                    "Un compte créé avec cette adresse e-mail est en attente d'approbation par le responsable "
+                            + "d'une classe. Vous recevrez vos identifiants par e-mail dès que la demande sera acceptée.");
+        }
+        ClassesEntity classe = inscriptionClasseService.resoudreClasse(codeClasse, demande instanceof Eleves);
+        boolean dejaEnAttente = daoAccessorService.getRepository(DemandeAccesRepository.class)
+                .findAllByUtilisateurIdAndClasseId(existant.getId(), classe.getId()).stream()
+                .anyMatch(d -> d.getEtat() == EtatDemandeAcces.EN_ATTENTE);
+        if (dejaEnAttente) {
+            throw new SchoolException(SchoolErrorCode.INSCRIPTION_EN_ATTENTE,
+                    "Une demande d'inscription à la classe " + classe.getNom() + " est déjà en attente "
+                            + "d'approbation pour cette adresse e-mail. Vous recevrez vos identifiants par e-mail "
+                            + "dès qu'elle sera acceptée.");
+        }
+        accederBusiness.demanderAcces(existant.getId(), classe.getId(), classe.getCodeActivation(),
+                demande.getClass() == Parents.class, null);
+        log.info("Class sign-up: new access request for pending account {} to class {}", existant.getId(), classe.getId());
+        Utilisateurs vue = mapUtilisateursEntityToModele(existant);
+        vue.setInscriptionStatut(InscriptionClasseService.STATUT_EN_ATTENTE_APPROBATION_CLASSE);
+        vue.setStatutInscription(InscriptionClasseService.STATUT_EN_ATTENTE_APPROBATION_CLASSE);
+        vue.setClasseId(classe.getId());
+        vue.setClasseNom(classe.getNom());
+        vue.setDemandeAccesCreee(true);
+        return vue;
+    }
+
+    /**
+     * Compte existant (ajout de profil) qui a fourni un code de classe : demande d'accès créée si le compte est
+     * actif et n'a ni accès ni demande en attente pour cette classe (vérifié avant l'appel : la classe a déjà
+     * été validée par InscriptionClasseService#resoudreClasse). Sinon rien n'est fait, le client peut refaire la
+     * demande depuis l'application.
+     */
+    private boolean demanderAccesSiPossible(UtilisateursEntity compte, ClassesEntity classe, boolean estParent) {
+        if (compte.getEtat() != EtatUtilisateur.ACTIVE) {
+            return false;
+        }
+        boolean dejaAcces = daoAccessorService.getRepository(AccederRepository.class)
+                .existsByUtilisateurIdAndClasseId(compte.getId(), classe.getId());
+        boolean dejaEnAttente = daoAccessorService.getRepository(DemandeAccesRepository.class)
+                .findAllByUtilisateurIdAndClasseId(compte.getId(), classe.getId()).stream()
+                .anyMatch(d -> d.getEtat() == EtatDemandeAcces.EN_ATTENTE && d.getEleveAssocieId() == null);
+        if (dejaAcces || dejaEnAttente) {
+            return false;
+        }
+        accederBusiness.demanderAcces(compte.getId(), classe.getId(), classe.getCodeActivation(), estParent, null);
+        return true;
+    }
     public static final String STATUT_ROLE_ADDED = "ROLE_ADDED";
     public static final String STATUT_ROLE_PENDING_VALIDATION = "ROLE_PENDING_VALIDATION";
     public static final String STATUT_ACTIVATION_REQUIRED = "ACTIVATION_REQUIRED";
@@ -514,7 +757,8 @@ public class UtilisateursBusiness {
      *       professeur, lui, reste en attente de validation.</li>
      * </ul>
      */
-    private Utilisateurs ajouterRoleACompteExistant(UtilisateursEntity existingEntity, Utilisateurs demande) {
+    private Utilisateurs ajouterRoleACompteExistant(UtilisateursEntity existingEntity, Utilisateurs demande,
+                                                    ClassesEntity classeEleve) {
         UtilisateursRepository userRepo = daoAccessorService.getRepository(UtilisateursRepository.class);
         UserRoleRepository roleRepo = daoAccessorService.getRepository(UserRoleRepository.class);
         String userId = existingEntity.getId();
@@ -530,10 +774,26 @@ public class UtilisateursBusiness {
             }
         }
 
+        boolean eleve = "STUDENT".equals(newRoleType);
         Optional<UserRoleEntity> roleExistant = roleRepo.findByUtilisateurIdAndRoleType(userId, newRoleType);
         if (roleExistant.isEmpty()) {
-            // Règle de combinaison des profils : le profil élève est exclusif.
+            // Règles de combinaison des profils (ex. élève mineur géré par un parent).
             verifierCompatibiliteRole(existingEntity, newRoleType);
+        }
+        if (roleExistant.isPresent() && eleve && !Boolean.TRUE.equals(roleExistant.get().getIsActive())) {
+            // Demande de profil élève non encore approuvée : si aucune demande d'accès n'est en attente (refusée),
+            // une nouvelle demande est faite avec le code fourni.
+            boolean enAttente = daoAccessorService.getRepository(DemandeAccesRepository.class).findByUtilisateurId(userId)
+                    .stream().anyMatch(d -> d.getEtat() == EtatDemandeAcces.EN_ATTENTE && !d.isEstParent());
+            if (enAttente || classeEleve == null) {
+                throw new SchoolException(SchoolErrorCode.DUPLICATE_RESOURCE,
+                        "Votre demande de profil élève est déjà en attente d'approbation par le responsable de la classe.");
+            }
+            accederBusiness.demanderAcces(userId, classeEleve.getId(), classeEleve.getCodeActivation(), false, null);
+            log.info("STUDENT role request renewed for user {} (class {})", userId, classeEleve.getId());
+            Utilisateurs vue = mapUtilisateursEntityToModele(existingEntity);
+            vue.setInscriptionStatut(STATUT_ROLE_PENDING_VALIDATION);
+            return vue;
         }
         if (roleExistant.isPresent()) {
             // Seule reprise possible : une demande de rôle professeur pas encore validée dont les pièces
@@ -552,26 +812,51 @@ public class UtilisateursBusiness {
             role.setDateAttribution(LocalDateTime.now()); // rouvre la fenêtre de dépôt des pièces
             roleRepo.save(role);
             userRepo.insertProfesseurRole(userId);
+            // Nouvelle demande après un refus : le profil repasse en « documents manquants » (le motif du refus
+            // précédent n'est plus affiché) jusqu'au dépôt des nouvelles pièces.
+            if (professeurVerification.statut(userId).orElse(null) == StatutVerificationProfesseur.REJETE) {
+                majStatutVerification(userId, StatutVerificationProfesseur.DOCUMENTS_MANQUANTS, null);
+            }
             Utilisateurs vue = mapUtilisateursEntityToModele(existingEntity);
-            vue.setInscriptionStatut(STATUT_ROLE_PENDING_VALIDATION);
+            // Compte professeur en cours d'inscription (non actif) : même réponse que la première tentative.
+            vue.setInscriptionStatut(existingEntity.getEtat() == EtatUtilisateur.ACTIVE
+                    ? STATUT_ROLE_PENDING_VALIDATION : STATUT_CREATED);
             return vue;
         }
 
         String statut;
         if (professeur) {
+            // Coordonnées reprises du compte existant ; rôle inactif + ligne professeurs (statut
+            // DOCUMENTS_MANQUANTS par défaut) jusqu'au dépôt des pièces (PATCH /utilisateurs/{id}) puis à la
+            // validation par l'administrateur.
             addRoleToUser(userId, newRoleType, false);
             userRepo.insertProfesseurRole(userId);
             log.info("Added PROFESSOR role as INACTIVE (pending documents + approval) for user {}", userId);
             statut = STATUT_ROLE_PENDING_VALIDATION;
+        } else if (eleve) {
+            // Profil élève : rôle inactif + demande d'accès à la classe du code ; l'approbation par le responsable
+            // de la classe active le rôle (InscriptionClasseService#activerRoleEleveSiDemande). Le compte a déjà
+            // un mot de passe : aucun mot de passe temporaire.
+            if (classeEleve == null) {
+                throw new SchoolException(SchoolErrorCode.CODE_CLASSE_REQUIS,
+                        "Le code d'une classe ouverte aux élèves majeurs est obligatoire pour ajouter le profil élève.");
+            }
+            addRoleToUser(userId, newRoleType, false);
+            userRepo.insertEleveRole(userId, classeEleve.getNiveau() != null && !classeEleve.getNiveau().isBlank()
+                    ? classeEleve.getNiveau() : "6eme");
+            accederBusiness.demanderAcces(userId, classeEleve.getId(), classeEleve.getCodeActivation(), false, null);
+            log.info("Added STUDENT role as INACTIVE (pending class approval, class {}) for user {}", classeEleve.getId(), userId);
+            statut = STATUT_ROLE_PENDING_VALIDATION;
+            EtatUtilisateur etat = existingEntity.getEtat();
+            if (etat == EtatUtilisateur.PENDING) {
+                envoyerEmailActivation(existingEntity);
+                statut = STATUT_ACTIVATION_REQUIRED;
+            }
         } else {
             addRoleToUser(userId, newRoleType, true);
             // Lignes des tables filles en SQL natif (l'héritage JOINED empêche de "changer" de sous-type via JPA)
             switch (newRoleType) {
                 case "PARENT" -> userRepo.insertParentRole(userId);
-                case "STUDENT" -> {
-                    String niveau = (demande instanceof Eleves eleve) ? eleve.getNiveau() : null;
-                    userRepo.insertEleveRole(userId, niveau != null && !niveau.isBlank() ? niveau : "6eme");
-                }
                 case "GESTIONNAIRE" -> userRepo.insertGestionnaireRole(userId);
                 default -> { }
             }
@@ -603,13 +888,18 @@ public class UtilisateursBusiness {
         return vue;
     }
 
+    public boolean emailExiste(String email) {
+        return email != null && !email.isBlank()
+                && daoAccessorService.getRepository(UtilisateursRepository.class).findByEmail(email.trim()).isPresent();
+    }
+
     public boolean professeurHasUploaded(String userId) {
         return daoAccessorService.getRepository(UtilisateursRepository.class).professeurHasUploaded(userId);
     }
 
     private void envoyerEmailActivation(UtilisateursEntity entity) {
         List<String> roles = roleService.determineUserRoles(mapUtilisateursEntityToModele(entity));
-        String activationToken = jwtUtil.generateAccessToken(entity.getEmail(), roles);
+        String activationToken = jwtUtil.generateActivationToken(entity.getEmail(), roles);
         entity.setActivationToken(activationToken);
         UtilisateursEntity saved = daoAccessorService.getRepository(UtilisateursRepository.class).save(entity);
         try {
@@ -716,7 +1006,7 @@ public class UtilisateursBusiness {
         Utilisateurs utilisateur = mapUtilisateursEntityToModele(utilisateurEntity);
         List<String> roles = roleService.determineUserRoles(utilisateur);
 
-        String activationToken = jwtUtil.generateAccessToken(utilisateurEntity.getEmail(), roles);
+        String activationToken = jwtUtil.generateActivationToken(utilisateurEntity.getEmail(), roles);
         utilisateurEntity.setActivationToken(activationToken);
         utilisateurEntity = daoAccessorService.getRepository(UtilisateursRepository.class).save(utilisateurEntity);
 
@@ -824,7 +1114,7 @@ public class UtilisateursBusiness {
         List<String> roles = new ArrayList<>();
         roles.add("ROLE_PROFESSOR");
 
-        String activationToken = jwtUtil.generateAccessToken(userEntity.getEmail(), roles); // Utilisez l'email du professeur ici
+        String activationToken = jwtUtil.generateActivationToken(userEntity.getEmail(), roles); // Utilisez l'email du professeur ici
         userEntity.setActivationToken(activationToken);
 
         // Save the validated professor entity
@@ -913,7 +1203,7 @@ public class UtilisateursBusiness {
             // motif et redéposer ses pièces ; ses droits professeur restent bloqués (profil REJETE).
             majStatutVerification(professorId, StatutVerificationProfesseur.REJETE, motifTexte);
             try {
-                rejectionEmailService.sendRejectionEmail(professeurEntity, motif, motifSupplementaire);
+                rejectionEmailService.sendRejectionEmail(professeurEntity, motif, motifSupplementaire, true);
             } catch (Exception e) {
                 log.warn("Rejection email not sent for {}: {}", professorId, e.getMessage());
             }
@@ -1023,40 +1313,107 @@ public class UtilisateursBusiness {
         }
     }
 
-    public static final String MSG_ELEVE_EXCLUSIF =
-            "Un compte élève ne peut pas avoir d'autre profil (parent ou professeur). "
-                    + "Utilisez une autre adresse e-mail pour créer ce profil.";
-    public static final String MSG_ELEVE_NON_AJOUTABLE =
-            "Un profil élève ne peut pas être ajouté à un compte qui possède déjà un autre profil "
-                    + "(parent, professeur…). Utilisez une autre adresse e-mail pour créer un compte élève.";
+    /**
+     * Profils du compte et leur état (page « Mes profils ») : rôles de user_roles (actifs et en attente) + rôles
+     * déduits des tables filles pour les comptes antérieurs à user_roles. Voir {@link RoleProfil}.
+     */
+    public List<RoleProfil> getProfils(String userId) {
+        UtilisateursRepository userRepo = daoAccessorService.getRepository(UtilisateursRepository.class);
+        List<UserRoleEntity> roles = new ArrayList<>(daoAccessorService.getRepository(UserRoleRepository.class)
+                .findByUtilisateurId(userId));
+        roles.sort(java.util.Comparator.comparing(UserRoleEntity::getDateAttribution,
+                java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder())));
+        java.util.Set<String> vus = new java.util.HashSet<>();
+        List<RoleProfil> profils = new ArrayList<>();
+        for (UserRoleEntity r : roles) {
+            if (r.getRoleType() == null || !vus.add(r.getRoleType()) || "USER".equals(r.getRoleType())) continue;
+            profils.add(construireProfil(userId, r.getRoleType(), Boolean.TRUE.equals(r.getIsActive()), r.getDateAttribution()));
+        }
+        // Comptes antérieurs à user_roles : rôles déduits des tables filles (considérés actifs)
+        String[][] legacy = {{"PROFESSOR"}, {"PARENT"}, {"STUDENT"}, {"TUTOR"}, {"GESTIONNAIRE"}};
+        for (String[] l : legacy) {
+            String role = l[0];
+            if (vus.contains(role)) continue;
+            boolean present = switch (role) {
+                case "PROFESSOR" -> userRepo.hasProfesseurRow(userId);
+                case "PARENT" -> userRepo.hasParentRow(userId);
+                case "STUDENT" -> userRepo.hasEleveRow(userId);
+                case "TUTOR" -> userRepo.hasRepetiteurRow(userId);
+                default -> userRepo.hasGestionnaireRow(userId);
+            };
+            if (present && roles.isEmpty()) {
+                vus.add(role);
+                profils.add(construireProfil(userId, role, true, null));
+            }
+        }
+        return profils;
+    }
+
+    private RoleProfil construireProfil(String userId, String role, boolean actif, LocalDateTime dateAttribution) {
+        RoleProfil.RoleProfilBuilder b = RoleProfil.builder().role(role).actif(actif).dateAttribution(dateAttribution)
+                .statut(RoleProfil.STATUT_ACTIF);
+        if ("PROFESSOR".equals(role)) {
+            Optional<StatutVerificationProfesseur> sv = professeurVerification.statut(userId);
+            sv.ifPresent(v -> b.statutVerification(v.name()));
+            StatutVerificationProfesseur v = sv.orElse(actif ? StatutVerificationProfesseur.VALIDE
+                    : StatutVerificationProfesseur.DOCUMENTS_MANQUANTS);
+            if (v == StatutVerificationProfesseur.REJETE) {
+                b.motifRejet(professeurVerification.motifRejet(userId));
+            }
+            if (!actif || v != StatutVerificationProfesseur.VALIDE) {
+                b.statut(switch (v) {
+                    case EN_ATTENTE_VALIDATION -> RoleProfil.STATUT_EN_ATTENTE_VALIDATION;
+                    case REJETE -> RoleProfil.STATUT_REFUSE;
+                    case VALIDE -> RoleProfil.STATUT_EN_ATTENTE_VALIDATION; // rôle pas encore réactivé
+                    default -> RoleProfil.STATUT_DOCUMENTS_MANQUANTS;
+                });
+            }
+        } else if ("STUDENT".equals(role) && !actif) {
+            // Demande d'accès élève (non parent) la plus récente : en attente ou refusée
+            Optional<DemandeAccesEntity> derniere = daoAccessorService.getRepository(DemandeAccesRepository.class)
+                    .findByUtilisateurId(userId).stream()
+                    .filter(d -> !d.isEstParent())
+                    .max(java.util.Comparator.comparing(DemandeAccesEntity::getDateDemande,
+                            java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder())));
+            if (derniere.isPresent() && derniere.get().getEtat() == EtatDemandeAcces.REJETEE) {
+                b.statut(RoleProfil.STATUT_REFUSE).motifRejet(derniere.get().getMotifRejet());
+            } else {
+                b.statut(RoleProfil.STATUT_EN_ATTENTE_APPROBATION_CLASSE);
+            }
+            derniere.ifPresent(d -> {
+                if (d.getClasse() != null) {
+                    b.classeId(d.getClasse().getId()).classeNom(d.getClasse().getNom());
+                }
+            });
+        } else if (!actif) {
+            b.statut(RoleProfil.STATUT_EN_ATTENTE_VALIDATION);
+        }
+        return b.build();
+    }
+
+    public static final String MSG_ELEVE_MINEUR =
+            "Ce compte élève est géré par un parent et ne possède pas d'identifiants de connexion : il ne peut pas "
+                    + "recevoir d'autre profil. Utilisez une autre adresse e-mail pour créer ce profil.";
 
     /**
-     * Règle de combinaison des profils : un compte élève (STUDENT) ne détient aucun autre profil, et le
-     * profil élève ne peut pas être ajouté à un compte existant d'un autre type. Parent et professeur
-     * (ainsi que les autres profils) restent combinables entre eux. Les rôles en attente (professeur non
-     * validé) comptent comme détenus.
+     * Règles de combinaison des profils. Un compte peut cumuler élève, parent et professeur (un élève majeur peut
+     * aussi être professeur et/ou parent, un parent ou un professeur peut ajouter le profil élève). Seule
+     * exception : un élève mineur créé et géré par un parent (lien parent_eleve, sans mot de passe) ne peut
+     * recevoir aucun autre profil.
      *
      * @throws SchoolException ROLE_INCOMPATIBLE (HTTP 409) si la combinaison est interdite
      */
     public void verifierCompatibiliteRole(UtilisateursEntity compte, String nouveauRole) {
-        if (compte == null || nouveauRole == null) {
+        if (compte == null || nouveauRole == null || "STUDENT".equals(nouveauRole)) {
             return;
         }
-        java.util.Set<String> roles = new java.util.HashSet<>(getAllUserRoleTypes(compte.getId()));
-        String legacy = mapTypeToRole(mapUtilisateursEntityToModele(compte));
-        if (!"USER".equals(legacy)) {
-            roles.add(legacy);
-        }
-        roles.remove("USER");
-        roles.remove(nouveauRole);
-        if (roles.isEmpty()) {
-            return;
-        }
-        if (roles.contains("STUDENT")) {
-            throw new SchoolException(SchoolErrorCode.ROLE_INCOMPATIBLE, MSG_ELEVE_EXCLUSIF);
-        }
-        if ("STUDENT".equals(nouveauRole)) {
-            throw new SchoolException(SchoolErrorCode.ROLE_INCOMPATIBLE, MSG_ELEVE_NON_AJOUTABLE);
+        UtilisateursRepository repo = daoAccessorService.getRepository(UtilisateursRepository.class);
+        boolean eleveMineurSansIdentifiants = repo.hasEleveRow(compte.getId())
+                && (compte.getPasseAccess() == null || compte.getPasseAccess().isBlank())
+                && !daoAccessorService.getRepository(ParentEleveRepository.class)
+                        .findParentIdsByEleveId(compte.getId()).isEmpty();
+        if (eleveMineurSansIdentifiants) {
+            throw new SchoolException(SchoolErrorCode.ROLE_INCOMPATIBLE, MSG_ELEVE_MINEUR);
         }
     }
 

@@ -22,6 +22,13 @@ public interface UtilisateursApi {
     )
     Utilisateurs avoirUtilisateur(@NonNull @PathVariable(name = "idUtilisateur") String idUtilisateur);
 
+    /** Profils du compte et leur état (soi-même ou administrateur) — page « Mes profils ». */
+    @GetMapping(
+            path = "/{idUtilisateur}/profils",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    List<cmr.notep.interfaces.modeles.RoleProfil> avoirProfils(@NonNull @PathVariable(name = "idUtilisateur") String idUtilisateur);
+
     @GetMapping(
             produces = MediaType.APPLICATION_JSON_VALUE
     )

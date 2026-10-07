@@ -493,7 +493,7 @@ public class AccessControlService {
                 .orElse(true);
     }
 
-    private static String uploadTokenFromCurrentRequest() {
+    public static String uploadTokenFromCurrentRequest() {
         org.springframework.web.context.request.RequestAttributes attrs =
                 org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
         if (!(attrs instanceof org.springframework.web.context.request.ServletRequestAttributes sra)) return null;

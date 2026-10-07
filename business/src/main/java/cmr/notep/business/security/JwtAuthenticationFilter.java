@@ -31,9 +31,12 @@ import java.util.stream.Collectors;
  * (SecurityConfig) qui décide — 401 via {@link RestAuthenticationEntryPoint} sur une route
  * protégée. La cause d'échec est exposée à l'entry point via l'attribut {@link #JWT_ERROR_ATTR}.
  *
- * Seuls les jetons d'accès sont acceptés (claim "roles" présent) et le compte doit être ACTIVE :
- * un jeton de réinitialisation de mot de passe, de renouvellement ou un refresh token ne vaut
- * pas authentification.
+ * Seuls les jetons d'accès sont acceptés (JwtUtil#isAccessToken : claim "roles" + type "access") et le compte
+ * doit être ACTIVE : un jeton d'activation (lien ou code de vérification), de réinitialisation de mot de passe,
+ * de renouvellement, de dépôt de pièces ou un refresh token ne vaut pas authentification.
+ *
+ * Mot de passe temporaire (must_change_password) : 403 MOT_DE_PASSE_A_CHANGER hors de la liste blanche
+ * de {@link MotDePasseAChanger}.
  *
  * Profil professeur : ROLE_PROFESSOR n'est accordé que si les pièces ont été validées par
  * l'administrateur (sinon ROLE_PROFESSOR_PENDING), et un professeur non validé qui agit en
@@ -44,6 +47,8 @@ import java.util.stream.Collectors;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     public static final String JWT_ERROR_ATTR = "scholchat.jwt.error";
+    /** Profil choisi pour la session (claim selectedRole du jeton d'accès), voir CurrentUserService#sessionRole. */
+    public static final String SESSION_ROLE_ATTR = "scholchat.jwt.selectedRole";
 
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
@@ -74,8 +79,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String userEmail = jwtUtil.getEmailFromToken(jwt); // lève TOKEN_EXPIRED / INVALID_TOKEN
             List<String> roles = jwtUtil.getRolesFromToken(jwt);
-            if (userEmail == null || roles == null) {
-                // Jeton signé mais qui n'est pas un jeton d'accès (reset, renouvellement, refresh…)
+            if (userEmail == null || roles == null || !jwtUtil.isAccessToken(jwt)) {
+                // Jeton signé mais qui n'est pas un jeton d'accès (activation, reset, renouvellement, refresh…)
                 request.setAttribute(JWT_ERROR_ATTR, "invalid");
             } else {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
@@ -98,6 +103,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                    String sessionRole = jwtUtil.getSelectedRoleFromToken(jwt);
+                    if (sessionRole != null) {
+                        request.setAttribute(SESSION_ROLE_ATTR, sessionRole);
+                    }
+
+                    // Mot de passe temporaire pas encore remplacé : seules quelques routes passent
+                    // (changement de mot de passe, son profil, session…) — relu en base à chaque requête.
+                    if (utilisateursRepository.findMustChangePasswordByEmail(userEmail)) {
+                        if (userId == null) {
+                            userId = utilisateursRepository.findIdByEmail(userEmail).orElse(null);
+                        }
+                        if (!MotDePasseAChanger.estRouteAutorisee(request, userId)) {
+                            log.info("Mot de passe temporaire à changer : accès refusé à {} {}",
+                                    request.getMethod(), request.getRequestURI());
+                            RestAuthenticationEntryPoint.write(response, HttpServletResponse.SC_FORBIDDEN,
+                                    SchoolErrorCode.MOT_DE_PASSE_A_CHANGER.name(), MotDePasseAChanger.MESSAGE);
+                            return;
+                        }
+                    }
 
                     // Professeur non validé qui agit en professeur : seules les routes de la liste
                     // blanche (profil, pièces, notifications, authentification) sont accessibles.

@@ -32,6 +32,11 @@ public class MailService implements MailServiceInterface {
         this.emailTemplateService = emailTemplateService;
     }
 
+    /** Identifiant (Content-ID) du logo référencé par les gabarits : {@code <img src="cid:scholchatLogo">}. */
+    public static final String LOGO_CID = "scholchatLogo";
+    private static final org.springframework.core.io.ClassPathResource LOGO =
+            new org.springframework.core.io.ClassPathResource("mail/scholchat-logo.png");
+
     @Value("${spring.mail.username}")
     private String fromEmail;
 
@@ -53,6 +58,11 @@ public class MailService implements MailServiceInterface {
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(htmlContent, true);
+            // Logo ScholChat des gabarits (templates/email/fragments/brand.html) : image jointe en ligne (CID),
+            // affichée par Gmail/Outlook sans dépendre d'une URL publique.
+            if (htmlContent != null && htmlContent.contains("cid:" + LOGO_CID)) {
+                helper.addInline(LOGO_CID, LOGO, "image/png");
+            }
 
             mailSender.send(mimeMessage);
             log.info("Email sent successfully to: {}", to);

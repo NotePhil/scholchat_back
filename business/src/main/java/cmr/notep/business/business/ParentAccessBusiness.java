@@ -34,6 +34,9 @@ public class ParentAccessBusiness {
     private final NotificationService notificationService;
     private final UtilisateursBusiness utilisateursBusiness;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.services.EmailTemplateService emailTemplateService;
+
     public ParentAccessBusiness(DaoAccessorService daoAccessorService, MailServiceInterface mailService,
                                 NotificationService notificationService, UtilisateursBusiness utilisateursBusiness,
             UserSubtypeService userSubtypeService) {
@@ -92,7 +95,7 @@ public class ParentAccessBusiness {
                 .findById(request.getParentId())
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur non trouvé"));
 
-        // Un compte élève ne peut pas devenir parent (profil élève exclusif)
+        // Règles de combinaison des profils (un élève mineur géré par un parent ne peut pas devenir parent)
         utilisateursBusiness.verifierCompatibiliteRole(parentUser, "PARENT");
 
         // Ligne parents : vérifiée en natif (compte multi-rôles : ParentsRepository.findById peut
@@ -257,27 +260,27 @@ public class ParentAccessBusiness {
         if (classe.getModerator() != null) {
             try {
                 String subject = "Nouvelle demande d'accès parent pour la classe " + classe.getNom();
-                StringBuilder content = new StringBuilder();
-                content.append("Le parent ").append(parent.getPrenom()).append(" ").append(parent.getNom())
-                        .append(" a fait une demande d'accès pour la classe ").append(classe.getNom()).append("\n\n");
-
+                List<String> eleves = new ArrayList<>();
                 if (classe.isAccesMajeur()) {
-                    content.append("Élèves associés :\n");
-                    for (String eleveId : elevesIds) {
+                    for (String eleveId : elevesIds == null ? List.<String>of() : elevesIds) {
                         ElevesEntity eleve = daoAccessorService.getRepository(ElevesRepository.class)
                                 .findById(eleveId).orElse(null);
                         if (eleve != null) {
-                            content.append("- ").append(eleve.getPrenom()).append(" ").append(eleve.getNom()).append("\n");
+                            eleves.add(eleve.getPrenom() + " " + eleve.getNom());
                         }
                     }
                 } else {
-                    content.append("Nouveaux élèves proposés :\n");
-                    for (String eleveNom : elevesNoms) {
-                        content.append("- ").append(eleveNom).append("\n");
-                    }
+                    if (elevesNoms != null) eleves.addAll(elevesNoms);
                 }
+                String content = emailTemplateService.generateNotificationGeneriqueEmail(
+                        "Nouvelle demande d'accès parent",
+                        List.of("Bonjour " + (classe.getModerator().getPrenom() == null ? "" : classe.getModerator().getPrenom()) + ",",
+                                "Le parent " + parent.getPrenom() + " " + parent.getNom()
+                                        + " a fait une demande d'accès pour la classe " + classe.getNom() + ".",
+                                classe.isAccesMajeur() ? "Élèves associés :" : "Nouveaux élèves proposés :"),
+                        eleves);
 
-                mailService.sendEmail(classe.getModerator().getEmail(), subject, content.toString());
+                mailService.sendEmail(classe.getModerator().getEmail(), subject, content);
             } catch (Exception e) {
                 log.error("Erreur lors de l'envoi de la notification au modérateur", e);
             }

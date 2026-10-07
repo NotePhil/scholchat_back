@@ -39,7 +39,18 @@ public class UtilisateursService implements UtilisateursApi {
     @Override
     public Utilisateurs avoirUtilisateur( String idUtilisateur) {
         log.info("Récupération de l'utilisateur avec ID: {}", idUtilisateur);
-        return redigerPiecesIdentite(utilisateursBusiness.avoirUtilisateur(idUtilisateur));
+        Utilisateurs u = redigerPiecesIdentite(utilisateursBusiness.avoirUtilisateur(idUtilisateur));
+        // Page « Mes profils » : profils du compte et leur état (soi-même ou administrateur uniquement)
+        if (currentUser.isAdmin() || currentUser.isSelf(idUtilisateur)) {
+            u.setProfils(utilisateursBusiness.getProfils(idUtilisateur));
+        }
+        return u;
+    }
+
+    @Override
+    public List<cmr.notep.interfaces.modeles.RoleProfil> avoirProfils(String idUtilisateur) {
+        currentUser.requireSelfOrAdmin(idUtilisateur);
+        return utilisateursBusiness.getProfils(idUtilisateur);
     }
 
     /**
@@ -108,6 +119,16 @@ public class UtilisateursService implements UtilisateursApi {
     public Utilisateurs posterUtilisateur(@NonNull Utilisateurs utilisateur) {
         log.info("Création d'un nouvel utilisateur");
         boolean admin = currentUser.isAdmin();
+        // Session ouverte avec le profil élève : pas d'ajout de profil au compte (déconnexion puis reconnexion
+        // avec un autre profil, ou ajout depuis une session parent / professeur).
+        if (!admin && currentUser.sessionEleve() && utilisateur.getEmail() != null
+                && utilisateursBusiness.emailExiste(utilisateur.getEmail())) {
+            throw new cmr.notep.business.exceptions.SchoolException(
+                    cmr.notep.business.exceptions.enums.SchoolErrorCode.CHANGEMENT_PROFIL_INTERDIT_ELEVE,
+                    "Vous êtes connecté avec votre profil élève : l'ajout d'un profil n'est pas possible depuis ce "
+                            + "profil. Déconnectez-vous puis reconnectez-vous avec votre profil parent ou professeur "
+                            + "pour ajouter un profil.");
+        }
         if (!admin) {
             boolean typePublic = utilisateur.getClass() == Eleves.class
                     || utilisateur.getClass() == Parents.class
@@ -119,11 +140,18 @@ public class UtilisateursService implements UtilisateursApi {
             utilisateur.setPasseAccess(null);
             utilisateur.setActivationToken(null);
             utilisateur.setResetPasswordToken(null);
+            utilisateur.setMustChangePassword(false);
             if (utilisateur instanceof Professeurs p) {
                 p.setHasUploaded(false);
             }
         }
-        Utilisateurs cree = utilisateursBusiness.posterUtilisateur(utilisateur);
+        // Inscription publique d'un nouveau parent / élève : code de classe obligatoire (codeClasse), compte en
+        // attente d'approbation de la demande d'accès — voir InscriptionClasseService.
+        // Jeton de dépôt des pièces d'une première tentative : permet de reprendre une inscription professeur
+        // inachevée (sinon un compte non actif existant est refusé sans être modifié).
+        Utilisateurs cree = utilisateursBusiness.posterUtilisateur(utilisateur, !admin,
+                currentUser.currentEmail().orElse(null),
+                admin ? null : AccessControlService.uploadTokenFromCurrentRequest());
         if (admin) return cree;
         Utilisateurs vue = vueMinimale(cree);
         // Inscription professeur : jeton de courte durée pour déposer les pièces sans être connecté
@@ -149,6 +177,10 @@ public class UtilisateursService implements UtilisateursApi {
         vue.setEtat(u.getEtat());
         vue.setCreationDate(u.getCreationDate());
         vue.setInscriptionStatut(u.getInscriptionStatut());
+        vue.setStatutInscription(u.getStatutInscription());
+        vue.setClasseId(u.getClasseId());
+        vue.setClasseNom(u.getClasseNom());
+        vue.setDemandeAccesCreee(u.getDemandeAccesCreee());
         return vue;
     }
 

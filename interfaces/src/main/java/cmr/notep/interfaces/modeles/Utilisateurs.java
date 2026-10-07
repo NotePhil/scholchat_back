@@ -54,6 +54,19 @@ public class Utilisateurs implements Serializable, IUtilisateurs {
     private EtatUtilisateur etat;
     private LocalDateTime creationDate;
     private boolean admin;
+    /**
+     * Vrai tant que l'utilisateur se connecte avec le mot de passe temporaire reçu par e-mail (inscription
+     * par code de classe approuvée) : il doit en choisir un nouveau (POST /auth/change-password).
+     * Lecture seule côté API (jamais modifiable par un payload client).
+     */
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private boolean mustChangePassword;
+    /**
+     * Entrée de POST /utilisateurs uniquement (jamais persisté, jamais renvoyé) : code d'activation de la
+     * classe (codeActivation) — obligatoire pour l'inscription publique d'un nouveau compte parent / élève.
+     */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String codeClasse;
     private List<Messages> messagesEnvoyer;
     private List<Messages> messagesRecus;
     @JsonManagedReference
@@ -75,4 +88,30 @@ public class Utilisateurs implements Serializable, IUtilisateurs {
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     private String uploadToken;
+    /**
+     * Réponse de POST /utilisateurs uniquement (inscription parent / élève avec code de classe) :
+     * EN_ATTENTE_APPROBATION_CLASSE — compte créé (ou demande ajoutée à un compte en attente), inactif,
+     * sans mot de passe, en attente d'approbation de la demande d'accès par le responsable de la classe.
+     * Pour un compte existant actif (ajout de profil + code), reprend la valeur d'inscriptionStatut.
+     */
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private String statutInscription;
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private String classeNom;
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private String classeId;
+    /** Réponse de POST /utilisateurs : vrai si une demande d'accès à la classe du code a été créée. */
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private Boolean demandeAccesCreee;
+    /**
+     * Réponse de GET /utilisateurs/{id} (soi-même ou admin) : profils du compte et leur état (voir RoleProfil).
+     * Jamais persisté, ignoré en entrée.
+     */
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private List<RoleProfil> profils;
 }

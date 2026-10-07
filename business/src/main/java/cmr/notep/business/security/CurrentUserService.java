@@ -138,6 +138,35 @@ public class CurrentUserService {
         }
     }
 
+    /**
+     * Profil choisi pour la session courante (claim selectedRole du jeton d'accès, normalisé : STUDENT,
+     * PARENT, PROFESSOR…), ou vide si l'appel est anonyme ou si le jeton ne porte pas de profil.
+     */
+    public Optional<String> sessionRole() {
+        if (!isAuthenticated()) {
+            return Optional.empty();
+        }
+        RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
+        if (attrs == null) {
+            return Optional.empty();
+        }
+        Object role = attrs.getAttribute(JwtAuthenticationFilter.SESSION_ROLE_ATTR, RequestAttributes.SCOPE_REQUEST);
+        if (!(role instanceof String r) || r.isBlank()) {
+            return Optional.empty();
+        }
+        String norm = r.trim().toUpperCase().replaceFirst("^ROLE_", "");
+        return Optional.of(switch (norm) {
+            case "ELEVE" -> "STUDENT";
+            case "PROFESSEUR" -> "PROFESSOR";
+            default -> norm;
+        });
+    }
+
+    /** Vrai si la session courante a été ouverte avec le profil élève. */
+    public boolean sessionEleve() {
+        return sessionRole().map("STUDENT"::equals).orElse(false);
+    }
+
     public static SchoolException forbidden(String message) {
         return new SchoolException(SchoolErrorCode.OPERATION_INTERDITE, message);
     }

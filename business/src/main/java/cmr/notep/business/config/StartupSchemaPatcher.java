@@ -35,6 +35,14 @@ public class StartupSchemaPatcher implements ApplicationRunner {
         // UtilisateursEntity mappe reset_password_token (jeton du lien de réinitialisation, usage unique) :
         // sans cette colonne toute lecture d'utilisateur échouerait.
         "ALTER TABLE ressources.utilisateurs ADD COLUMN IF NOT EXISTS reset_password_token TEXT",
+        // Mot de passe temporaire à changer à la première connexion (changeset 23-utilisateurs-must-change-password)
+        "ALTER TABLE ressources.utilisateurs ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE",
+        // Codes de vérification du compte par e-mail (changeset 24-verification-codes)
+        "CREATE TABLE IF NOT EXISTS ressources.verification_codes (id VARCHAR(255) NOT NULL PRIMARY KEY, "
+                + "utilisateur_id VARCHAR(255) NOT NULL REFERENCES ressources.utilisateurs(id) ON DELETE CASCADE, "
+                + "code_hash VARCHAR(128) NOT NULL, expires_at TIMESTAMP NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, "
+                + "created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)",
+        "CREATE INDEX IF NOT EXISTS idx_verification_codes_utilisateur ON ressources.verification_codes(utilisateur_id)",
     };
 
     /**

@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS ressources.utilisateurs (
     creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_admin BOOLEAN DEFAULT FALSE,
     reset_password_token VARCHAR(2000),
+    must_change_password BOOLEAN DEFAULT FALSE NOT NULL,
     CONSTRAINT pk_utilisateurs PRIMARY KEY (id)
 );
 
@@ -695,4 +696,16 @@ CREATE TABLE IF NOT EXISTS chapitre_progress (
     completed    BOOLEAN      NOT NULL DEFAULT FALSE,
     completed_at TIMESTAMP,
     UNIQUE (user_id, chapitre_id)
+);
+
+-- Codes de vérification du compte par e-mail (changeset 24-verification-codes)
+CREATE TABLE IF NOT EXISTS ressources.verification_codes (
+    id             VARCHAR(255) NOT NULL PRIMARY KEY,
+    utilisateur_id VARCHAR(255) NOT NULL,
+    code_hash      VARCHAR(128) NOT NULL,
+    expires_at     TIMESTAMP    NOT NULL,
+    attempts       INTEGER      DEFAULT 0 NOT NULL,
+    created_at     TIMESTAMP    DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT fk_verification_codes_utilisateur FOREIGN KEY (utilisateur_id)
+        REFERENCES ressources.utilisateurs (id) ON DELETE CASCADE
 );

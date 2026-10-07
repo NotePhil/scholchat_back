@@ -62,6 +62,11 @@ public interface UtilisateursRepository extends JpaRepository<UtilisateursEntity
     @Query("SELECT u.id FROM UtilisateursEntity u WHERE u.email = :email")
     Optional<String> findIdByEmail(@Param("email") String email);
 
+    /** Drapeau "mot de passe temporaire à changer" (lu à chaque requête authentifiée par le filtre JWT). */
+    @Query(value = "SELECT COALESCE((SELECT must_change_password FROM ressources.utilisateurs WHERE email = :email), false)",
+            nativeQuery = true)
+    boolean findMustChangePasswordByEmail(@Param("email") String email);
+
     @Query(value = "SELECT COUNT(*) > 0 FROM ressources.professeurs WHERE professeurs_id = :userId", nativeQuery = true)
     boolean hasProfesseurRow(@Param("userId") String userId);
 

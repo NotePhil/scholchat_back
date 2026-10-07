@@ -46,6 +46,9 @@ public class AuthBusiness {
     @org.springframework.beans.factory.annotation.Autowired
     private ProfesseurVerificationService professeurVerification;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.services.InscriptionClasseService inscriptionClasseService;
+
     public AuthBusiness(PasswordEncoder passwordEncoder, UtilisateursBusiness utilisateursBusiness, JwtUtil jwtUtil, JwtConfig jwtConfig, ActivationEmailService activationEmailService, RefreshTokenBusiness refreshTokenBusiness, PasswordResetEmailService passwordResetEmailService,RoleService roleService, UserValidationService userValidationService, PasswordDecryptionService passwordDecryptionService, ContratBusiness contratBusiness) {
         this.passwordEncoder = passwordEncoder;
         this.utilisateursBusiness = utilisateursBusiness;
@@ -117,6 +120,7 @@ public class AuthBusiness {
         user.setPasseAccess(passwordEncoder.encode(request.getPasseAccess()));
         user.setEtat(EtatUtilisateur.ACTIVE);
         user.setActivationToken(null); // Invalidate token now that password is set
+        user.setMustChangePassword(false);
 
         // Save user
         utilisateursBusiness.mettreUtilisateurAJour(user);
@@ -146,6 +150,16 @@ public class AuthBusiness {
         Utilisateurs existingUser = utilisateursBusiness.avoirUtilisateurParEmail(loginRequest.getEmail());
 
         // Vérification de l'état d'abord
+        if (inscriptionClasseService.estEnAttenteInscriptionClasse(existingUser.getId(), existingUser.getEtat())) {
+            log.warn("Login attempt for class sign-up account awaiting approval: {}", loginRequest.getEmail());
+            throw new SchoolException(SchoolErrorCode.COMPTE_EN_ATTENTE_APPROBATION,
+                    inscriptionClasseService.aUneDemandeEnAttente(existingUser.getId())
+                            ? "Votre compte est en attente d'approbation par le responsable de la classe. Vous recevrez "
+                                    + "vos identifiants de connexion par e-mail dès que votre demande sera acceptée."
+                            : "Votre demande d'inscription n'a pas été acceptée par le responsable de la classe : votre "
+                                    + "compte n'est pas activé. Vous pouvez refaire une inscription avec la même adresse "
+                                    + "e-mail et le code d'une classe.");
+        }
         if (existingUser.getEtat() != EtatUtilisateur.ACTIVE) {
             log.warn("Login attempt for inactive account: {}", loginRequest.getEmail());
             throw new SchoolException(
@@ -235,8 +249,9 @@ public class AuthBusiness {
             selectedRole = availableRoles.isEmpty() ? "USER" : availableRoles.get(0);
         } else if (!availableRoles.contains(selectedRole)) {
             if (pendingRoles.contains(selectedRole)) {
-                throw new SchoolException(SchoolErrorCode.INVALID_STATE,
-                        "Votre profil " + libelleRole(selectedRole) + " est en attente de validation par l'administration.");
+                throw new SchoolException(SchoolErrorCode.INVALID_STATE, "STUDENT".equals(selectedRole)
+                        ? "Votre profil élève est en attente d'approbation de votre demande d'accès par le responsable de la classe."
+                        : "Votre profil " + libelleRole(selectedRole) + " est en attente de validation par l'administration.");
             }
             throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
                     "Le profil " + libelleRole(selectedRole) + " n'est pas disponible pour ce compte.");
@@ -323,10 +338,12 @@ public class AuthBusiness {
                 .selectedRole(selectedRole)
                 .multiRole(isMultiRole)
                 .pendingRoles(pendingRoles.isEmpty() ? null : pendingRoles)
+                .profils(utilisateursBusiness.getProfils(existingUser.getId()))
                 .professeurStatutVerification(statutProfesseur)
                 .professeurMotifRejet(motifRejetProfesseur)
                 .children(children)
                 .expiredEntities(expiredEntities.isEmpty() ? null : expiredEntities)
+                .mustChangePassword(existingUser.isMustChangePassword())
                 .build();
     }
 
@@ -556,6 +573,7 @@ public class AuthBusiness {
         // Update password
         user.setPasseAccess(passwordEncoder.encode(request.getNewPassword()));
         user.setResetPasswordToken(null); // Clear the reset token
+        user.setMustChangePassword(false); // mot de passe choisi par l'utilisateur (remplace un mot de passe temporaire)
 
         // Save user
         utilisateursBusiness.mettreUtilisateurAJour(user);
@@ -575,10 +593,17 @@ public class AuthBusiness {
         }
 
         validatePasswordStrength(request.getNewPassword());
+        if (request.getNewPassword().equals(request.getCurrentPassword())) {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
+                    "Le nouveau mot de passe doit être différent du mot de passe actuel");
+        }
 
+        boolean etaitTemporaire = user.isMustChangePassword();
         user.setPasseAccess(passwordEncoder.encode(request.getNewPassword()));
+        // Mot de passe temporaire (inscription par code de classe) remplacé : accès complet débloqué
+        user.setMustChangePassword(false);
         utilisateursBusiness.mettreUtilisateurAJour(user);
-        log.info("Password changed successfully for: {}", userEmail);
+        log.info("Password changed successfully for: {}{}", userEmail, etaitTemporaire ? " (temporary password replaced)" : "");
     }
 
     public Utilisateurs registerUserWithToken(Utilisateurs utilisateur, String token) {

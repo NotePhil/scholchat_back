@@ -154,3 +154,17 @@ databaseChangeLog:
             path: sql/migration-professeur-statut-verification.sql
             relativeToChangelogFile: false
             splitStatements: false
+  - changeSet:
+      id: 23-utilisateurs-must-change-password
+      author: db-init
+      changes:
+        - sqlFile:
+            path: sql/migration-must-change-password.sql
+            relativeToChangelogFile: false
+  - changeSet:
+      id: 24-verification-codes
+      author: db-init
+      changes:
+        - sqlFile:
+            path: sql/migration-verification-codes.sql
+            relativeToChangelogFile: false

@@ -166,6 +166,11 @@ public class ProfesseurVerificationService {
             String id = MATCHER.extractUriTemplateVariables("/utilisateurs/{id}", path).get("id");
             return id != null && id.equals(userId);
         }
+        // Ses profils et leur état (page « Mes profils »)
+        if (get && MATCHER.match("/utilisateurs/{id}/profils", path)) {
+            String id = MATCHER.extractUriTemplateVariables("/utilisateurs/{id}/profils", path).get("id");
+            return id != null && id.equals(userId);
+        }
         // Inscription (ajout d'un autre profil avec le même e-mail), renvoi du lien d'activation
         if (post && match(path, "/utilisateurs", "/utilisateurs/regenerate-activation")) return true;
         // Dépôt des pièces : le type de pièce est contrôlé dans MediaServiceImpl

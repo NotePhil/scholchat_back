@@ -21,15 +21,24 @@ public class RejectionEmailService implements IRejectionEmailService {
     }
 
     public void sendRejectionEmail(ProfesseursEntity professeur, MotifRejetEntity motif, String motifSupplementaire) {
+        sendRejectionEmail(professeur, motif, motifSupplementaire, false);
+    }
+
+    @Override
+    public void sendRejectionEmail(ProfesseursEntity professeur, MotifRejetEntity motif, String motifSupplementaire,
+                                   boolean compteActif) {
         try {
             log.info("Sending rejection email asynchronously to {}", professeur.getEmail());
             String htmlContent = emailTemplateService.generateRejectionEmail(
                     professeur,
                     motif,
-                    motifSupplementaire
+                    motifSupplementaire,
+                    compteActif
             );
 
-            String subject = "Votre demande de compte professeur a été rejetée";
+            String subject = compteActif
+                    ? "Votre demande de profil professeur n'a pas été validée"
+                    : "Votre demande de compte professeur a été rejetée";
 
             mailService.sendEmail(professeur.getEmail(), subject, htmlContent);
             log.info("Rejection email sent successfully to {}", professeur.getEmail());

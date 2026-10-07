@@ -31,10 +31,61 @@ public class JwtUtil {
 
 
     // Generate an access token with roles
+    // ─── Type de jeton (claim "typ") ───────────────────────────────────────────
+    // Seuls les jetons d'ACCÈS (typ=access, émis à la connexion / au changement de profil) authentifient une
+    // requête (JwtAuthenticationFilter, WebSocketAuthInterceptor) : un jeton d'activation, de réinitialisation,
+    // de renouvellement, de dépôt de pièces ou de rafraîchissement n'ouvre jamais de session.
+    public static final String CLAIM_TYPE = "typ";
+    public static final String TYPE_ACCESS = "access";
+    public static final String TYPE_ACTIVATION = "activation";
+    public static final String TYPE_PASSWORD_RESET = "password-reset";
+    public static final String TYPE_RENEWAL = "renewal";
+    public static final String TYPE_REFRESH = "refresh";
+
     public String generateAccessToken(String email, List<String> roles) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("roles", roles); // Add roles to token
+        claims.put(CLAIM_TYPE, TYPE_ACCESS);
         return createToken(claims, email, accessTokenExpirationMillis);
+    }
+
+    /**
+     * Jeton d'activation (lien d'activation, code de vérification du compte) : ne sert qu'à POST /auth/activate,
+     * GET /auth/users/byEmail et POST /auth/registerPassword (comparé au jeton enregistré sur le compte). Il porte
+     * les rôles (compatibilité) mais son type "activation" le fait refuser comme jeton de session.
+     */
+    public String generateActivationToken(String email, List<String> roles) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", roles);
+        claims.put(CLAIM_TYPE, TYPE_ACTIVATION);
+        return createToken(claims, email, accessTokenExpirationMillis);
+    }
+
+    /**
+     * Vrai si {@code token} est un jeton d'accès valide (signature, expiration) : claim "roles" présent et type
+     * "access". Les jetons d'accès émis avant l'ajout du type (sans "typ") sont reconnus à leur claim
+     * "selectedRole", que seuls les jetons de connexion portent (les anciens jetons d'activation n'en ont pas).
+     */
+    public boolean isAccessToken(String token) {
+        try {
+            Claims c = getAllClaimsFromToken(token);
+            if (c.get("roles") == null) return false;
+            String typ = c.get(CLAIM_TYPE, String.class);
+            if (typ != null) return TYPE_ACCESS.equals(typ);
+            String selected = c.get("selectedRole", String.class);
+            return selected != null && !selected.isBlank();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** Type du jeton (claim "typ"), ou null (jetons antérieurs / invalides). */
+    public String getTokenType(String token) {
+        try {
+            return getAllClaimsFromToken(token).get(CLAIM_TYPE, String.class);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     // Generate an access token with roles, additionally flagging entities (classe/etablissement)
@@ -43,6 +94,7 @@ public class JwtUtil {
     public String generateAccessToken(String email, List<String> roles, List<Map<String, String>> expiredEntities) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("roles", roles);
+        claims.put(CLAIM_TYPE, TYPE_ACCESS);
         if (expiredEntities != null && !expiredEntities.isEmpty()) {
             claims.put("expiredEntities", expiredEntities);
         }
@@ -57,6 +109,7 @@ public class JwtUtil {
                                       String selectedRole) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("roles", roles);
+        claims.put(CLAIM_TYPE, TYPE_ACCESS);
         if (expiredEntities != null && !expiredEntities.isEmpty()) {
             claims.put("expiredEntities", expiredEntities);
         }
@@ -69,12 +122,14 @@ public class JwtUtil {
     // Generate a refresh token (without roles)
     public String generateRefreshToken(String email) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put(CLAIM_TYPE, TYPE_REFRESH);
         return createToken(claims, email, refreshTokenExpirationMillis);
     }
 
 
     public String generatePasswordResetToken(String email) {
         return Jwts.builder()
+                .claim(CLAIM_TYPE, TYPE_PASSWORD_RESET)
                 .setSubject(email)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtConfig.getPasswordResetTokenExpirationMillis()))
@@ -84,11 +139,13 @@ public class JwtUtil {
 
     public boolean validatePasswordResetToken(String token) {
         try {
-            Jwts.parserBuilder()
+            Claims c = Jwts.parserBuilder()
                     .setSigningKey(secretKey) // Utilisez secretKey ici aussi
                     .build()
-                    .parseClaimsJws(token);
-            return true;
+                    .parseClaimsJws(token).getBody();
+            // Liens émis avant l'ajout du type : sans "typ" ni "roles" ; sinon le type doit être password-reset.
+            String typ = c.get(CLAIM_TYPE, String.class);
+            return typ != null ? TYPE_PASSWORD_RESET.equals(typ) : c.get("roles") == null;
         } catch (Exception e) {
             return false;
         }
@@ -100,6 +157,7 @@ public class JwtUtil {
         Map<String, Object> claims = new HashMap<>();
         claims.put("entityType", entityType);
         claims.put("entityId", entityId);
+        claims.put(CLAIM_TYPE, TYPE_RENEWAL);
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(entityId)
@@ -111,8 +169,9 @@ public class JwtUtil {
 
     public boolean validateRenewalToken(String token) {
         try {
-            Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token);
-            return true;
+            Claims c = Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token).getBody();
+            String typ = c.get(CLAIM_TYPE, String.class);
+            return typ != null ? TYPE_RENEWAL.equals(typ) : c.get("entityType") != null;
         } catch (Exception e) {
             return false;
         }
@@ -180,6 +239,24 @@ public class JwtUtil {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /**
+     * Comme {@link #isValidProfessorDocumentsUploadToken} mais accepte un jeton expiré (signature et destinataire
+     * vérifiés) : preuve que l'appelant a commencé l'inscription de ce compte (reprise d'inscription professeur).
+     */
+    public boolean isSignedProfessorDocumentsUploadToken(String token, String userId) {
+        if (token == null || token.isBlank() || userId == null) return false;
+        Claims claims;
+        try {
+            claims = Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token.trim()).getBody();
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            claims = e.getClaims();
+        } catch (Exception e) {
+            return false;
+        }
+        return claims != null && PURPOSE_PROFESSOR_DOCUMENTS.equals(claims.get("purpose", String.class))
+                && userId.equals(claims.getSubject());
     }
 
     public String getEntityTypeFromRenewalToken(String token) {

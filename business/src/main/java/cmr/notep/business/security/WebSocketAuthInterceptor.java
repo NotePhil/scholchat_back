@@ -90,7 +90,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
         } catch (Exception e) {
             throw new MessageDeliveryException("Jeton invalide ou expiré");
         }
-        if (email == null || roles == null) {
+        if (email == null || roles == null || !jwtUtil.isAccessToken(token)) {
             throw new MessageDeliveryException("Jeton invalide");
         }
         UtilisateursEntity user = utilisateursRepository.findByEmail(email)

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<!--
+  Charte commune des e-mails ScholChat (incluse par tous les gabarits de templates/email/) :
+  - logo : image jointe en ligne (Content-ID "scholchatLogo", ajoutée par MailService.sendEmail) ;
+  - bannière : dégradé #4F46E5 -> #9333EA (style écrit dans chaque gabarit, sur la cellule "email-banner") ;
+  - pied de page commun.
+-->
+<body>
+
+<div th:fragment="logo" style="text-align:center;">
+    <img src="cid:scholchatLogo" width="64" height="64" alt="ScholChat"
+         style="display:block;margin:0 auto 10px;width:64px;height:64px;border:0;border-radius:14px;outline:none;text-decoration:none;">
+    <div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;letter-spacing:3px;color:#E0E7FF;text-transform:uppercase;margin-bottom:12px;">ScholChat</div>
+</div>
+
+<td th:fragment="pied" style="background-color:#F9FAFB;border-top:1px solid #E5E7EB;padding:20px 32px;text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#6B7280;">
+    <p style="margin:0 0 4px;font-weight:bold;color:#4F46E5;">ScholChat</p>
+    <p style="margin:0 0 4px;">La plateforme qui relie enseignants, élèves et parents.</p>
+    <p style="margin:0 0 4px;">Cet e-mail vous a été envoyé automatiquement, merci de ne pas y répondre.</p>
+    <p style="margin:0;">&copy; <span th:text="${#temporals.format(#temporals.createNow(), 'yyyy')}">2026</span> ScholChat. Tous droits réservés.</p>
+</td>
+
+</body>
+</html>

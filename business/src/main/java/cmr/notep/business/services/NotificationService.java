@@ -327,13 +327,28 @@ public class NotificationService {
     /** Demande de rôle supplémentaire (ex. parent qui devient professeur) traitée par un administrateur. */
     @Transactional
     public void createRoleRequestDecisionNotification(String userId, String roleLabel, boolean approved, String motif) {
+        String libelleProfil = roleLabel == null || roleLabel.isEmpty() ? "" :
+                Character.toUpperCase(roleLabel.charAt(0)) + roleLabel.substring(1);
         String message = approved
-                ? "Votre profil " + roleLabel + " a été validé. Vous pouvez y basculer depuis le sélecteur de profil."
+                ? "Votre profil " + roleLabel + " est validé — vous pouvez basculer vers le profil " + libelleProfil + "."
                 : "Votre demande de profil " + roleLabel + " a été refusée." + (motif != null && !motif.isBlank() ? " Motif : " + motif : "");
-        saveNotification(userId, approved ? "ROLE_VALIDATED" : "ROLE_REJECTED",
+        String prefixe = switch (roleLabel == null ? "" : roleLabel) {
+            case "professeur" -> "PROFESSOR_";
+            case "élève", "eleve" -> "STUDENT_";
+            default -> "";
+        };
+        saveNotification(userId, prefixe + (approved ? TYPE_ROLE_VALIDE : TYPE_ROLE_REFUSE),
                 approved ? "Profil " + roleLabel + " validé" : "Profil " + roleLabel + " refusé",
                 message, null, null, userId, "UTILISATEUR");
     }
+
+    /**
+     * Décision sur une demande de profil supplémentaire : PROFESSOR_ROLE_VALIDATED / PROFESSOR_ROLE_REJECTED
+     * (validation admin des pièces), STUDENT_ROLE_VALIDATED / STUDENT_ROLE_REJECTED (approbation de la demande
+     * d'accès à la classe), ROLE_VALIDATED / ROLE_REJECTED pour les autres profils.
+     */
+    public static final String TYPE_ROLE_VALIDE = "ROLE_VALIDATED";
+    public static final String TYPE_ROLE_REFUSE = "ROLE_REJECTED";
 
     /** Types de notification envoyés au professeur quand le statut de vérification de son profil change. */
     public static final String TYPE_PROF_VERIFICATION_VALIDEE = "PROFESSOR_VERIFICATION_VALIDATED";

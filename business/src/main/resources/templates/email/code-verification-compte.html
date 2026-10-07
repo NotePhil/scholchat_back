@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Votre code de vérification ScholChat</title>
+    <style>
+
+        /* ── Charte ScholChat (commune à tous les e-mails) ── */
+        .content { padding: 0 !important; background: transparent !important; }
+        .content h2, .content h3 { color: #4F46E5; }
+        a { color: #4F46E5; }
+        .button, a.button, .btn, a.btn {
+            display: inline-block; background-color: #4F46E5 !important; color: #ffffff !important;
+            padding: 12px 24px; border-radius: 10px; text-decoration: none; font-weight: bold;
+        }
+    </style>
+</head>
+<body style="margin:0;padding:0;background-color:#F3F4F6;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F3F4F6;">
+    <tr>
+        <td align="center" style="padding:24px 12px;">
+            <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"
+                   style="width:100%;max-width:600px;background-color:#FFFFFF;border-radius:16px;overflow:hidden;border:1px solid #E5E7EB;">
+                <tr>
+                    <td class="email-banner" style="background-color:#4F46E5;background-image:linear-gradient(135deg,#4F46E5 0%,#9333EA 100%);padding:28px 24px 26px;text-align:center;">
+                        <div th:replace="~{email/fragments/brand :: logo}"></div>
+                        <h1 style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:22px;line-height:1.35;font-weight:bold;color:#FFFFFF;">Vérification de votre compte</h1>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="email-body" style="padding:28px 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1F2937;">
+
+        <div class="content">
+        <p>Bonjour <strong th:text="${userName}">Utilisateur</strong>,</p>
+        <p>Voici votre code pour vérifier votre compte ScholChat (<span th:text="${userEmail}">email@example.com</span>) :</p>
+        <p style="text-align:center;margin:24px 0;">
+            <span th:text="${code}" style="display:inline-block;font-family:'Courier New',Courier,monospace;font-size:32px;font-weight:bold;letter-spacing:8px;color:#4F46E5;background-color:#EEF2FF;border:1px solid #E0E7FF;border-radius:12px;padding:14px 24px;">123456</span>
+        </p>
+        <p>Saisissez ce code sur la page de connexion (« Vérifier mon compte »). Il est valable
+            <strong th:text="${validiteMinutes} + ' minutes'">10 minutes</strong> et ne peut être utilisé qu'une seule fois.</p>
+        <div style="background-color:#FFF8E1;border-left:4px solid #F59E0B;padding:10px 15px;margin:18px 0;">
+            <p style="margin:0;">Ne communiquez jamais ce code. Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet e-mail.</p>
+        </div>
+        <p>Cordialement,<br>L'équipe ScholChat</p>
+    </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td th:replace="~{email/fragments/brand :: pied}"></td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

@@ -25,6 +25,9 @@ public class AuthResponse {
     private boolean multiRole;
     // Rôles demandés mais pas encore utilisables (ex. PROFESSOR en attente de validation admin)
     private java.util.List<String> pendingRoles;
+    // Tous les profils du compte avec leur état (actif / en attente / documents manquants / refusé…),
+    // pour la page « Mes profils ». Voir RoleProfil.
+    private java.util.List<RoleProfil> profils;
     // Statut de vérification du profil professeur (DOCUMENTS_MANQUANTS, EN_ATTENTE_VALIDATION, VALIDE,
     // REJETE) pour les comptes ayant un profil professeur ; null sinon. Tant qu'il n'est pas VALIDE, le
     // jeton porte ROLE_PROFESSOR_PENDING au lieu de ROLE_PROFESSOR et les fonctions professeur sont refusées (403).
@@ -35,6 +38,10 @@ public class AuthResponse {
     // Classes/etablissements dont l'offre est expiree (professeur/gestionnaire concerne) ;
     // vide/absent si aucune offre expiree. Voir ContratBusiness.resoudreEntitesExpirees.
     private java.util.List<java.util.Map<String, String>> expiredEntities;
+    // Mot de passe temporaire (inscription par code de classe approuvée) : tant que vrai, toutes les routes
+    // authentifiées sauf POST /auth/change-password (et quelques routes de session) répondent 403
+    // MOT_DE_PASSE_A_CHANGER. Le client doit afficher l'écran "choisir un nouveau mot de passe".
+    private boolean mustChangePassword;
 
     @Data
     @Builder

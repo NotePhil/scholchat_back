@@ -59,6 +59,14 @@ public class UtilisateursEntity {
     @Column(name = "is_admin")
     private Boolean admin = false;
 
+    /**
+     * Mot de passe temporaire (envoyé par e-mail à l'approbation d'une inscription par code de classe) :
+     * tant que vrai, seules quelques routes sont accessibles (voir MotDePasseAChangerService) jusqu'au
+     * choix d'un nouveau mot de passe via POST /auth/change-password.
+     */
+    @Column(name = "must_change_password", nullable = false)
+    private boolean mustChangePassword = false;
+
     @OneToMany(mappedBy = "expediteurEntity", fetch = FetchType.EAGER)
     @Mapping("messagesEnvoyer")
     private List<MessagesEntity> messagesEnvoyerEntities;

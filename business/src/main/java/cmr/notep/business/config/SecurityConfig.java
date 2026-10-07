@@ -70,7 +70,9 @@ public class SecurityConfig {
                                 "/auth/login", "/auth/switch-role", "/auth/activate",
                                 "/auth/reset-password-request", "/auth/reset-password",
                                 "/auth/registerPassword",          // exige le jeton d'activation (contrôlé dans AuthService)
-                                "/auth/users/register"             // exige le jeton d'activation
+                                "/auth/users/register",            // exige le jeton d'activation
+                                // Vérification du compte par code e-mail (bouton « Vérifier mon compte »)
+                                "/auth/verification-compte/envoyer", "/auth/verification-compte/verifier"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/auth/users/byEmail").permitAll() // exige le jeton d'activation
                         // Ancien endpoint qui fixait le mot de passe de n'importe quel email : admin uniquement
@@ -101,6 +103,8 @@ public class SecurityConfig {
 
                         // ── Divers publics ──
                         .requestMatchers(HttpMethod.GET, "/public/jitsi-branding").permitAll()
+                        // Aperçu d'une classe par son code avant inscription (limité par IP, voir ClasseApercuController)
+                        .requestMatchers(HttpMethod.GET, "/public/classes/apercu").permitAll()
                         // Poignée de main WebSocket/SockJS : l'authentification se fait sur la trame STOMP CONNECT
                         // (WebSocketAuthInterceptor), pas sur la requête HTTP d'upgrade.
                         .requestMatchers("/ws/**").permitAll()
