@@ -96,17 +96,23 @@ public class UserValidationService {
     }
 
     /**
-     * Validates phone number format for Cameroon and France
+     * Validates the phone number (international format, default region Cameroon).
+     * Cameroon numbers are accepted as soon as they have the national shape (9 digits starting with
+     * 2 or 6): operators open new ranges (e.g. 64x) before libphonenumber's metadata lists them, and
+     * the clients apply the same rule. Other countries must be valid per libphonenumber.
      */
     private void validatePhoneNumber(String phoneNumber) {
         try {
             PhoneNumberUtil phoneUtil = PhoneNumberUtil.getInstance();
-            Phonenumber.PhoneNumber numberProto = phoneUtil.parse(phoneNumber, "CM"); // ou "CM" pour Cameroun
-
-            if (!phoneUtil.isValidNumber(numberProto)) {
-                throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
-                        "Invalid phone number format");
+            Phonenumber.PhoneNumber numberProto = phoneUtil.parse(phoneNumber, "CM");
+            if (phoneUtil.isValidNumber(numberProto)) {
+                return;
             }
+            String national = String.valueOf(numberProto.getNationalNumber());
+            if (numberProto.getCountryCode() == 237 && national.matches("[26]\\d{8}")) {
+                return;
+            }
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Invalid phone number format");
         } catch (NumberParseException e) {
             throw new SchoolException(SchoolErrorCode.INVALID_INPUT,
                     "Invalid phone number format");
