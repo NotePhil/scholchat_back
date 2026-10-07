@@ -30,4 +30,7 @@ public interface ClassesRepository extends JpaRepository<ClassesEntity, String> 
     /** Classes dont l'utilisateur est le modérateur principal (sans passer par ProfesseursEntity). */
     List<ClassesEntity> findByModeratorId(String moderatorId);
 
+    /** Classes créées par l'utilisateur (creator_id), même si un autre en est désormais le modérateur. */
+    List<ClassesEntity> findByCreatorId(String creatorId);
+
 }

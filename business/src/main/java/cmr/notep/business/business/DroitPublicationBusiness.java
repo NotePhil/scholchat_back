@@ -227,52 +227,86 @@ public class DroitPublicationBusiness {
     }
 
     /**
-     * Returns classes where the user has publication rights,
-     * each wrapped with peutPublier and peutModerer flags.
-     * This lets the frontend distinguish:
-     *   - peutModerer=true  → user created/moderates the class
-     *   - peutModerer=false → rights were granted by someone else
+     * "Mes classes" d'un professeur : union, dédupliquée avec le rôle le plus fort, de
+     *   - CREATEUR    : classes créées par l'utilisateur (creatorId), même modérées par un autre ;
+     *   - MODERATEUR  : classes dont il est modérateur principal ou co-modérateur
+     *                   (professeur_classes_moderees, cf. AccessControlService.isClassManager) ;
+     *   - PUBLICATION : classes où un droit de publication lui a été accordé (peutModerer = droit délégué).
+     * Chaque entrée porte le nom du créateur (creatorNom) et du modérateur principal (moderateurNom).
      */
     public List<ClasseAvecDroitDto> obtenirClassesAvecDroitsDetail(String utilisateurId) throws SchoolException {
         log.info("Getting classes with rights detail for user {}", utilisateurId);
 
-        UtilisateursEntity utilisateur = daoAccessorService.getRepository(UtilisateursRepository.class)
+        daoAccessorService.getRepository(UtilisateursRepository.class)
                 .findById(utilisateurId)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "User not found"));
 
+        ClassesRepository classesRepository = daoAccessorService.getRepository(ClassesRepository.class);
+        // Ordre d'insertion conservé : créées/modérées d'abord, puis droits accordés
+        Map<String, ClassesEntity> classes = new LinkedHashMap<>();
+        Set<String> moderees = new HashSet<>();
+        Map<String, DroitPublicationEntity> droitsParClasse = new HashMap<>();
+
+        for (ClassesEntity c : classesRepository.findByCreatorId(utilisateurId)) {
+            classes.putIfAbsent(c.getId(), c);
+        }
+        for (ClassesEntity c : classesRepository.findByModeratorId(utilisateurId)) {
+            classes.putIfAbsent(c.getId(), c);
+            moderees.add(c.getId());
+        }
+        List<String> coModerees;
+        try {
+            coModerees = daoAccessorService.getRepository(ProfesseursRepository.class).findClassIdsModeratedBy(utilisateurId);
+        } catch (Exception e) {
+            // table de co-modération absente : ignorée (même tolérance que AccessControlService)
+            coModerees = Collections.emptyList();
+        }
+        for (String classeId : coModerees) {
+            if (!classes.containsKey(classeId)) {
+                classesRepository.findById(classeId).ifPresent(c -> classes.put(c.getId(), c));
+            }
+            if (classes.containsKey(classeId)) moderees.add(classeId);
+        }
+        for (DroitPublicationEntity droit : daoAccessorService.getRepository(DroitPublicationRepository.class)
+                .findAllClassesByUserId(utilisateurId)) {
+            ClassesEntity c = droit.getClasse();
+            if (c == null) continue;
+            classes.putIfAbsent(c.getId(), c);
+            droitsParClasse.put(c.getId(), droit);
+        }
+
+        Map<String, String> nomsCache = new HashMap<>();
         List<ClasseAvecDroitDto> result = new ArrayList<>();
-        Set<String> seen = new HashSet<>();
+        for (ClassesEntity classe : classes.values()) {
+            boolean estCreateur = utilisateurId.equals(classe.getCreatorId());
+            boolean estModerateur = moderees.contains(classe.getId());
+            DroitPublicationEntity droit = droitsParClasse.get(classe.getId());
 
-        // 1. For professors: moderated classes (user is the moderator of the class)
-        if (userSubtypeService.isProfesseur(utilisateurId)) {
-            for (ClassesEntity classe : daoAccessorService.getRepository(ClassesRepository.class).findByModeratorId(utilisateurId)) {
-                if (seen.add(classe.getId())) {
-                    Classes mapped = mapClassWithMinimalData(classe);
-                    // estCreateur=true only if this user originally created the class
-                    boolean estCreateur = utilisateurId.equals(classe.getCreatorId());
-                    result.add(new ClasseAvecDroitDto(mapped, true, true, estCreateur));
-                }
+            ClasseAvecDroitDto dto;
+            if (estCreateur || estModerateur) {
+                // Gestionnaire de la classe (isClassManager) : publie et modère
+                dto = new ClasseAvecDroitDto(mapClassWithMinimalData(classe), true, true, estCreateur);
+                dto.setRole(estCreateur ? ClasseAvecDroitDto.ROLE_CREATEUR : ClasseAvecDroitDto.ROLE_MODERATEUR);
+            } else {
+                dto = new ClasseAvecDroitDto(mapClassWithMinimalData(classe),
+                        droit != null && droit.isPeutPublier(), droit != null && droit.isPeutModerer(), false);
+                dto.setRole(ClasseAvecDroitDto.ROLE_PUBLICATION);
             }
+            dto.setModerateurNom(classe.getModerator() != null ? nomComplet(classe.getModerator()) : null);
+            dto.setCreatorNom(nomUtilisateur(classe.getCreatorId(), nomsCache));
+            result.add(dto);
         }
-
-        // 2. Classes from droits_publication table where user is NOT the moderator → granted rights
-        List<DroitPublicationEntity> droits = daoAccessorService
-                .getRepository(DroitPublicationRepository.class)
-                .findAllClassesByUserId(utilisateurId);
-
-        for (DroitPublicationEntity droit : droits) {
-            ClassesEntity classe = droit.getClasse();
-            if (classe != null && seen.add(classe.getId())) {
-                // Only add here if user is NOT the moderator of this class
-                boolean isModerator = classe.getModerator() != null
-                        && utilisateurId.equals(classe.getModerator().getId());
-                if (!isModerator) {
-                    Classes mapped = mapClassWithMinimalData(classe);
-                    result.add(new ClasseAvecDroitDto(mapped, droit.isPeutPublier(), false));
-                }
-            }
-        }
-
         return result;
+    }
+
+    private String nomUtilisateur(String userId, Map<String, String> cache) {
+        if (userId == null || userId.isBlank()) return null;
+        return cache.computeIfAbsent(userId, id -> daoAccessorService.getRepository(UtilisateursRepository.class)
+                .findById(id).map(this::nomComplet).orElse(null));
+    }
+
+    private String nomComplet(UtilisateursEntity u) {
+        String nom = ((u.getPrenom() != null ? u.getPrenom() : "") + " " + (u.getNom() != null ? u.getNom() : "")).trim();
+        return nom.isEmpty() ? null : nom;
     }
 }

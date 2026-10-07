@@ -15,6 +15,10 @@ public interface ProfesseursRepository extends JpaRepository<ProfesseursEntity, 
     
     @Query(value = "SELECT professeur_id FROM ressources.professeur_classes_moderees WHERE classe_id = :classeId", nativeQuery = true)
     List<String> findModeratorIdsForClass(@Param("classeId") String classeId);
+
+    /** Classes dont le professeur est co-modérateur (table professeur_classes_moderees). */
+    @Query(value = "SELECT classe_id FROM ressources.professeur_classes_moderees WHERE professeur_id = :professeurId", nativeQuery = true)
+    List<String> findClassIdsModeratedBy(@Param("professeurId") String professeurId);
     
     @Query(value = "INSERT INTO ressources.professeur_classes_moderees (professeur_id, classe_id) VALUES (:professeurId, :classeId)", nativeQuery = true)
     @org.springframework.data.jpa.repository.Modifying

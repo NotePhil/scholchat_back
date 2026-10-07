@@ -56,7 +56,8 @@ public class GlobalExceptionHandler {
 
     private HttpStatus mapSchoolExceptionToHttpStatus(SchoolErrorCode code) {
         return switch (code) {
-            case NOT_FOUND, CODE_CLASSE_INVALIDE -> HttpStatus.NOT_FOUND;
+            // CONTRAT_INTROUVABLE : "pas encore de contrat" est un état normal côté clients (404, pas 500)
+            case NOT_FOUND, RESOURCE_NOT_FOUND, CODE_CLASSE_INVALIDE, CONTRAT_INTROUVABLE -> HttpStatus.NOT_FOUND;
             case OPERATION_INTERDITE, FORBIDDEN, INVALID_STATE, INACTIVE_USER, PROFIL_PROFESSEUR_NON_VALIDE,
                  MOT_DE_PASSE_A_CHANGER, COMPTE_EN_ATTENTE_APPROBATION,
                  CHANGEMENT_PROFIL_INTERDIT_ELEVE -> HttpStatus.FORBIDDEN;
