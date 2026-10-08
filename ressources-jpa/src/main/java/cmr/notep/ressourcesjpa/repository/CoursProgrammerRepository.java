@@ -27,4 +27,14 @@ public interface CoursProgrammerRepository extends JpaRepository<CoursProgrammer
 """)
     List<CoursProgrammerEntity> findByUserAccess(@Param("userId") String userId);
 
+    /** Nombre de programmations du cours dans la classe (table de jointure, ou ancienne colonne classe_id). */
+    @Query(value = """
+    SELECT COUNT(*) FROM ressources.cours_programmer cp
+    WHERE cp.cours_id = :coursId
+      AND (cp.classe_id = :classeId
+           OR EXISTS (SELECT 1 FROM ressources.cours_programmer_classes cpc
+                      WHERE cpc.cours_programmer_id = cp.id AND cpc.classe_id = :classeId))
+""", nativeQuery = true)
+    long countProgrammationsDansClasse(@Param("coursId") String coursId, @Param("classeId") String classeId);
+
 }

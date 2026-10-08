@@ -35,6 +35,9 @@ public class ParentAccessBusiness {
     private final UtilisateursBusiness utilisateursBusiness;
 
     @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.services.InscriptionClasseEmailService inscriptionClasseEmailService;
+
+    @org.springframework.beans.factory.annotation.Autowired
     private cmr.notep.business.services.EmailTemplateService emailTemplateService;
 
     public ParentAccessBusiness(DaoAccessorService daoAccessorService, MailServiceInterface mailService,
@@ -280,7 +283,10 @@ public class ParentAccessBusiness {
                                 classe.isAccesMajeur() ? "Élèves associés :" : "Nouveaux élèves proposés :"),
                         eleves);
 
-                mailService.sendEmail(classe.getModerator().getEmail(), subject, content);
+                // Envoi asynchrone après commit : la demande répond sans attendre le serveur SMTP
+                String emailModerateur = classe.getModerator().getEmail();
+                cmr.notep.business.services.InscriptionClasseService.apresCommit(
+                        () -> inscriptionClasseEmailService.envoyerHtml(emailModerateur, subject, content));
             } catch (Exception e) {
                 log.error("Erreur lors de l'envoi de la notification au modérateur", e);
             }

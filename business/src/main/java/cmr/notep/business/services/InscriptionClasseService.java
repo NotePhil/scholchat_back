@@ -214,6 +214,29 @@ public class InscriptionClasseService {
         }
     }
 
+    /**
+     * Demande d'accès acceptée pour un compte déjà actif (aucun autre e-mail envoyé : ni identifiants, ni profil
+     * élève, ni enfant accepté) : e-mail « Votre demande d'accès à la classe … a été acceptée » (après commit).
+     */
+    public void notifierAccesAccorde(UtilisateursEntity utilisateur, ClassesEntity classe, boolean pourParent) {
+        if (utilisateur == null || utilisateur.getEmail() == null || utilisateur.getEmail().isBlank()) return;
+        String email = utilisateur.getEmail();
+        String nomComplet = nomComplet(utilisateur);
+        String classeNom = classe.getNom();
+        apresCommit(() -> emailService.envoyerAccesAccorde(email, nomComplet, classeNom, pourParent));
+    }
+
+    /** Refus de la demande d'accès d'un compte déjà actif : e-mail « Refus d'accès » avec le motif (après commit). */
+    public void notifierAccesRefuse(UtilisateursEntity utilisateur, ClassesEntity classe, String motif) {
+        if (utilisateur == null || utilisateur.getEmail() == null || utilisateur.getEmail().isBlank()) return;
+        String email = utilisateur.getEmail();
+        String prenom = utilisateur.getPrenom();
+        String nom = utilisateur.getNom();
+        String classeId = classe.getId();
+        String classeNom = classe.getNom();
+        apresCommit(() -> emailService.envoyerAccesRefuse(email, prenom, nom, classeId, classeNom, motif));
+    }
+
     /** Refus de la demande d'un compte en attente d'inscription par classe : e-mail dédié (après commit). */
     public void notifierRefus(UtilisateursEntity utilisateur, ClassesEntity classe, String motif) {
         String email = utilisateur.getEmail();
@@ -262,7 +285,7 @@ public class InscriptionClasseService {
     }
 
     /** Exécute l'action après le commit de la transaction courante (immédiatement s'il n'y en a pas). */
-    static void apresCommit(Runnable action) {
+    public static void apresCommit(Runnable action) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override

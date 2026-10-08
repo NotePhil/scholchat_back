@@ -44,6 +44,9 @@ public class AccederBusiness {
     private cmr.notep.business.services.EmailTemplateService emailTemplateService;
 
     @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.services.InscriptionClasseEmailService inscriptionClasseEmailService;
+
+    @org.springframework.beans.factory.annotation.Autowired
     @org.springframework.context.annotation.Lazy
     private cmr.notep.business.services.InscriptionParentService inscriptionParentService;
 
@@ -188,8 +191,11 @@ public class AccederBusiness {
                                 "Veuillez traiter cette demande depuis votre interface modérateur."),
                         null);
 
-                mailService.sendEmail(moderateur.getEmail(), subject, content);
-                log.info("Notification envoyée au modérateur {}", moderateur.getEmail());
+                // Envoi asynchrone après commit : la demande d'accès répond sans attendre le serveur SMTP
+                String emailModerateur = moderateur.getEmail();
+                cmr.notep.business.services.InscriptionClasseService.apresCommit(
+                        () -> inscriptionClasseEmailService.envoyerHtml(emailModerateur, subject, content));
+                log.info("Notification programmée pour le modérateur {}", emailModerateur);
             } catch (Exception e) {
                 log.error("Erreur lors de l'envoi de la notification au modérateur: {}", e.getMessage());
             }
@@ -238,7 +244,7 @@ public class AccederBusiness {
 
         // 0. Compte créé par l'inscription avec code de classe (parent / élève majeur) jamais approuvé :
         //    mot de passe temporaire, activation du compte, e-mail des identifiants.
-        inscriptionClasseService.activerSiInscriptionClasse(demande.getUtilisateur(), demande.getClasse());
+        boolean compteActive = inscriptionClasseService.activerSiInscriptionClasse(demande.getUtilisateur(), demande.getClasse());
         //    Profil élève demandé par un compte existant (ajout de profil + code de classe) : rôle activé.
         boolean demandeProfilEleve = !demande.isEstParent()
                 && inscriptionClasseService.activerRoleEleveSiDemande(demande.getUtilisateur(), demande.getClasse());
@@ -280,7 +286,8 @@ public class AccederBusiness {
         if (!demande.isEstParent() && finalEleveId != null) {
             try {
                 List<DemandeAccesEntity> linkedParentRequests = daoAccessorService
-                        .getRepository(DemandeAccesRepository.class).findAll().stream()
+                        .getRepository(DemandeAccesRepository.class)
+                        .findByClasseIdInAndEtat(List.of(classeId), EtatDemandeAcces.EN_ATTENTE).stream()
                         .filter(d -> d.getEtat() == EtatDemandeAcces.EN_ATTENTE
                                 && d.isEstParent()
                                 && finalEleveId.equals(d.getEleveAssocieId())
@@ -291,6 +298,8 @@ public class AccederBusiness {
                     accorderAcces(parentDemande.getUtilisateur().getId(), parentDemande.getClasse().getId());
                     creerRelationParentEleve(parentDemande.getUtilisateur().getId(), finalEleveId);
                     finaliserDemande(parentDemande);
+                    // Le parent est prévenu comme pour une demande pour enfant approuvée (notification + e-mail)
+                    inscriptionParentService.notifierEnfantAccepte(parentDemande);
                     log.info("Auto-approved parent access for {} linked to student {}",
                             parentDemande.getUtilisateur().getId(), finalEleveId);
                 }
@@ -309,7 +318,14 @@ public class AccederBusiness {
             return;
         }
 
-        // 5. Send approval notification to the student
+        // 6. Compte déjà actif (élève majeur, parent pour lui-même, professeur…) : aucun e-mail n'a été envoyé
+        //    (ni identifiants, ni profil élève) -> e-mail « Votre demande d'accès … a été acceptée » (après commit).
+        if (!compteActive && !demandeProfilEleve) {
+            inscriptionClasseService.notifierAccesAccorde(demande.getUtilisateur(), demande.getClasse(),
+                    demande.isEstParent());
+        }
+
+        // 7. Send approval notification to the student
         try {
             String moderatorName = demande.getClasse().getModerator() != null
                     ? demande.getClasse().getModerator().getPrenom() + " " + demande.getClasse().getModerator().getNom()
@@ -414,11 +430,8 @@ public class AccederBusiness {
             if (!demande.isEstParent()) {
                 inscriptionClasseService.notifierRefusRoleEleveSiDemande(demande.getUtilisateur(), motifRejet);
             }
-            accessRejectionEmailService.sendRejectionEmail(
-                    dozerMapperBean.map(demande.getUtilisateur(), Utilisateurs.class),
-                    dozerMapperBean.map(demande.getClasse(), Classes.class),
-                    motifRejet
-            );
+            // Après commit, sans mapper toute l'entité (Dozer chargerait les associations paresseuses)
+            inscriptionClasseService.notifierAccesRefuse(demande.getUtilisateur(), demande.getClasse(), motifRejet);
         }
 
         // Send rejection notification to the student

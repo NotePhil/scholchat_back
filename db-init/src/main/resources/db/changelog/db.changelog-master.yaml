@@ -168,3 +168,11 @@ databaseChangeLog:
         - sqlFile:
             path: sql/migration-verification-codes.sql
             relativeToChangelogFile: false
+  - changeSet:
+      id: 25-exercise-programmer-cours
+      author: db-init
+      changes:
+        - sqlFile:
+            path: sql/migration-exercise-programmer-cours.sql
+            relativeToChangelogFile: false
+            splitStatements: false

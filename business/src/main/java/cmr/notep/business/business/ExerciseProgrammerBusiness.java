@@ -33,7 +33,27 @@ public class ExerciseProgrammerBusiness {
     private final DaoAccessorService daoAccessorService;
     private final NotificationService notificationService;
 
+    /** Programme sans diffuser (POST /exercises-programmer) ; renvoie la première programmation créée. */
     public ExerciseProgrammer programmerExercise(ExerciseProgrammer exerciseProgrammer) {
+        return programmer(exerciseProgrammer, false).get(0);
+    }
+
+    /** Programme et diffuse (POST /programmer-et-diffuser) ; renvoie la première programmation créée. */
+    public ExerciseProgrammer programmerEtDiffuserExercise(ExerciseProgrammer exerciseProgrammer) {
+        return programmer(exerciseProgrammer, true).get(0);
+    }
+
+    /**
+     * Programme un exercice pour une ou plusieurs classes. Chaque classe reçoit un cours (coursParClasse[classe],
+     * sinon coursId, sinon « Exercice général ») qui doit être programmé dans cette classe (400
+     * COURS_NON_PROGRAMME_DANS_CLASSE sinon ; tout est validé avant toute écriture). Les classes sont regroupées par
+     * cours : une programmation (exercises_programmer) par cours distinct, mêmes dates/type/état, chacune diffusée
+     * (si {@code diffuser}) dans ses classes et notifiée à leurs élèves (un élève n'est notifié qu'une fois).
+     * Un seul groupe (cas habituel) = une seule programmation, comme avant.
+     *
+     * @return les programmations créées, dans l'ordre des classes demandées (jamais vide)
+     */
+    public List<ExerciseProgrammer> programmer(ExerciseProgrammer exerciseProgrammer, boolean diffuser) {
         log.info("Programmation d'un nouvel exercice à partir de l'exercice ID: {}", exerciseProgrammer.getExerciseId());
 
         ExerciseEntity exerciseSource = daoAccessorService.getRepository(ExerciseRepository.class)
@@ -43,97 +63,167 @@ public class ExerciseProgrammerBusiness {
         UtilisateursEntity professeur = userSubtypeService.findProfesseur(exerciseProgrammer.getProgrammeParId())
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Professeur programmeur introuvable"));
 
-        ExerciseProgrammerEntity entity = new ExerciseProgrammerEntity();
-        entity.setId(UUID.randomUUID().toString());
-        entity.setExercise(exerciseSource);
-        entity.setProgrammePar(professeur);
-        entity.setTypeAssignation(exerciseProgrammer.getTypeAssignation() != null 
-            ? exerciseProgrammer.getTypeAssignation() 
-            : cmr.notep.modele.TypeAssignation.EXERCICE); // Default to EXERCICE
-        entity.setDateExoPrevue(exerciseProgrammer.getDateExoPrevue());
-        entity.setDateDebutExoEffectif(exerciseProgrammer.getDateDebutExoEffectif());
-        entity.setDateFinExoEffectif(exerciseProgrammer.getDateFinExoEffectif());
-        entity.setEtat(EtatExercise.ACTIF);
+        // 1. Validation : un cours (ou null = général) par classe, regroupement par cours
+        List<String> classeIds = classeIdsDemandees(exerciseProgrammer);
+        java.util.Map<String, CoursEntity> coursParGroupe = new java.util.LinkedHashMap<>();
+        java.util.Map<String, List<String>> classesParGroupe = new java.util.LinkedHashMap<>();
+        if (classeIds.isEmpty()) {
+            CoursEntity cours = resoudreCours(exerciseProgrammer.getCoursId(), List.of());
+            String cle = cours == null ? "" : cours.getId();
+            coursParGroupe.put(cle, cours);
+            classesParGroupe.put(cle, new ArrayList<>());
+        } else {
+            java.util.Map<String, String> parClasse = exerciseProgrammer.getCoursParClasse() != null
+                    ? exerciseProgrammer.getCoursParClasse() : java.util.Map.of();
+            for (String classeId : classeIds) {
+                String coursId = parClasse.containsKey(classeId) ? parClasse.get(classeId) : exerciseProgrammer.getCoursId();
+                CoursEntity cours = resoudreCoursPourClasse(coursId, classeId);
+                String cle = cours == null ? "" : cours.getId();
+                coursParGroupe.putIfAbsent(cle, cours);
+                classesParGroupe.computeIfAbsent(cle, k -> new ArrayList<>()).add(classeId);
+            }
+        }
 
-        exerciseSource.setEtat(EtatExercise.ACTIF);
+        // 2. Création d'une programmation par cours distinct
+        exerciseSource.setEtat(diffuser && !classeIds.isEmpty() ? EtatExercise.PUBLIE : EtatExercise.ACTIF);
         daoAccessorService.getRepository(ExerciseRepository.class).save(exerciseSource);
+        if (diffuser) {
+            lierCoursLegacy(exerciseSource, exerciseProgrammer.getCoursIds());
+        }
 
-        ExerciseProgrammerEntity savedEntity = daoAccessorService.getRepository(ExerciseProgrammerRepository.class).save(entity);
-        log.info("Exercice programmé avec ID: {} à partir de l'exercice source: {} (Type: {})", 
-            savedEntity.getId(), exerciseProgrammer.getExerciseId(), entity.getTypeAssignation());
+        String exerciseName = exerciseSource.getNom() != null ? exerciseSource.getNom() : "Exercice";
+        String profName = professeur.getPrenom() + " " + professeur.getNom();
+        java.util.Set<String> elevesNotifies = new java.util.HashSet<>();
+        List<ExerciseProgrammer> crees = new ArrayList<>();
+        for (java.util.Map.Entry<String, List<String>> groupe : classesParGroupe.entrySet()) {
+            ExerciseProgrammerEntity entity = new ExerciseProgrammerEntity();
+            entity.setId(UUID.randomUUID().toString());
+            entity.setExercise(exerciseSource);
+            entity.setProgrammePar(professeur);
+            entity.setTypeAssignation(exerciseProgrammer.getTypeAssignation() != null
+                    ? exerciseProgrammer.getTypeAssignation() : TypeAssignation.EXERCICE);
+            entity.setDateExoPrevue(exerciseProgrammer.getDateExoPrevue());
+            entity.setDateDebutExoEffectif(exerciseProgrammer.getDateDebutExoEffectif());
+            entity.setDateFinExoEffectif(exerciseProgrammer.getDateFinExoEffectif());
+            entity.setEtat(EtatExercise.ACTIF);
+            entity.setCours(coursParGroupe.get(groupe.getKey()));
+            if (diffuser) {
+                for (String classeId : groupe.getValue()) {
+                    ClassesEntity classe = daoAccessorService.getRepository(ClassesRepository.class).findById(classeId)
+                            .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe introuvable"));
+                    if (!entity.getClassesDiffusees().contains(classe)) {
+                        entity.getClassesDiffusees().add(classe);
+                    }
+                }
+            }
+            ExerciseProgrammerEntity saved = daoAccessorService.getRepository(ExerciseProgrammerRepository.class).save(entity);
+            log.info("Exercice programmé {} (source {}, type {}, cours {}) {} classes {}", saved.getId(),
+                    exerciseSource.getId(), saved.getTypeAssignation(),
+                    saved.getCours() != null ? saved.getCours().getId() : "(général)",
+                    diffuser ? "diffusé dans les" : "pour les", groupe.getValue());
 
-        return dozerMapperBean.map(savedEntity, ExerciseProgrammer.class);
+            if (diffuser && !groupe.getValue().isEmpty()) {
+                try {
+                    notificationService.createExerciseAssignedNotification(saved.getId(), exerciseName,
+                            professeur.getId(), profName, groupe.getValue(), elevesNotifies);
+                } catch (Exception e) {
+                    log.error("Error sending exercise notifications: {}", e.getMessage());
+                }
+            }
+            crees.add(dozerMapperBean.map(saved, ExerciseProgrammer.class));
+        }
+        return crees;
     }
 
-    // Les autres méthodes restent inchangées...
-    public ExerciseProgrammer programmerEtDiffuserExercise(ExerciseProgrammer exerciseProgrammer) {
-        ExerciseProgrammer exerciseProgramme = programmerExercise(exerciseProgrammer);
-
-        // Link to specific courses if provided
-        if (exerciseProgrammer.getCoursIds() != null && !exerciseProgrammer.getCoursIds().isEmpty()) {
-            for (String coursId : exerciseProgrammer.getCoursIds()) {
-                try {
-                    daoAccessorService.getRepository(ExerciseRepository.class)
-                        .findById(exerciseProgrammer.getExerciseId()).ifPresent(ex -> {
-                            cmr.notep.ressourcesjpa.dao.CoursEntity cours = daoAccessorService
-                                .getRepository(cmr.notep.ressourcesjpa.repository.CoursRepository.class)
-                                .findById(coursId).orElse(null);
-                            if (cours != null && !ex.getCoursLies().contains(cours)) {
-                                ex.getCoursLies().add(cours);
-                                daoAccessorService.getRepository(ExerciseRepository.class).save(ex);
-                            }
-                        });
-                } catch (Exception e) {
-                    log.warn("Could not link exercise to cours {}: {}", coursId, e.getMessage());
-                }
-            }
+    /** Ancien champ coursIds : lie l'exercice source aux cours (exercises.coursLies), sans effet sur le rattachement. */
+    private void lierCoursLegacy(ExerciseEntity exercise, List<String> coursIds) {
+        if (coursIds == null || coursIds.isEmpty()) {
+            return;
         }
-
-        // Diffuse to classes
-        List<String> classeIdsToDistribute = new ArrayList<>();
-        if (exerciseProgrammer.getClasseIds() != null && !exerciseProgrammer.getClasseIds().isEmpty()) {
-            classeIdsToDistribute.addAll(exerciseProgrammer.getClasseIds());
-        } else if (exerciseProgrammer.getClassesDiffusees() != null && !exerciseProgrammer.getClassesDiffusees().isEmpty()) {
-            for (Classes classe : exerciseProgrammer.getClassesDiffusees()) {
-                classeIdsToDistribute.add(classe.getId());
-            }
-        }
-
-        if (!classeIdsToDistribute.isEmpty()) {
-            List<String> classeIds = new ArrayList<>();
-            for (String classId : classeIdsToDistribute) {
-                diffuserExerciseDansClasse(exerciseProgramme.getId(), classId);
-                classeIds.add(classId);
-            }
-
-            String sourceExerciseId = exerciseProgrammer.getExerciseId() != null
-                    ? exerciseProgrammer.getExerciseId()
-                    : exerciseProgramme.getExerciseId();
-            ExerciseEntity source = sourceExerciseId != null
-                    ? daoAccessorService.getRepository(ExerciseRepository.class).findById(sourceExerciseId).orElse(null)
-                    : null;
-            if (source != null) {
-                source.setEtat(EtatExercise.PUBLIE);
-                daoAccessorService.getRepository(ExerciseRepository.class).save(source);
-            }
-
+        for (String coursId : coursIds) {
             try {
-                UtilisateursEntity prof = userSubtypeService.findProfesseur(exerciseProgrammer.getProgrammeParId()).orElse(null);
-                if (prof != null) {
-                    String profName = prof.getPrenom() + " " + prof.getNom();
-                    // Use the exercise NAME (not ID) for the notification message
-                    String exerciseName = (source != null && source.getNom() != null)
-                            ? source.getNom()
-                            : "Exercice";
-                    notificationService.createExerciseAssignedNotification(
-                            exerciseProgramme.getId(), exerciseName, prof.getId(), profName, classeIds);
+                CoursEntity cours = daoAccessorService.getRepository(CoursRepository.class).findById(coursId).orElse(null);
+                if (cours != null && !exercise.getCoursLies().contains(cours)) {
+                    exercise.getCoursLies().add(cours);
+                    daoAccessorService.getRepository(ExerciseRepository.class).save(exercise);
                 }
             } catch (Exception e) {
-                log.error("Error sending exercise notifications: {}", e.getMessage());
+                log.warn("Could not link exercise to cours {}: {}", coursId, e.getMessage());
             }
         }
+    }
 
-        return exerciseProgramme;
+    /** Valide le cours d'une classe (null/vide = général) ; message d'erreur nommant la classe. */
+    private CoursEntity resoudreCoursPourClasse(String coursId, String classeId) {
+        if (coursId == null || coursId.isBlank()) {
+            return null;
+        }
+        CoursEntity cours = daoAccessorService.getRepository(CoursRepository.class).findById(coursId.trim())
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.COURS_NON_PROGRAMME_DANS_CLASSE,
+                        "Cours introuvable : " + coursId));
+        if (daoAccessorService.getRepository(CoursProgrammerRepository.class)
+                .countProgrammationsDansClasse(cours.getId(), classeId) == 0) {
+            String nomClasse = daoAccessorService.getRepository(ClassesRepository.class).findById(classeId)
+                    .map(ClassesEntity::getNom).orElse(classeId);
+            throw new SchoolException(SchoolErrorCode.COURS_NON_PROGRAMME_DANS_CLASSE,
+                    "Le cours « " + cours.getTitre() + " » n'est pas programmé dans la classe « " + nomClasse + " ».");
+        }
+        return cours;
+    }
+
+    private static List<String> classeIdsDemandees(ExerciseProgrammer exerciseProgrammer) {
+        java.util.LinkedHashSet<String> ids = new java.util.LinkedHashSet<>();
+        if (exerciseProgrammer.getClasseIds() != null) {
+            exerciseProgrammer.getClasseIds().stream().filter(id -> id != null && !id.isBlank()).forEach(ids::add);
+        }
+        if (ids.isEmpty() && exerciseProgrammer.getClassesDiffusees() != null) {
+            exerciseProgrammer.getClassesDiffusees().stream()
+                    .filter(c -> c != null && c.getId() != null).forEach(c -> ids.add(c.getId()));
+        }
+        if (exerciseProgrammer.getCoursParClasse() != null) {
+            exerciseProgrammer.getCoursParClasse().keySet().stream().filter(id -> id != null && !id.isBlank())
+                    .forEach(ids::add);
+        }
+        return new ArrayList<>(ids);
+    }
+
+    /**
+     * Cours de rattachement d'un exercice programmé : null/vide = « Exercices généraux ». Sinon le cours doit
+     * exister et être programmé (cours_programmer) dans chacune des classes indiquées ; à défaut, 400
+     * COURS_NON_PROGRAMME_DANS_CLASSE.
+     */
+    public CoursEntity resoudreCours(String coursId, java.util.Collection<String> classeIds) {
+        if (coursId == null || coursId.isBlank()) {
+            return null;
+        }
+        CoursEntity cours = daoAccessorService.getRepository(CoursRepository.class).findById(coursId.trim())
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.COURS_NON_PROGRAMME_DANS_CLASSE,
+                        "Cours introuvable : " + coursId));
+        if (classeIds != null) {
+            CoursProgrammerRepository cpRepo = daoAccessorService.getRepository(CoursProgrammerRepository.class);
+            for (String classeId : classeIds) {
+                if (cpRepo.countProgrammationsDansClasse(cours.getId(), classeId) == 0) {
+                    throw new SchoolException(SchoolErrorCode.COURS_NON_PROGRAMME_DANS_CLASSE,
+                            "Le cours « " + cours.getTitre() + " » n'est pas programmé dans cette classe.");
+                }
+            }
+        }
+        return cours;
+    }
+
+    /**
+     * Change (ou retire, coursId null/vide) le cours de rattachement d'un exercice programmé existant. Le cours
+     * doit être programmé dans toutes les classes où l'exercice est diffusé.
+     */
+    public ExerciseProgrammerEntity changerCours(String exerciseProgrammerId, String coursId) {
+        ExerciseProgrammerEntity ep = obtenirExerciseProgrammeEntityParId(exerciseProgrammerId);
+        List<String> classeIds = ep.getClassesDiffusees() == null ? List.of()
+                : ep.getClassesDiffusees().stream().map(ClassesEntity::getId).collect(Collectors.toList());
+        ep.setCours(resoudreCours(coursId, classeIds));
+        ExerciseProgrammerEntity saved = daoAccessorService.getRepository(ExerciseProgrammerRepository.class).save(ep);
+        log.info("Exercice programmé {} rattaché au cours {}", exerciseProgrammerId,
+                saved.getCours() != null ? saved.getCours().getId() : "(exercices généraux)");
+        return saved;
     }
 
     public ExerciseProgrammerEntity diffuserExerciseDansClasse(String exerciseProgrammerId, String classeId) {

@@ -30,6 +30,7 @@ public class ExerciseProgrammerService implements ExerciseProgrammerApi {
 
     @Override
     public ExerciseProgrammerResponseDTO programmerExercise(ExerciseProgrammerRequestDTO requestDTO) {
+        ExerciseProgrammerMapper.normaliserClasses(requestDTO);
         currentUser.requireAuthenticated();
         if (!currentUser.isAdmin()) {
             if (!currentUser.hasRole("PROFESSOR") && !currentUser.hasRole("TUTOR")) {
@@ -42,14 +43,12 @@ public class ExerciseProgrammerService implements ExerciseProgrammerApi {
         log.info("Programmation d'un nouvel exercice à partir de l'exercice ID: {}", requestDTO.getExerciseId());
 
         ExerciseProgrammer exerciseProgrammer = exerciseProgrammerMapper.toModel(requestDTO);
-        ExerciseProgrammer createdExercise = exerciseProgrammerBusiness.programmerExercise(exerciseProgrammer);
-
-        ExerciseProgrammerEntity entity = exerciseProgrammerBusiness.obtenirExerciseProgrammeEntityParId(createdExercise.getId());
-        return exerciseProgrammerMapper.toResponseDTO(entity);
+        return reponseCreation(exerciseProgrammerBusiness.programmer(exerciseProgrammer, false));
     }
 
     @Override
     public ExerciseProgrammerResponseDTO programmerEtDiffuserExercise(ExerciseProgrammerRequestDTO requestDTO) {
+        ExerciseProgrammerMapper.normaliserClasses(requestDTO);
         currentUser.requireAuthenticated();
         if (!currentUser.isAdmin()) {
             if (!currentUser.hasRole("PROFESSOR") && !currentUser.hasRole("TUTOR")) {
@@ -62,10 +61,23 @@ public class ExerciseProgrammerService implements ExerciseProgrammerApi {
         log.info("Programmation et diffusion d'un exercice à partir de l'exercice ID: {}", requestDTO.getExerciseId());
 
         ExerciseProgrammer exerciseProgrammer = exerciseProgrammerMapper.toModel(requestDTO);
-        ExerciseProgrammer createdExercise = exerciseProgrammerBusiness.programmerEtDiffuserExercise(exerciseProgrammer);
+        return reponseCreation(exerciseProgrammerBusiness.programmer(exerciseProgrammer, true));
+    }
 
-        ExerciseProgrammerEntity entity = exerciseProgrammerBusiness.obtenirExerciseProgrammeEntityParId(createdExercise.getId());
-        return exerciseProgrammerMapper.toResponseDTO(entity);
+    /**
+     * Réponse des POST de programmation : la première programmation créée (forme historique) + la liste complète
+     * dans {@code programmations} et leur nombre dans {@code nombreProgrammations}.
+     */
+    private ExerciseProgrammerResponseDTO reponseCreation(List<ExerciseProgrammer> crees) {
+        List<ExerciseProgrammerResponseDTO> dtos = crees.stream()
+                .map(c -> exerciseProgrammerMapper.toResponseDTO(
+                        exerciseProgrammerBusiness.obtenirExerciseProgrammeEntityParId(c.getId())))
+                .collect(Collectors.toList());
+        ExerciseProgrammerResponseDTO premiere = exerciseProgrammerMapper.toResponseDTO(
+                exerciseProgrammerBusiness.obtenirExerciseProgrammeEntityParId(crees.get(0).getId()));
+        premiere.setProgrammations(dtos);
+        premiere.setNombreProgrammations(dtos.size());
+        return premiere;
     }
 
     @Override
@@ -121,6 +133,16 @@ public class ExerciseProgrammerService implements ExerciseProgrammerApi {
 
         ExerciseProgrammer updatedExercise = exerciseProgrammerBusiness.mettreAJourEtatExerciseProgramme(exerciseProgrammerId, nouvelEtat);
         ExerciseProgrammerEntity entity = exerciseProgrammerBusiness.obtenirExerciseProgrammeEntityParId(updatedExercise.getId());
+        return exerciseProgrammerMapper.toResponseDTO(entity);
+    }
+
+    @Override
+    public ExerciseProgrammerResponseDTO changerCoursExerciseProgramme(String exerciseProgrammerId,
+                                                                       java.util.Map<String, String> body) {
+        accessControl.requireExerciseProgrammeTeacher(exerciseProgrammerId);
+        String coursId = body == null ? null : body.get("coursId");
+        log.info("Rattachement de l'exercice programmé {} au cours {}", exerciseProgrammerId, coursId);
+        ExerciseProgrammerEntity entity = exerciseProgrammerBusiness.changerCours(exerciseProgrammerId, coursId);
         return exerciseProgrammerMapper.toResponseDTO(entity);
     }
 

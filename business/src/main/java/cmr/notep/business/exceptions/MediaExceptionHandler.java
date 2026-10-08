@@ -67,6 +67,8 @@ public class MediaExceptionHandler {
             case ENFANTS_TROP_NOMBREUX:
             case ENFANT_INVALIDE:
             case ENFANT_EN_DOUBLE:
+            // Exercice programmé : cours non programmé dans la classe
+            case COURS_NON_PROGRAMME_DANS_CLASSE:
                 return HttpStatus.BAD_REQUEST;
             case TROP_DE_TENTATIVES:
                 return HttpStatus.TOO_MANY_REQUESTS;

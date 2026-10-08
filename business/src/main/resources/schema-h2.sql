@@ -709,3 +709,11 @@ CREATE TABLE IF NOT EXISTS ressources.verification_codes (
     CONSTRAINT fk_verification_codes_utilisateur FOREIGN KEY (utilisateur_id)
         REFERENCES ressources.utilisateurs (id) ON DELETE CASCADE
 );
+
+-- Exercice programmé rattaché à un cours (changeset 25-exercise-programmer-cours) : NULL = « Exercices généraux »
+ALTER TABLE ressources.exercises_programmer ADD COLUMN IF NOT EXISTS cours_id VARCHAR(255);
+ALTER TABLE ressources.exercises_programmer ADD CONSTRAINT IF NOT EXISTS fk_exercises_programmer_cours
+    FOREIGN KEY (cours_id) REFERENCES ressources.cours (id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_exercises_programmer_cours ON ressources.exercises_programmer (cours_id);
+CREATE INDEX IF NOT EXISTS idx_cours_programmer_classes_classe ON ressources.cours_programmer_classes (classe_id);
+CREATE INDEX IF NOT EXISTS idx_questions_reponses_exercise ON ressources.questions_reponses (exercise_id);

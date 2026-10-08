@@ -32,9 +32,20 @@ public class ExerciseProgrammerResponseDTO {
     private Date dateExoPrevue;
     private Date dateDebutExoEffectif;
     private Date dateFinExoEffectif;
+    /** Cours de rattachement de l'exercice programmé ; null = « Exercices généraux ». */
+    private String coursId;
+    private String coursTitre;
     private List<CoursSummaryDTO> coursLies;
     private List<MatiereSummaryDTO> matieres;
     private List<QuestionReponseSummaryDTO> questions;
     private List<ClasseSummaryDTO> classesDiffusees;
     private List<ParticipationExerciseResponseDTO> participations;
+    /**
+     * POST /exercises-programmer[/programmer-et-diffuser] uniquement : toutes les programmations créées par la requête
+     * (la première est aussi l'objet racine). Plusieurs éléments lorsque coursParClasse associe des cours différents
+     * aux classes. Null sur les autres endpoints.
+     */
+    private List<ExerciseProgrammerResponseDTO> programmations;
+    /** Nombre de programmations créées (POST uniquement ; null ailleurs). */
+    private Integer nombreProgrammations;
 }

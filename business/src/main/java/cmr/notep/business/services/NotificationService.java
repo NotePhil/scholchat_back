@@ -111,7 +111,19 @@ public class NotificationService {
      */
     @Transactional
     public void createExerciseAssignedNotification(String exerciseProgrammerId, String exerciseName, String professorId, String professorName, List<String> classeIds) {
-        java.util.Set<String> notified = new java.util.HashSet<>();
+        createExerciseAssignedNotification(exerciseProgrammerId, exerciseName, professorId, professorName, classeIds,
+                new java.util.HashSet<>());
+    }
+
+    /**
+     * Variante partageant l'ensemble des élèves déjà notifiés : quand une même programmation est éclatée en plusieurs
+     * exercices programmés (un cours différent par classe), un élève inscrit dans plusieurs des classes n'est notifié
+     * qu'une fois.
+     */
+    @Transactional
+    public void createExerciseAssignedNotification(String exerciseProgrammerId, String exerciseName, String professorId,
+                                                   String professorName, List<String> classeIds,
+                                                   java.util.Set<String> notified) {
         for (String classeId : classeIds) {
             List<String> studentIds = accederRepository.findUserIdsByClasseId(classeId);
             for (String studentId : studentIds) {

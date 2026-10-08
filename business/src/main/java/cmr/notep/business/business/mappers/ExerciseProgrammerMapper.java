@@ -34,7 +34,36 @@ public class ExerciseProgrammerMapper {
         if (requestDTO.getCoursIds() != null && !requestDTO.getCoursIds().isEmpty()) {
             exerciseProgrammer.setCoursIds(requestDTO.getCoursIds());
         }
+        if (requestDTO.getCoursId() != null && !requestDTO.getCoursId().isBlank()) {
+            exerciseProgrammer.setCoursId(requestDTO.getCoursId().trim());
+        }
+        if (requestDTO.getCoursParClasse() != null && !requestDTO.getCoursParClasse().isEmpty()) {
+            java.util.Map<String, String> parClasse = new java.util.LinkedHashMap<>();
+            requestDTO.getCoursParClasse().forEach((classeId, coursId) -> {
+                if (classeId != null && !classeId.isBlank()) {
+                    parClasse.put(classeId.trim(), coursId == null || coursId.isBlank() ? null : coursId.trim());
+                }
+            });
+            exerciseProgrammer.setCoursParClasse(parClasse);
+        }
         return exerciseProgrammer;
+    }
+
+    /**
+     * Ajoute à classeIds les classes citées dans coursParClasse (pour que le contrôle d'accès « professeur de la
+     * classe » et la diffusion portent aussi sur elles).
+     */
+    public static void normaliserClasses(ExerciseProgrammerRequestDTO requestDTO) {
+        if (requestDTO == null || requestDTO.getCoursParClasse() == null || requestDTO.getCoursParClasse().isEmpty()) {
+            return;
+        }
+        java.util.LinkedHashSet<String> ids = new java.util.LinkedHashSet<>();
+        if (requestDTO.getClasseIds() != null) {
+            requestDTO.getClasseIds().stream().filter(id -> id != null && !id.isBlank()).map(String::trim).forEach(ids::add);
+        }
+        requestDTO.getCoursParClasse().keySet().stream().filter(id -> id != null && !id.isBlank()).map(String::trim)
+                .forEach(ids::add);
+        requestDTO.setClasseIds(new ArrayList<>(ids));
     }
     private ParticipationExerciseResponseDTO mapParticipationToDTO(ParticiperExoEntity participation) {
         return ParticipationExerciseResponseDTO.builder()
@@ -43,6 +72,8 @@ public class ExerciseProgrammerMapper {
                 .utilisateurPrenom(participation.getUtilisateur().getPrenom())
                 .exerciseProgrammerId(participation.getExerciseProgrammer().getId())
                 .exerciseProgrammerNom(participation.getExerciseProgrammer().getExercise().getNom())
+                .coursId(coursId(participation.getExerciseProgrammer()))
+                .coursTitre(coursTitre(participation.getExerciseProgrammer()))
                 .etatSoumission(participation.getEtatSoumission())
                 .note(participation.getNote())
                 .appreciation(participation.getAppreciation())
@@ -71,6 +102,8 @@ public class ExerciseProgrammerMapper {
                 .dateExoPrevue(entity.getDateExoPrevue())
                 .dateDebutExoEffectif(entity.getDateDebutExoEffectif())
                 .dateFinExoEffectif(entity.getDateFinExoEffectif())
+                .coursId(coursId(entity))
+                .coursTitre(coursTitre(entity))
                 .build();
 
         responseDTO.setClassesDiffusees(entity.getClassesDiffusees() != null ?
@@ -116,6 +149,15 @@ public class ExerciseProgrammerMapper {
                         .collect(Collectors.toList()) : new ArrayList<>());
 
         return responseDTO;
+    }
+
+    /** Cours de rattachement (null = « Exercices généraux »). */
+    public static String coursId(ExerciseProgrammerEntity entity) {
+        return entity != null && entity.getCours() != null ? entity.getCours().getId() : null;
+    }
+
+    public static String coursTitre(ExerciseProgrammerEntity entity) {
+        return entity != null && entity.getCours() != null ? entity.getCours().getTitre() : null;
     }
 
     public ExerciseProgrammerEntity toEntity(ExerciseProgrammer exerciseProgrammer) {

@@ -70,7 +70,9 @@ public enum SchoolErrorCode {
     ENFANT_INVALIDE("Prenom et nom de l'enfant obligatoires"),                    // HTTP 400 (+ enfantIndex)
     ENFANT_EN_DOUBLE("Enfant en double"),                                         // HTTP 400 (+ enfantIndex)
     // Session PARENT dont aucun enfant n'a encore ete accepte dans une classe — HTTP 403
-    PARENT_SANS_ENFANT_VALIDE("Aucun enfant accepte dans une classe");
+    PARENT_SANS_ENFANT_VALIDE("Aucun enfant accepte dans une classe"),
+    // Exercice programmé rattaché à un cours qui n'est pas programmé dans la classe (ou inexistant) — HTTP 400
+    COURS_NON_PROGRAMME_DANS_CLASSE("Ce cours n'est pas programme dans cette classe");
     private final String message;
 
     SchoolErrorCode(String message) {

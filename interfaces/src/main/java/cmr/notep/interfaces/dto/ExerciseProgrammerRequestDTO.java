@@ -24,4 +24,16 @@ public class ExerciseProgrammerRequestDTO {
     private EtatExercise etat;
     private List<String> classeIds;
     private List<String> coursIds; // optional: link to specific courses
+    /**
+     * Cours (programmé dans la/les classe(s) de diffusion) auquel rattacher cet exercice programmé.
+     * Absent/vide = « Exercices généraux ». Sinon 400 COURS_NON_PROGRAMME_DANS_CLASSE.
+     */
+    private String coursId;
+    /**
+     * Cours choisi pour chaque classe : {classeId: coursId | null (« Exercice général »)}. Prioritaire sur coursId
+     * pour les classes listées (coursId reste la valeur par défaut des autres classes). Les classes en clé sont
+     * ajoutées à classeIds. Si toutes les classes ont le même cours, une seule programmation est créée ; sinon une
+     * programmation par cours distinct (mêmes dates/type), chacune diffusée dans ses classes.
+     */
+    private java.util.Map<String, String> coursParClasse;
 }

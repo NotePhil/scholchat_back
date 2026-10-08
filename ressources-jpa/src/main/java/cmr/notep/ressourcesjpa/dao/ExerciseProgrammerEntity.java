@@ -47,6 +47,11 @@ public class ExerciseProgrammerEntity {
     @JoinColumn(name = "programme_par_id", nullable = false)
     private UtilisateursEntity programmePar;
 
+    /** Cours auquel l'exercice est rattaché (programmé dans la classe) ; NULL = « Exercices généraux ». */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cours_id")
+    private CoursEntity cours;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "exercise_programmer_classes", schema = "ressources",
             joinColumns = @JoinColumn(name = "exercise_programmer_id"),

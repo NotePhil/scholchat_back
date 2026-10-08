@@ -80,6 +80,49 @@ public class InscriptionClasseEmailService {
         }
     }
 
+    /** Envoi asynchrone d'un e-mail HTML déjà généré (ex. notification du modérateur d'une nouvelle demande). */
+    @Async
+    public void envoyerHtml(String email, String sujet, String html) {
+        try {
+            mailService.sendEmail(email, sujet, html);
+            log.info("E-mail « {} » sent to {}", sujet, email);
+        } catch (Exception e) {
+            log.error("E-mail « {} » could not be sent to {}: {}", sujet, email, e.getMessage());
+        }
+    }
+
+    /** Demande d'accès à une classe acceptée (compte déjà actif) : « Votre demande d'accès … a été acceptée ». */
+    @Async
+    public void envoyerAccesAccorde(String email, String nomComplet, String classeNom, boolean pourParent) {
+        try {
+            String html = emailTemplateService.generateAccesClasseAccordeEmail(nomComplet, classeNom, pourParent);
+            mailService.sendEmail(email, "Votre demande d'accès à la classe " + classeNom + " a été acceptée", html);
+            log.info("Class access granted e-mail sent to {}", email);
+        } catch (Exception e) {
+            log.error("Class access granted e-mail could not be sent to {}: {}", email, e.getMessage());
+        }
+    }
+
+    /** Demande d'accès refusée (compte déjà actif), avec le motif éventuel. */
+    @Async
+    public void envoyerAccesRefuse(String email, String prenom, String nom, String classeId, String classeNom,
+                                   String motif) {
+        try {
+            cmr.notep.interfaces.modeles.Utilisateurs u = new cmr.notep.interfaces.modeles.Utilisateurs();
+            u.setPrenom(prenom == null ? "" : prenom);
+            u.setNom(nom == null ? "" : nom);
+            u.setEmail(email);
+            cmr.notep.interfaces.modeles.Classes c = new cmr.notep.interfaces.modeles.Classes();
+            c.setId(classeId);
+            c.setNom(classeNom);
+            String html = emailTemplateService.generateAccessRejectionEmail(u, c, motif);
+            mailService.sendEmail(email, "Refus d'accès à la classe " + classeNom, html);
+            log.info("Class access rejected e-mail sent to {}", email);
+        } catch (Exception e) {
+            log.error("Class access rejected e-mail could not be sent to {}: {}", email, e.getMessage());
+        }
+    }
+
     @Async
     public void envoyerEnfantRefuse(String email, String nomCompletParent, String enfantNom, String classeNom, String motif) {
         try {

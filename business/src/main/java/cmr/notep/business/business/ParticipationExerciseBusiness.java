@@ -253,6 +253,8 @@ public class ParticipationExerciseBusiness {
                 .utilisateurPrenom(participation.getUtilisateur().getPrenom())
                 .exerciseProgrammerId(participation.getExerciseProgrammer().getId())
                 .exerciseProgrammerNom(participation.getExerciseProgrammer().getExercise().getNom())
+                .coursId(cmr.notep.business.business.mappers.ExerciseProgrammerMapper.coursId(participation.getExerciseProgrammer()))
+                .coursTitre(cmr.notep.business.business.mappers.ExerciseProgrammerMapper.coursTitre(participation.getExerciseProgrammer()))
                 .etatSoumission(participation.getEtatSoumission())
                 .note(participation.getNote())
                 .appreciation(participation.getAppreciation())

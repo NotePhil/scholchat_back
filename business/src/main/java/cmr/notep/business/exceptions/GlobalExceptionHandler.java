@@ -66,7 +66,7 @@ public class GlobalExceptionHandler {
             case INTERFACE_NON_RESPECTEE, INVALID_INPUT, CODE_CLASSE_REQUIS, CLASSE_NON_ACTIVE,
                  CLASSE_RESERVEE_MINEURS, CODE_VERIFICATION_INVALIDE, CODE_VERIFICATION_EXPIRE,
                  COMPTE_NON_ELIGIBLE, ENFANTS_REQUIS, ENFANTS_TROP_NOMBREUX, ENFANT_INVALIDE,
-                 ENFANT_EN_DOUBLE -> HttpStatus.BAD_REQUEST;
+                 ENFANT_EN_DOUBLE, COURS_NON_PROGRAMME_DANS_CLASSE -> HttpStatus.BAD_REQUEST;
             case DUPLICATE_RESOURCE, ROLE_INCOMPATIBLE, EMAIL_DEJA_UTILISE, COMPTE_NON_ACTIVE,
                  COMPTE_EN_ATTENTE_VALIDATION -> HttpStatus.CONFLICT;
             // Inscription refusée : un compte en attente d'approbation existe déjà pour cet e-mail

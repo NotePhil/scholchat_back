@@ -210,6 +210,19 @@ public class EmailTemplateService {
         return templateEngine.process("email/enfant-acces-approuve", context);
     }
 
+    /**
+     * Demande d'accès à une classe acceptée pour un compte déjà actif (élève majeur, parent pour lui-même,
+     * professeur…) : « Votre demande d'accès à la classe … a été acceptée ».
+     */
+    public String generateAccesClasseAccordeEmail(String nomComplet, String classeNom, boolean pourParent) {
+        Context context = new Context();
+        context.setVariable("userName", nomComplet);
+        context.setVariable("classeNom", classeNom);
+        context.setVariable("pourParent", pourParent);
+        context.setVariable("loginUrl", loginUrl());
+        return templateEngine.process("email/acces-classe-accorde", context);
+    }
+
     /** Demande d'un parent pour son enfant refusée (avec le motif). */
     public String generateEnfantAccesRefuseEmail(String nomCompletParent, String enfantNom, String classeNom, String motif) {
         Context context = new Context();
