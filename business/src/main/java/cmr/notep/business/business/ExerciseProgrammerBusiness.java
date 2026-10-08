@@ -44,9 +44,10 @@ public class ExerciseProgrammerBusiness {
     }
 
     /**
-     * Programme un exercice pour une ou plusieurs classes. Chaque classe reçoit un cours (coursParClasse[classe],
-     * sinon coursId, sinon « Exercice général ») qui doit être programmé dans cette classe (400
-     * COURS_NON_PROGRAMME_DANS_CLASSE sinon ; tout est validé avant toute écriture). Les classes sont regroupées par
+     * Programme un exercice pour une ou plusieurs classes. Chaque classe reçoit obligatoirement un cours
+     * (coursParClasse[classe], sinon coursId ; absent/vide -> 400 COURS_REQUIS nommant la classe) qui doit être
+     * programmé dans cette classe (400 COURS_NON_PROGRAMME_DANS_CLASSE sinon ; tout est validé avant toute écriture).
+     * Il n'y a pas d'exercice ni de devoir sans cours. Les classes sont regroupées par
      * cours : une programmation (exercises_programmer) par cours distinct, mêmes dates/type/état, chacune diffusée
      * (si {@code diffuser}) dans ses classes et notifiée à leurs élèves (un élève n'est notifié qu'une fois).
      * Un seul groupe (cas habituel) = une seule programmation, comme avant.
@@ -63,13 +64,13 @@ public class ExerciseProgrammerBusiness {
         UtilisateursEntity professeur = userSubtypeService.findProfesseur(exerciseProgrammer.getProgrammeParId())
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Professeur programmeur introuvable"));
 
-        // 1. Validation : un cours (ou null = général) par classe, regroupement par cours
+        // 1. Validation : un cours obligatoire par classe, regroupement par cours
         List<String> classeIds = classeIdsDemandees(exerciseProgrammer);
         java.util.Map<String, CoursEntity> coursParGroupe = new java.util.LinkedHashMap<>();
         java.util.Map<String, List<String>> classesParGroupe = new java.util.LinkedHashMap<>();
         if (classeIds.isEmpty()) {
-            CoursEntity cours = resoudreCours(exerciseProgrammer.getCoursId(), List.of());
-            String cle = cours == null ? "" : cours.getId();
+            CoursEntity cours = resoudreCoursObligatoire(exerciseProgrammer.getCoursId(), List.of());
+            String cle = cours.getId();
             coursParGroupe.put(cle, cours);
             classesParGroupe.put(cle, new ArrayList<>());
         } else {
@@ -78,7 +79,7 @@ public class ExerciseProgrammerBusiness {
             for (String classeId : classeIds) {
                 String coursId = parClasse.containsKey(classeId) ? parClasse.get(classeId) : exerciseProgrammer.getCoursId();
                 CoursEntity cours = resoudreCoursPourClasse(coursId, classeId);
-                String cle = cours == null ? "" : cours.getId();
+                String cle = cours.getId();
                 coursParGroupe.putIfAbsent(cle, cours);
                 classesParGroupe.computeIfAbsent(cle, k -> new ArrayList<>()).add(classeId);
             }
@@ -153,22 +154,35 @@ public class ExerciseProgrammerBusiness {
         }
     }
 
-    /** Valide le cours d'une classe (null/vide = général) ; message d'erreur nommant la classe. */
+    /** Valide le cours (obligatoire) d'une classe ; messages d'erreur nommant la classe. */
     private CoursEntity resoudreCoursPourClasse(String coursId, String classeId) {
         if (coursId == null || coursId.isBlank()) {
-            return null;
+            throw new SchoolException(SchoolErrorCode.COURS_REQUIS,
+                    "Choisissez le cours auquel rattacher cet exercice pour la classe « " + nomClasse(classeId) + " ».");
         }
         CoursEntity cours = daoAccessorService.getRepository(CoursRepository.class).findById(coursId.trim())
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.COURS_NON_PROGRAMME_DANS_CLASSE,
                         "Cours introuvable : " + coursId));
         if (daoAccessorService.getRepository(CoursProgrammerRepository.class)
                 .countProgrammationsDansClasse(cours.getId(), classeId) == 0) {
-            String nomClasse = daoAccessorService.getRepository(ClassesRepository.class).findById(classeId)
-                    .map(ClassesEntity::getNom).orElse(classeId);
             throw new SchoolException(SchoolErrorCode.COURS_NON_PROGRAMME_DANS_CLASSE,
-                    "Le cours « " + cours.getTitre() + " » n'est pas programmé dans la classe « " + nomClasse + " ».");
+                    "Le cours « " + cours.getTitre() + " » n'est pas programmé dans la classe « " + nomClasse(classeId) + " ».");
         }
         return cours;
+    }
+
+    private String nomClasse(String classeId) {
+        return daoAccessorService.getRepository(ClassesRepository.class).findById(classeId)
+                .map(ClassesEntity::getNom).orElse(classeId);
+    }
+
+    /** Comme {@link #resoudreCours} mais le cours est obligatoire (absent/vide -> 400 COURS_REQUIS). */
+    public CoursEntity resoudreCoursObligatoire(String coursId, java.util.Collection<String> classeIds) {
+        if (coursId == null || coursId.isBlank()) {
+            throw new SchoolException(SchoolErrorCode.COURS_REQUIS,
+                    "Choisissez le cours auquel rattacher cet exercice.");
+        }
+        return resoudreCours(coursId, classeIds);
     }
 
     private static List<String> classeIdsDemandees(ExerciseProgrammer exerciseProgrammer) {
@@ -188,7 +202,9 @@ public class ExerciseProgrammerBusiness {
     }
 
     /**
-     * Cours de rattachement d'un exercice programmé : null/vide = « Exercices généraux ». Sinon le cours doit
+     * Cours de rattachement d'un exercice programmé : null/vide -> null (lecture des anciennes programmations
+     * « Exercices généraux » uniquement ; toute création/modification passe par {@link #resoudreCoursObligatoire}).
+     * Sinon le cours doit
      * exister et être programmé (cours_programmer) dans chacune des classes indiquées ; à défaut, 400
      * COURS_NON_PROGRAMME_DANS_CLASSE.
      */
@@ -212,20 +228,25 @@ public class ExerciseProgrammerBusiness {
     }
 
     /**
-     * Change (ou retire, coursId null/vide) le cours de rattachement d'un exercice programmé existant. Le cours
-     * doit être programmé dans toutes les classes où l'exercice est diffusé.
+     * Change le cours de rattachement d'un exercice programmé existant (y compris une ancienne programmation sans
+     * cours). Le cours est obligatoire (null/vide -> 400 COURS_REQUIS : on ne peut que déplacer vers un autre cours)
+     * et doit être programmé dans toutes les classes où l'exercice est diffusé.
      */
     public ExerciseProgrammerEntity changerCours(String exerciseProgrammerId, String coursId) {
         ExerciseProgrammerEntity ep = obtenirExerciseProgrammeEntityParId(exerciseProgrammerId);
         List<String> classeIds = ep.getClassesDiffusees() == null ? List.of()
                 : ep.getClassesDiffusees().stream().map(ClassesEntity::getId).collect(Collectors.toList());
-        ep.setCours(resoudreCours(coursId, classeIds));
+        ep.setCours(resoudreCoursObligatoire(coursId, classeIds));
         ExerciseProgrammerEntity saved = daoAccessorService.getRepository(ExerciseProgrammerRepository.class).save(ep);
-        log.info("Exercice programmé {} rattaché au cours {}", exerciseProgrammerId,
-                saved.getCours() != null ? saved.getCours().getId() : "(exercices généraux)");
+        log.info("Exercice programmé {} rattaché au cours {}", exerciseProgrammerId, saved.getCours().getId());
         return saved;
     }
 
+    /**
+     * Diffuse une programmation existante dans une classe supplémentaire. Son cours doit être programmé dans cette
+     * classe (400 COURS_NON_PROGRAMME_DANS_CLASSE) ; une ancienne programmation sans cours doit d'abord être associée
+     * à un cours (400 COURS_REQUIS).
+     */
     public ExerciseProgrammerEntity diffuserExerciseDansClasse(String exerciseProgrammerId, String classeId) {
         ExerciseProgrammerEntity exerciseProgrammer = daoAccessorService.getRepository(ExerciseProgrammerRepository.class)
                 .findById(exerciseProgrammerId)
@@ -236,6 +257,18 @@ public class ExerciseProgrammerBusiness {
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Classe introuvable"));
 
         if (!exerciseProgrammer.getClassesDiffusees().contains(classe)) {
+            if (exerciseProgrammer.getCours() == null) {
+                throw new SchoolException(SchoolErrorCode.COURS_REQUIS,
+                        "Associez d'abord cet exercice à un cours avant de le diffuser dans la classe « "
+                                + classe.getNom() + " ».");
+            }
+            if (daoAccessorService.getRepository(CoursProgrammerRepository.class)
+                    .countProgrammationsDansClasse(exerciseProgrammer.getCours().getId(), classeId) == 0) {
+                throw new SchoolException(SchoolErrorCode.COURS_NON_PROGRAMME_DANS_CLASSE,
+                        "Le cours « " + exerciseProgrammer.getCours().getTitre()
+                                + " » n'est pas programmé dans la classe « " + classe.getNom()
+                                + " ». Programmez-y d'abord ce cours, ou programmez l'exercice avec un cours de cette classe.");
+            }
             exerciseProgrammer.getClassesDiffusees().add(classe);
             exerciseProgrammer = daoAccessorService.getRepository(ExerciseProgrammerRepository.class).save(exerciseProgrammer);
             log.info("Exercice {} diffusé dans la classe {}", exerciseProgrammerId, classeId);

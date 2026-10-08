@@ -64,7 +64,8 @@ public class AccederService implements AccederApi {
     public List<UtilisateurSimpleDto> obtenirUtilisateursAvecAcces(String classeId) {
         accessControl.requireClassMember(classeId);
         log.info("API - Obtenir les utilisateurs ayant accès à la classe {}", classeId);
-        return accederBusiness.obtenirUtilisateursAvecAccesSimple(classeId);
+        // Détails (état, coordonnées, date de création) réservés aux gestionnaires de la classe
+        return accederBusiness.obtenirUtilisateursAvecAccesSimple(classeId, canSeeMemberDetails(classeId));
     }
 
     @Override
@@ -92,6 +93,13 @@ public class AccederService implements AccederApi {
     public List<UtilisateurSimpleDto> obtenirUtilisateursAvecAcces(List<String> classeIds) {
         if (classeIds != null) classeIds.forEach(accessControl::requireClassMember);
         log.info("API - Obtenir les utilisateurs ayant accès aux classes {}", classeIds);
-        return accederBusiness.obtenirUtilisateursAvecAccesSimple(classeIds);
+        boolean details = classeIds != null && !classeIds.isEmpty()
+                && classeIds.stream().allMatch(this::canSeeMemberDetails);
+        return accederBusiness.obtenirUtilisateursAvecAccesSimple(classeIds, details);
+    }
+
+    private boolean canSeeMemberDetails(String classeId) {
+        return currentUser.isAdmin()
+                || currentUser.currentUserIdOpt().map(me -> accessControl.isClassManager(classeId, me)).orElse(false);
     }
 }

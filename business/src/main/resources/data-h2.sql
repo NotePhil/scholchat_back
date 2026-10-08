@@ -234,7 +234,8 @@ INSERT INTO ressources.exercise_matieres (exercise_id, matiere_id) VALUES
 INSERT INTO ressources.cours_exercises (exercise_id, cours_id) VALUES
 ('ffffffff-0006-0006-0006-000000000001', 'dddddddd-0004-0004-0004-000000000001'),
 ('ffffffff-0006-0006-0006-000000000002', 'dddddddd-0004-0004-0004-000000000002'),
-('ffffffff-0006-0006-0006-000000000003', 'dddddddd-0004-0004-0004-000000000003');
+('ffffffff-0006-0006-0006-000000000003', 'dddddddd-0004-0004-0004-000000000003'),
+('ffffffff-0006-0006-0006-000000000006', 'dddddddd-0004-0004-0004-000000000004');
 
 -- =============================================
 -- QUESTIONS REPONSES
@@ -252,12 +253,15 @@ INSERT INTO ressources.questions_reponses (id, intitule, reponse, type_question,
 INSERT INTO ressources.cours_programmer (id, cours_id, date_cours_prevue, etat_cours_programme, classe_id, lieu, description, date_creation, professeur_id) VALUES
 ('cp-001', 'dddddddd-0004-0004-0004-000000000001', '2025-01-10 08:00:00', 'PLANIFIE', '550e8400-e29b-41d4-a716-446655440407', 'Salle 101', 'Seance 1 equations', '2024-12-10 08:00:00', '550e8400-e29b-41d4-a716-446655440007'),
 ('cp-002', 'dddddddd-0004-0004-0004-000000000002', '2025-01-12 10:00:00', 'PLANIFIE', '550e8400-e29b-41d4-a716-446655440407', 'Labo Physique', 'Seance forces', '2024-12-10 09:00:00', '550e8400-e29b-41d4-a716-446655440007'),
-('cp-003', 'dddddddd-0004-0004-0004-000000000003', '2025-01-14 08:00:00', 'TERMINE', '550e8400-e29b-41d4-a716-446655440401', 'Salle 202', 'Seance dissertation', '2024-12-11 08:00:00', '550e8400-e29b-41d4-a716-446655440008');
+('cp-003', 'dddddddd-0004-0004-0004-000000000003', '2025-01-14 08:00:00', 'TERMINE', '550e8400-e29b-41d4-a716-446655440401', 'Salle 202', 'Seance dissertation', '2024-12-11 08:00:00', '550e8400-e29b-41d4-a716-446655440008'),
+-- Pas d'exercice sans cours : le QCM d'histoire de Demo Class 1 est rattaché à ce cours (cf. changeset 26)
+('cp-006', 'dddddddd-0004-0004-0004-000000000004', '2025-04-08 08:00:00', 'PLANIFIE', '550e8400-e29b-41d4-a716-446655440407', 'Salle 103', 'Seance Revolution francaise', '2025-03-01 08:00:00', '550e8400-e29b-41d4-a716-446655440007');
 
 INSERT INTO ressources.cours_programmer_classes (cours_programmer_id, classe_id) VALUES
 ('cp-001', '550e8400-e29b-41d4-a716-446655440407'),
 ('cp-002', '550e8400-e29b-41d4-a716-446655440407'),
-('cp-003', '550e8400-e29b-41d4-a716-446655440401');
+('cp-003', '550e8400-e29b-41d4-a716-446655440401'),
+('cp-006', '550e8400-e29b-41d4-a716-446655440407');
 
 INSERT INTO ressources.cours_programmer_participants (cours_programmer_id, utilisateur_id) VALUES
 ('cp-001', '550e8400-e29b-41d4-a716-446655440300'),
@@ -268,9 +272,9 @@ INSERT INTO ressources.cours_programmer_participants (cours_programmer_id, utili
 -- =============================================
 -- EXERCISES PROGRAMMER (exercise_id is PK in H2 schema)
 -- =============================================
-INSERT INTO ressources.exercises_programmer (exercise_id, date_exo_prevue, date_debut_exo_effectif, date_fin_exo_effectif, etat_exercise_programmer, programme_par_id) VALUES
-('ffffffff-0006-0006-0006-000000000001', '2025-01-15 08:00:00', '2025-01-15 08:00:00', '2025-01-15 09:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007'),
-('ffffffff-0006-0006-0006-000000000002', '2025-01-17 10:00:00', '2025-01-17 10:00:00', '2025-01-17 11:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007');
+INSERT INTO ressources.exercises_programmer (exercise_id, date_exo_prevue, date_debut_exo_effectif, date_fin_exo_effectif, etat_exercise_programmer, programme_par_id, cours_id) VALUES
+('ffffffff-0006-0006-0006-000000000001', '2025-01-15 08:00:00', '2025-01-15 08:00:00', '2025-01-15 09:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007', 'dddddddd-0004-0004-0004-000000000001'),
+('ffffffff-0006-0006-0006-000000000002', '2025-01-17 10:00:00', '2025-01-17 10:00:00', '2025-01-17 11:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007', 'dddddddd-0004-0004-0004-000000000002');
 
 INSERT INTO ressources.exercise_programmer_classes (exercise_programmer_id, classe_id) VALUES
 ('ffffffff-0006-0006-0006-000000000001', '550e8400-e29b-41d4-a716-446655440407'),
@@ -301,8 +305,8 @@ INSERT INTO ressources.questions_reponses (id, intitule, reponse, type_question,
 ('11111111-0007-0007-0007-000000000011', 'Qui etait roi de France en 1789 ?', 'Louis XVI', 'QCM', 'ffffffff-0006-0006-0006-000000000006'),
 ('11111111-0007-0007-0007-000000000012', 'Quel document a ete adopte en 1789 ?', 'La Declaration des droits de l homme', 'QCM', 'ffffffff-0006-0006-0006-000000000006');
 
-INSERT INTO ressources.exercises_programmer (exercise_id, date_exo_prevue, date_debut_exo_effectif, date_fin_exo_effectif, etat_exercise_programmer, programme_par_id) VALUES
-('ffffffff-0006-0006-0006-000000000006', '2025-04-10 09:00:00', '2025-04-10 09:00:00', '2025-04-10 10:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007');
+INSERT INTO ressources.exercises_programmer (exercise_id, date_exo_prevue, date_debut_exo_effectif, date_fin_exo_effectif, etat_exercise_programmer, programme_par_id, cours_id) VALUES
+('ffffffff-0006-0006-0006-000000000006', '2025-04-10 09:00:00', '2025-04-10 09:00:00', '2025-04-10 10:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007', 'dddddddd-0004-0004-0004-000000000004');
 
 INSERT INTO ressources.exercise_programmer_classes (exercise_programmer_id, classe_id) VALUES
 ('ffffffff-0006-0006-0006-000000000006', '550e8400-e29b-41d4-a716-446655440407');
@@ -483,9 +487,9 @@ INSERT INTO ressources.questions_reponses (id, intitule, reponse, type_question,
 ('11111111-0007-0007-0007-000000000009', 'Quelle est la mediane de 1, 3, 5 ?', '3', 'QCM', 'ffffffff-0006-0006-0006-000000000005');
 
 -- Schedule private and public exercises in Demo Class 1
-INSERT INTO ressources.exercises_programmer (exercise_id, date_exo_prevue, date_debut_exo_effectif, date_fin_exo_effectif, etat_exercise_programmer, programme_par_id) VALUES
-('ffffffff-0006-0006-0006-000000000004', '2025-02-05 09:00:00', '2025-02-05 09:00:00', '2025-02-05 10:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007'),
-('ffffffff-0006-0006-0006-000000000005', '2025-02-07 09:00:00', '2025-02-07 09:00:00', '2025-02-07 10:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007');
+INSERT INTO ressources.exercises_programmer (exercise_id, date_exo_prevue, date_debut_exo_effectif, date_fin_exo_effectif, etat_exercise_programmer, programme_par_id, cours_id) VALUES
+('ffffffff-0006-0006-0006-000000000004', '2025-02-05 09:00:00', '2025-02-05 09:00:00', '2025-02-05 10:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007', 'dddddddd-0004-0004-0004-000000000005'),
+('ffffffff-0006-0006-0006-000000000005', '2025-02-07 09:00:00', '2025-02-07 09:00:00', '2025-02-07 10:00:00', 'ACTIF', '550e8400-e29b-41d4-a716-446655440007', 'dddddddd-0004-0004-0004-000000000006');
 
 INSERT INTO ressources.exercise_programmer_classes (exercise_programmer_id, classe_id) VALUES
 ('ffffffff-0006-0006-0006-000000000004', '550e8400-e29b-41d4-a716-446655440407'),

@@ -666,6 +666,11 @@ public class AccederBusiness {
     }
 
     public List<UtilisateurSimpleDto> obtenirUtilisateursAvecAccesSimple(String classeId) throws SchoolException {
+        return obtenirUtilisateursAvecAccesSimple(classeId, false);
+    }
+
+    /** @param details true pour un gestionnaire de la classe : ajoute état, coordonnées, date de création… */
+    public List<UtilisateurSimpleDto> obtenirUtilisateursAvecAccesSimple(String classeId, boolean details) throws SchoolException {
         log.info("Obtenir tous les utilisateurs ayant accès à la classe {} (simple)", classeId);
 
         if (!daoAccessorService.getRepository(ClassesRepository.class).existsById(classeId)) {
@@ -675,11 +680,15 @@ public class AccederBusiness {
         return daoAccessorService.getRepository(AccederRepository.class)
                 .findByClasseId(classeId)
                 .stream()
-                .map(acceder -> mapToUtilisateurSimpleDto(acceder.getUtilisateur()))
+                .map(acceder -> mapToUtilisateurSimpleDto(acceder.getUtilisateur(), details))
                 .collect(Collectors.toList());
     }
 
     public List<UtilisateurSimpleDto> obtenirUtilisateursAvecAccesSimple(List<String> classeIds) throws SchoolException {
+        return obtenirUtilisateursAvecAccesSimple(classeIds, false);
+    }
+
+    public List<UtilisateurSimpleDto> obtenirUtilisateursAvecAccesSimple(List<String> classeIds, boolean details) throws SchoolException {
         log.info("Obtenir les utilisateurs ayant accès aux classes {} (simple)", classeIds);
 
         if (classeIds == null || classeIds.isEmpty()) {
@@ -701,14 +710,14 @@ public class AccederBusiness {
                         log.warn("Utilisateur non trouvé pour l'accès: {}", acceder);
                         return null;
                     }
-                    return mapToUtilisateurSimpleDto(acceder.getUtilisateur());
+                    return mapToUtilisateurSimpleDto(acceder.getUtilisateur(), details);
                 })
                 .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());
     }
 
-    private UtilisateurSimpleDto mapToUtilisateurSimpleDto(UtilisateursEntity entity) {
+    private UtilisateurSimpleDto mapToUtilisateurSimpleDto(UtilisateursEntity entity, boolean details) {
         UtilisateurSimpleDto dto = new UtilisateurSimpleDto();
         dto.setId(entity.getId());
         dto.setNom(entity.getNom());
@@ -716,6 +725,19 @@ public class AccederBusiness {
         dto.setEmail(entity.getEmail());
         String type = userSubtypeService.typeUtilisateur(entity.getId());
         dto.setTypeUtilisateur(type == null || "GESTIONNAIRE".equals(type) ? "UTILISATEUR" : type);
+        if (details) {
+            dto.setEtat(entity.getEtat() != null ? entity.getEtat().name() : null);
+            dto.setTelephone(entity.getTelephone());
+            dto.setAdresse(entity.getAdresse());
+            dto.setCreationDate(entity.getCreationDate());
+            // Colonnes propres au sous-type, seulement si l'entité est déjà chargée sous ce sous-type
+            Object real = org.hibernate.Hibernate.unproxy(entity);
+            if (real instanceof ElevesEntity eleve) {
+                dto.setNiveau(eleve.getNiveau());
+            } else if (real instanceof ProfesseursEntity prof) {
+                dto.setMatriculeProfesseur(prof.getMatriculeProfesseur());
+            }
+        }
         return dto;
     }
 }
