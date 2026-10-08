@@ -18,7 +18,7 @@ public class StatistiquesClasseDTO {
     private String classeId;
     /** Nombre d'élèves ayant accès à la classe. */
     private int effectif;
-    /** Un élément par cours ; l'élément coursId = null regroupe les « Exercices généraux » (s'il y en a). */
+    /** Un élément par cours (les anciens exercices programmés sans cours sont ignorés). */
     private List<Cours> cours;
     private List<Eleve> eleves;
 

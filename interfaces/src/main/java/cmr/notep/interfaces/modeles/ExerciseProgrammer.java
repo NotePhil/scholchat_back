@@ -20,7 +20,7 @@ public class ExerciseProgrammer extends Exercise {
     private List<Classes> classesDiffusees;
     private List<String> classeIds;
     private List<String> coursIds;
-    /** Cours de rattachement (null = « Exercices généraux »). Non mappé par Dozer depuis l'entité (champ cours). */
+    /** Cours de rattachement (obligatoire ; null seulement sur d'anciennes lignes, ignorées). Non mappé par Dozer depuis l'entité (champ cours). */
     private String coursId;
     /** {classeId: coursId | null} — cours choisi par classe (voir ExerciseProgrammerRequestDTO). */
     private java.util.Map<String, String> coursParClasse;

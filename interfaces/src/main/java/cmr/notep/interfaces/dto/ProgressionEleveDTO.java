@@ -20,7 +20,7 @@ public class ProgressionEleveDTO {
     /** Classe filtrée (null = toutes les classes de l'élève). */
     private String classeId;
     private Global global;
-    /** Un élément par cours ; l'élément coursId = null regroupe les « Exercices généraux » (s'il y en a). */
+    /** Un élément par cours (les anciens exercices programmés sans cours sont ignorés). */
     private List<Cours> cours;
     private List<DevoirEnRetard> devoirsEnRetard;
 

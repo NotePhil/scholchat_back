@@ -47,7 +47,7 @@ public class ExerciseProgrammerEntity {
     @JoinColumn(name = "programme_par_id", nullable = false)
     private UtilisateursEntity programmePar;
 
-    /** Cours auquel l'exercice est rattaché (programmé dans la classe) ; NULL = « Exercices généraux ». */
+    /** Cours auquel l'exercice est rattaché (programmé dans la classe) ; NULL seulement sur d'anciennes lignes (ignorées). */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cours_id")
     private CoursEntity cours;

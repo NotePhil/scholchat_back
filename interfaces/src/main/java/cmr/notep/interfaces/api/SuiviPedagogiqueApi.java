@@ -24,7 +24,7 @@ public interface SuiviPedagogiqueApi {
     List<CoursProgrammeResumeDTO> resumeCoursProgrammes(@PathVariable String classeId);
 
     /**
-     * Exercices programmés du cours dans la classe (coursId = « general » : exercices sans cours).
+     * Exercices programmés du cours dans la classe (liste vide pour un coursId inconnu, p. ex. l'ancien « general »).
      * Sans eleveId : membres de la classe. Avec eleveId : l'élève lui-même, son parent, un enseignant de la classe
      * ou un admin ; l'élève doit avoir accès à la classe.
      */

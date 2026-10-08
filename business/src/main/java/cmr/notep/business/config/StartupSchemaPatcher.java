@@ -43,7 +43,7 @@ public class StartupSchemaPatcher implements ApplicationRunner {
                 + "code_hash VARCHAR(128) NOT NULL, expires_at TIMESTAMP NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, "
                 + "created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)",
         "CREATE INDEX IF NOT EXISTS idx_verification_codes_utilisateur ON ressources.verification_codes(utilisateur_id)",
-        // Exercice programmé rattaché à un cours (changeset 25-exercise-programmer-cours) : NULL = « Exercices généraux ».
+        // Exercice programmé rattaché à un cours (changeset 25-exercise-programmer-cours) : NULL seulement sur d'anciennes lignes (ignorées).
         // La clé étrangère (ON DELETE SET NULL) est ajoutée plus bas après vérification.
         "ALTER TABLE ressources.exercises_programmer ADD COLUMN IF NOT EXISTS cours_id VARCHAR(255)",
         "CREATE INDEX IF NOT EXISTS idx_exercises_programmer_cours ON ressources.exercises_programmer(cours_id)",

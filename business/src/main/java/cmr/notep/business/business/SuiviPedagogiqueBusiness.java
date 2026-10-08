@@ -34,7 +34,8 @@ import java.util.stream.Collectors;
  *   <li>Élèves d'une classe : comptes ayant accès (acceder) avec un profil élève, hors enseignants de la classe.</li>
  *   <li>Cours d'une classe : cours programmés dans la classe (cours_programmer, table de jointure ou ancienne colonne
  *       classe_id) ∪ cours auxquels sont rattachés les exercices programmés de la classe.</li>
- *   <li>Exercice programmé sans cours (cours_id NULL) : « Exercices généraux ».</li>
+ *   <li>Tout exercice programmé appartient à un cours : les anciennes lignes sans cours (cours_id NULL) sont
+ *       ignorées (ni listées, ni comptées).</li>
  *   <li>Exercices programmés à l'état ANNULE : ignorés dans les compteurs et moyennes.</li>
  *   <li>Copie rendue : SOUMIS, EN_ATTENTE_CORRECTION ou CORRIGE. Moyennes : copies CORRIGE dont la note est lisible,
  *       ramenée sur 20 ({@link #noteSur20(String)}).</li>
@@ -45,10 +46,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 public class SuiviPedagogiqueBusiness {
-
-    /** coursId réservé (GET /classes/{id}/cours/general/exercices) : exercices programmés sans cours. */
-    public static final String COURS_GENERAL = "general";
-    public static final String TITRE_EXERCICES_GENERAUX = "Exercices généraux";
 
     private static final Set<String> ETATS_RENDUS = Set.of(
             EtatSoumission.SOUMIS.name(), EtatSoumission.EN_ATTENTE_CORRECTION.name(), EtatSoumission.CORRIGE.name());
@@ -113,9 +110,9 @@ public class SuiviPedagogiqueBusiness {
     }
 
     public List<ExerciceCoursClasseDTO> exercicesDuCours(String classeId, String coursId, String eleveId) {
-        boolean general = coursId == null || COURS_GENERAL.equalsIgnoreCase(coursId);
+        if (coursId == null || coursId.isBlank()) return List.of();
         List<Exo> exos = dedoublonner(exercices(List.of(classeId))).stream()
-                .filter(e -> general ? e.coursId() == null : coursId.equals(e.coursId()))
+                .filter(e -> coursId.equals(e.coursId()))
                 .sorted(Comparator.comparing(Exo::prevue, Comparator.nullsLast(Comparator.naturalOrder())))
                 .toList();
         if (exos.isEmpty()) return List.of();
@@ -231,10 +228,6 @@ public class SuiviPedagogiqueBusiness {
                     l == null ? null : l.derniere());
             lignes.add(ligne);
         }
-        List<Exo> generaux = exos.stream().filter(e -> e.coursId() == null).toList();
-        if (!generaux.isEmpty()) {
-            lignes.add(ligneProgression(null, TITRE_EXERCICES_GENERAUX, 0, 0, generaux, parts, null));
-        }
         for (ProgressionEleveDTO.Cours ligne : lignes) {
             activiteGlobale = max(activiteGlobale, ligne.getDerniereActivite() == null ? null
                     : Timestamp.valueOf(ligne.getDerniereActivite()));
@@ -340,14 +333,6 @@ public class SuiviPedagogiqueBusiness {
                     .exercices(statsExercices(duCours, parts, effectif))
                     .build());
         }
-        List<Exo> generaux = exos.stream().filter(e -> e.coursId() == null).toList();
-        if (!generaux.isEmpty()) {
-            lignesCours.add(StatistiquesClasseDTO.Cours.builder()
-                    .coursId(null).titre(TITRE_EXERCICES_GENERAUX).chapitresTotal(0)
-                    .progressionMoyenne(null)
-                    .exercices(statsExercices(generaux, parts, effectif))
-                    .build());
-        }
 
         List<StatistiquesClasseDTO.Eleve> lignesEleves = new ArrayList<>();
         for (Eleve el : eleves) {
@@ -420,7 +405,7 @@ public class SuiviPedagogiqueBusiness {
             FROM ressources.exercise_programmer_classes epc
             JOIN ressources.exercises_programmer ep ON ep.id = epc.exercise_programmer_id
             JOIN ressources.exercises ex ON ex.id = ep.source_exercise_id
-            LEFT JOIN ressources.cours c ON c.id = ep.cours_id
+            JOIN ressources.cours c ON c.id = ep.cours_id
             WHERE epc.classe_id IN (:classeIds)
             """;
 

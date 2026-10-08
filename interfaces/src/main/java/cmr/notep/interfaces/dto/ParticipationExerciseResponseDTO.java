@@ -18,7 +18,7 @@ public class ParticipationExerciseResponseDTO {
     private String utilisateurPrenom;
     private String exerciseProgrammerId;
     private String exerciseProgrammerNom;
-    /** Cours de rattachement de l'exercice programmé ; null = « Exercices généraux ». */
+    /** Cours de rattachement de l'exercice programmé (obligatoire ; null seulement sur d'anciennes lignes, ignorées). */
     private String coursId;
     private String coursTitre;
     private EtatSoumission etatSoumission;

@@ -203,7 +203,7 @@ public class ExerciseProgrammerBusiness {
 
     /**
      * Cours de rattachement d'un exercice programmé : null/vide -> null (lecture des anciennes programmations
-     * « Exercices généraux » uniquement ; toute création/modification passe par {@link #resoudreCoursObligatoire}).
+     * sans cours uniquement ; toute création/modification passe par {@link #resoudreCoursObligatoire}).
      * Sinon le cours doit
      * exister et être programmé (cours_programmer) dans chacune des classes indiquées ; à défaut, 400
      * COURS_NON_PROGRAMME_DANS_CLASSE.

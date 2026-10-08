@@ -151,7 +151,7 @@ public class ExerciseProgrammerMapper {
         return responseDTO;
     }
 
-    /** Cours de rattachement (null = « Exercices généraux »). */
+    /** Cours de rattachement (obligatoire ; null seulement sur d'anciennes lignes, ignorées). */
     public static String coursId(ExerciseProgrammerEntity entity) {
         return entity != null && entity.getCours() != null ? entity.getCours().getId() : null;
     }

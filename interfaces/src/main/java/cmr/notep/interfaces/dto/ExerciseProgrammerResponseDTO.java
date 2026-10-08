@@ -32,7 +32,7 @@ public class ExerciseProgrammerResponseDTO {
     private Date dateExoPrevue;
     private Date dateDebutExoEffectif;
     private Date dateFinExoEffectif;
-    /** Cours de rattachement de l'exercice programmé ; null = « Exercices généraux ». */
+    /** Cours de rattachement de l'exercice programmé (obligatoire ; null seulement sur d'anciennes lignes, ignorées). */
     private String coursId;
     private String coursTitre;
     private List<CoursSummaryDTO> coursLies;
