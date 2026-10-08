@@ -79,6 +79,12 @@ public class UtilisateursBusiness {
     private InscriptionClasseService inscriptionClasseService;
 
     @Autowired
+    private cmr.notep.business.services.InscriptionParentService inscriptionParentService;
+
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
+    @Autowired
     @org.springframework.context.annotation.Lazy
     private AccederBusiness accederBusiness;
 
@@ -508,8 +514,28 @@ public class UtilisateursBusiness {
                 if (existant.getPrenom() != null) utilisateur.setPrenom(existant.getPrenom());
             }
             userValidationService.validateUserData(utilisateur);
+            // Ajout du profil parent à un compte actif avec des enfants : enfants validés AVANT toute écriture.
+            List<cmr.notep.interfaces.modeles.EnfantInscription> enfantsAjout =
+                    utilisateur instanceof Parents p && p.getEnfantsInscription() != null
+                            && !p.getEnfantsInscription().isEmpty() && existant.getEtat() == EtatUtilisateur.ACTIVE
+                            ? p.getEnfantsInscription() : null;
+            List<ClassesEntity> classesEnfants = enfantsAjout == null ? null
+                    : inscriptionParentService.validerEnfants(enfantsAjout,
+                            inscriptionParentService.nomsEnfantsExistants(existant.getId()));
+            if (utilisateur instanceof Parents p) p.setEnfantsInscription(null);
             ClassesEntity classeEleve = ajoutEleve ? classeDemandee : null;
-            Utilisateurs vue = annulerSiErreur(() -> ajouterRoleACompteExistant(existant, utilisateur, classeEleve));
+            Utilisateurs vue = annulerSiErreur(() -> {
+                Utilisateurs v = ajouterRoleACompteExistant(existant, utilisateur, classeEleve);
+                if (enfantsAjout != null && v instanceof Parents vp) {
+                    List<cmr.notep.interfaces.modeles.EnfantInscription> crees = new java.util.ArrayList<>();
+                    for (int i = 0; i < enfantsAjout.size(); i++) {
+                        crees.add(inscriptionParentService.inscrireEnfant(existant.getId(), enfantsAjout.get(i),
+                                classesEnfants.get(i)));
+                    }
+                    vp.setEnfantsInscription(crees);
+                }
+                return v;
+            });
             if (classeDemandee != null) {
                 vue.setClasseId(classeDemandee.getId());
                 vue.setClasseNom(classeDemandee.getNom());
@@ -527,6 +553,14 @@ public class UtilisateursBusiness {
         // Inscription publique d'un nouveau parent / élève : code de classe obligatoire, compte sans mot de
         // passe en attente d'approbation de la demande d'accès (aucun e-mail d'activation).
         if (inscriptionPublique && parentOuEleve) {
+            // Parent : inscription avec la liste de ses enfants (chacun avec le code de sa classe), compte actif
+            // avec mot de passe temporaire — voir InscriptionParentService. L'ancienne inscription parent avec un
+            // seul code de classe (sans enfants) n'est plus acceptée pour un nouveau compte.
+            if (utilisateur instanceof Parents parent) {
+                List<cmr.notep.interfaces.modeles.EnfantInscription> enfants = parent.getEnfantsInscription();
+                List<ClassesEntity> classesEnfants = inscriptionParentService.validerEnfants(enfants, java.util.Set.of());
+                return annulerSiErreur(() -> creerCompteParentAvecEnfants(parent, enfants, classesEnfants));
+            }
             ClassesEntity classe = inscriptionClasseService.resoudreClasse(codeClasse, utilisateur instanceof Eleves);
             // L'élève ne saisit plus son niveau : c'est celui de la classe rejointe.
             if (utilisateur instanceof Eleves eleve) {
@@ -654,6 +688,56 @@ public class UtilisateursBusiness {
         }
     }
 
+    /**
+     * Nouveau compte parent (inscription publique avec ses enfants, déjà validés) : compte ACTIF avec un mot de
+     * passe temporaire (must_change_password), rôle PARENT actif ; chaque enfant est créé, rattaché et inscrit
+     * (demande d'accès EN_ATTENTE à sa classe). Un seul e-mail au parent après commit (identifiants + enfants).
+     */
+    private Utilisateurs creerCompteParentAvecEnfants(Parents parent,
+                                                      List<cmr.notep.interfaces.modeles.EnfantInscription> enfants,
+                                                      List<ClassesEntity> classes) {
+        String motDePasse = inscriptionParentService.genererMotDePasseTemporaire();
+        parent.setEnfantsInscription(null);
+        parent.setAdmin(false);
+        parent.setActivationToken(null);
+        parent.setResetPasswordToken(null);
+        parent.setEtat(EtatUtilisateur.ACTIVE);
+        parent.setCreationDate(LocalDateTime.now());
+
+        UtilisateursEntity entity = mapUtilisateursModeleToEntity(parent);
+        entity.setId(UUID.randomUUID().toString());
+        entity.setPasseAccess(passwordEncoder.encode(motDePasse));
+        entity.setMustChangePassword(true);
+        entity.setEtat(EtatUtilisateur.ACTIVE);
+        UtilisateursEntity saved = daoAccessorService.getRepository(UtilisateursRepository.class).save(entity);
+        addRoleToUser(saved.getId(), "PARENT", true);
+
+        List<cmr.notep.interfaces.modeles.EnfantInscription> crees = new java.util.ArrayList<>();
+        for (int i = 0; i < enfants.size(); i++) {
+            crees.add(inscriptionParentService.inscrireEnfant(saved.getId(), enfants.get(i), classes.get(i)));
+        }
+        String nomComplet = ((saved.getPrenom() == null ? "" : saved.getPrenom()) + " "
+                + (saved.getNom() == null ? "" : saved.getNom())).trim();
+        inscriptionParentService.envoyerEmailInscriptionApresCommit(saved.getEmail(), nomComplet, motDePasse, crees);
+        log.info("Parent sign-up: account {} created (active, temporary password e-mailed) with {} child(ren)",
+                saved.getId(), crees.size());
+
+        Utilisateurs vue = mapUtilisateursEntityToModele(saved);
+        Parents cree = vue instanceof Parents p ? p : dozerMapperBean.map(saved, Parents.class);
+        cree.setInscriptionStatut(cmr.notep.business.services.InscriptionParentService.STATUT_COMPTE_PARENT_CREE);
+        cree.setStatutInscription(cmr.notep.business.services.InscriptionParentService.STATUT_COMPTE_PARENT_CREE);
+        cree.setEnfantsInscription(crees);
+        return cree;
+    }
+
+    /** Parent : au moins un enfant accepté dans une classe ; null si le compte n'a pas de profil parent. */
+    public Boolean parentAEnfantValide(String userId) {
+        if (userId == null || !daoAccessorService.getRepository(UtilisateursRepository.class).hasParentRow(userId)) {
+            return null;
+        }
+        return inscriptionParentService.parentAEnfantValide(userId);
+    }
+
     /** Nouveau compte parent / élève majeur, inactif et sans mot de passe, + demande d'accès à la classe. */
     private Utilisateurs creerCompteEnAttenteInscriptionClasse(Utilisateurs utilisateur, ClassesEntity classe) {
         utilisateur.setAdmin(false);
@@ -674,6 +758,10 @@ public class UtilisateursBusiness {
                 utilisateur instanceof Parents, null);
         log.info("Class sign-up: account {} created (awaiting approval) with access request to class {}",
                 saved.getId(), classe.getId());
+        // Élève majeur : accusé de réception (sans identifiants, envoyés à l'approbation)
+        if (utilisateur instanceof Eleves) {
+            inscriptionClasseService.envoyerAccuseInscriptionEleve(saved.getEmail(), saved.getPrenom(), saved.getNom(), classe);
+        }
 
         Utilisateurs cree = mapUtilisateursEntityToModele(saved);
         cree.setInscriptionStatut(InscriptionClasseService.STATUT_EN_ATTENTE_APPROBATION_CLASSE);
@@ -711,6 +799,10 @@ public class UtilisateursBusiness {
         accederBusiness.demanderAcces(existant.getId(), classe.getId(), classe.getCodeActivation(),
                 demande.getClass() == Parents.class, null);
         log.info("Class sign-up: new access request for pending account {} to class {}", existant.getId(), classe.getId());
+        if (demande.getClass() == Eleves.class) {
+            inscriptionClasseService.envoyerAccuseInscriptionEleve(existant.getEmail(), existant.getPrenom(),
+                    existant.getNom(), classe);
+        }
         Utilisateurs vue = mapUtilisateursEntityToModele(existant);
         vue.setInscriptionStatut(InscriptionClasseService.STATUT_EN_ATTENTE_APPROBATION_CLASSE);
         vue.setStatutInscription(InscriptionClasseService.STATUT_EN_ATTENTE_APPROBATION_CLASSE);

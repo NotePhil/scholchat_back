@@ -22,7 +22,7 @@ public class GlobalExceptionHandler {
         HttpStatus status = mapSchoolExceptionToHttpStatus(ex.getCode());
 
         return new ResponseEntity<>(
-                new ErrorResponse(ex.getCode(), ex.getMessage()),
+                new ErrorResponse(ex.getCode(), ex.getMessage(), ex.getEnfantIndex()),
                 status
         );
     }
@@ -60,12 +60,13 @@ public class GlobalExceptionHandler {
             case NOT_FOUND, RESOURCE_NOT_FOUND, CODE_CLASSE_INVALIDE, CONTRAT_INTROUVABLE -> HttpStatus.NOT_FOUND;
             case OPERATION_INTERDITE, FORBIDDEN, INVALID_STATE, INACTIVE_USER, PROFIL_PROFESSEUR_NON_VALIDE,
                  MOT_DE_PASSE_A_CHANGER, COMPTE_EN_ATTENTE_APPROBATION,
-                 CHANGEMENT_PROFIL_INTERDIT_ELEVE -> HttpStatus.FORBIDDEN;
+                 CHANGEMENT_PROFIL_INTERDIT_ELEVE, PARENT_SANS_ENFANT_VALIDE -> HttpStatus.FORBIDDEN;
             case TROP_DE_TENTATIVES -> HttpStatus.TOO_MANY_REQUESTS;
             case UNAUTHORIZED -> HttpStatus.UNAUTHORIZED;
             case INTERFACE_NON_RESPECTEE, INVALID_INPUT, CODE_CLASSE_REQUIS, CLASSE_NON_ACTIVE,
                  CLASSE_RESERVEE_MINEURS, CODE_VERIFICATION_INVALIDE, CODE_VERIFICATION_EXPIRE,
-                 COMPTE_NON_ELIGIBLE -> HttpStatus.BAD_REQUEST;
+                 COMPTE_NON_ELIGIBLE, ENFANTS_REQUIS, ENFANTS_TROP_NOMBREUX, ENFANT_INVALIDE,
+                 ENFANT_EN_DOUBLE -> HttpStatus.BAD_REQUEST;
             case DUPLICATE_RESOURCE, ROLE_INCOMPATIBLE, EMAIL_DEJA_UTILISE, COMPTE_NON_ACTIVE,
                  COMPTE_EN_ATTENTE_VALIDATION -> HttpStatus.CONFLICT;
             // Inscription refusée : un compte en attente d'approbation existe déjà pour cet e-mail
@@ -77,13 +78,25 @@ public class GlobalExceptionHandler {
     }
 
     // Inner class for structured error responses
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     private static class ErrorResponse {
         private final String code;
         private final String message;
+        private final Integer enfantIndex;
 
         public ErrorResponse(SchoolErrorCode code, String message) {
+            this(code, message, null);
+        }
+
+        public ErrorResponse(SchoolErrorCode code, String message, Integer enfantIndex) {
             this.code = code.name();
             this.message = message;
+            this.enfantIndex = enfantIndex;
+        }
+
+        /** Index (0-based) de l'enfant concerné dans la liste envoyée (inscription parent), absent sinon. */
+        public Integer getEnfantIndex() {
+            return enfantIndex;
         }
 
         public String getCode() {

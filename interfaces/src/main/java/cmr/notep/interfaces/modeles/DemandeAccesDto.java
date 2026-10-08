@@ -17,6 +17,7 @@ public class DemandeAccesDto {
     private String utilisateurNom;
     private String utilisateurPrenom;
     private String utilisateurEmail;
+    private String utilisateurTelephone;
     private String classeId;
     private String classeNom;
     private String codeActivation;
@@ -25,4 +26,8 @@ public class DemandeAccesDto {
     private Date dateTraitement;
     private String motifRejet;
     private String typeUtilisateur;
+    /** Demande d'un parent pour son enfant (estParent) : enfant concerné ; null pour une demande personnelle. */
+    private String eleveAssocieId;
+    private String eleveAssocieNom;
+    private String eleveAssociePrenom;
 }

@@ -114,4 +114,12 @@ public class Utilisateurs implements Serializable, IUtilisateurs {
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     private List<RoleProfil> profils;
+    /**
+     * Réponse de GET /utilisateurs/{id} (soi-même ou admin) pour un compte parent : vrai si au moins un de ses
+     * enfants a été accepté dans une classe (sinon, en session PARENT, les routes hors liste blanche répondent
+     * 403 PARENT_SANS_ENFANT_VALIDE). Absent pour un compte sans profil parent.
+     */
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private Boolean parentAEnfantValide;
 }

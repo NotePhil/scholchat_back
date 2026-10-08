@@ -17,12 +17,8 @@ public class ParentsEntity extends UtilisateursEntity {
 //    @Mapping("classes")
 //    private List<ClassesEntity> classesEntities;
 
-    @ManyToMany
-    @JoinTable(
-            name = "parent_eleve",
-            schema = "ressources",
-            joinColumns = @JoinColumn(name = "parent_id"),
-            inverseJoinColumns = @JoinColumn(name = "eleve_id")
-    )
-    private List<ElevesEntity> enfants;
+    // Plus de collection JPA "enfants" (@ManyToMany sur parent_eleve) : les comptes sont mis à jour par
+    // fusion d'une entité reconstruite depuis le modèle (Dozer), où la collection était toujours null —
+    // chaque mise à jour du parent (changement de mot de passe, PATCH du profil…) VIDAIT parent_eleve.
+    // Les liens se lisent / s'écrivent via ParentEleveRepository / ParentEleveEntity.
 }

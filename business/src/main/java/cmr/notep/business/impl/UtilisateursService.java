@@ -43,6 +43,8 @@ public class UtilisateursService implements UtilisateursApi {
         // Page « Mes profils » : profils du compte et leur état (soi-même ou administrateur uniquement)
         if (currentUser.isAdmin() || currentUser.isSelf(idUtilisateur)) {
             u.setProfils(utilisateursBusiness.getProfils(idUtilisateur));
+            // Compte parent : au moins un enfant accepté dans une classe (sinon session PARENT limitée)
+            u.setParentAEnfantValide(utilisateursBusiness.parentAEnfantValide(idUtilisateur));
         }
         return u;
     }
@@ -181,6 +183,9 @@ public class UtilisateursService implements UtilisateursApi {
         vue.setClasseId(u.getClasseId());
         vue.setClasseNom(u.getClasseNom());
         vue.setDemandeAccesCreee(u.getDemandeAccesCreee());
+        if (u instanceof Parents p && vue instanceof Parents vp) {
+            vp.setEnfantsInscription(p.getEnfantsInscription());
+        }
         return vue;
     }
 

@@ -22,6 +22,5 @@ public class ElevesEntity extends UtilisateursEntity {
 //    private List<ClassesEntity> classesEntities;
 
 
-    @ManyToMany(mappedBy = "enfants")
-    private List<ParentsEntity> parents;
+    // Liens parent / enfant : voir ParentEleveRepository (plus de collection JPA, cf. ParentsEntity).
 }

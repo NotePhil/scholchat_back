@@ -43,6 +43,10 @@ public class AccederBusiness {
     @org.springframework.beans.factory.annotation.Autowired
     private cmr.notep.business.services.EmailTemplateService emailTemplateService;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.context.annotation.Lazy
+    private cmr.notep.business.services.InscriptionParentService inscriptionParentService;
+
     public AccederBusiness(DaoAccessorService daoAccessorService,
                            AccessConfirmationEmailService accessConfirmationEmailService,
                            AccessRejectionEmailService accessRejectionEmailService,
@@ -146,10 +150,18 @@ public class AccederBusiness {
         daoAccessorService.getRepository(DemandeAccesRepository.class).save(demande);
         log.info("Demande d'accès créée avec succès");
 
+        // Demande pour un enfant : le modérateur doit savoir pour quel enfant (« X demande l'accès pour son enfant Y »)
+        String enfantNom = pourEnfant ? inscriptionParentService.nomEnfant(eleveAssocieId) : null;
+
         // Send in-app notifications to student, moderator, and admins
         try {
             String studentName = utilisateur.getPrenom() + " " + utilisateur.getNom();
-            notificationService.createAccessRequestNotification(classeId, classe.getNom(), utilisateurId, studentName);
+            if (pourEnfant) {
+                notificationService.createChildAccessRequestNotification(classeId, classe.getNom(), utilisateurId,
+                        studentName, enfantNom);
+            } else {
+                notificationService.createAccessRequestNotification(classeId, classe.getNom(), utilisateurId, studentName);
+            }
         } catch (Exception e) {
             log.error("Erreur lors de la création des notifications: {}", e.getMessage());
         }
@@ -162,12 +174,17 @@ public class AccederBusiness {
                 Utilisateurs demandeur = dozerMapperBean.map(utilisateur, Utilisateurs.class);
 
                 // Créer le contenu de l'email (gabarit aux couleurs de ScholChat)
-                String subject = "Nouvelle demande d'accès à votre classe " + classe.getNom();
+                String subject = pourEnfant
+                        ? "Nouvelle demande d'accès pour " + enfantNom + " à votre classe " + classe.getNom()
+                        : "Nouvelle demande d'accès à votre classe " + classe.getNom();
                 String content = emailTemplateService.generateNotificationGeneriqueEmail(
                         "Nouvelle demande d'accès",
                         List.of("Bonjour " + (moderateur.getPrenom() == null ? "" : moderateur.getPrenom()) + ",",
-                                demandeur.getPrenom() + " " + demandeur.getNom() + " a demandé l'accès à votre classe "
-                                        + classe.getNom() + ".",
+                                pourEnfant
+                                        ? demandeur.getPrenom() + " " + demandeur.getNom() + " demande l'accès pour son enfant "
+                                                + enfantNom + " à votre classe " + classe.getNom() + "."
+                                        : demandeur.getPrenom() + " " + demandeur.getNom() + " a demandé l'accès à votre classe "
+                                                + classe.getNom() + ".",
                                 "Veuillez traiter cette demande depuis votre interface modérateur."),
                         null);
 
@@ -285,6 +302,13 @@ public class AccederBusiness {
         // 5. Finaliser la demande
         finaliserDemande(demande);
 
+        // 5. Demande d'un parent pour son enfant : notification CHILD_ACCESS_APPROVED + e-mail au parent
+        //    (le parent a déjà ses identifiants ; il a reçu l'accès à la classe à l'étape 1).
+        if (cmr.notep.business.services.InscriptionParentService.estDemandePourEnfant(demande)) {
+            inscriptionParentService.notifierEnfantAccepte(demande);
+            return;
+        }
+
         // 5. Send approval notification to the student
         try {
             String moderatorName = demande.getClasse().getModerator() != null
@@ -381,6 +405,11 @@ public class AccederBusiness {
         // reste en attente, sans mot de passe ; une nouvelle inscription avec le même e-mail reste possible).
         if (inscriptionClasseService.estEnAttenteInscriptionClasse(demande.getUtilisateur())) {
             inscriptionClasseService.notifierRefus(demande.getUtilisateur(), demande.getClasse(), motifRejet);
+        } else if (cmr.notep.business.services.InscriptionParentService.estDemandePourEnfant(demande)) {
+            // Demande d'un parent pour son enfant : e-mail (avec le motif) + notification CHILD_ACCESS_REJECTED
+            inscriptionParentService.notifierEnfantRefuse(demande, motifRejet);
+            log.info("Demande d'accès (enfant) rejetée avec succès");
+            return;
         } else {
             if (!demande.isEstParent()) {
                 inscriptionClasseService.notifierRefusRoleEleveSiDemande(demande.getUtilisateur(), motifRejet);
@@ -583,6 +612,9 @@ public class AccederBusiness {
         String type = entity.isEstParent() && userSubtypeService.isParent(u.getId())
                 ? "PARENT" : userSubtypeService.typeUtilisateur(u.getId());
         if (type == null || "GESTIONNAIRE".equals(type)) type = "UTILISATEUR";
+        // Demande d'un parent pour son enfant : enfant concerné (« pour l'enfant … » côté professeur)
+        UtilisateursEntity enfant = entity.getEleveAssocieId() == null || entity.getEleveAssocieId().isBlank() ? null
+                : daoAccessorService.getRepository(UtilisateursRepository.class).findById(entity.getEleveAssocieId()).orElse(null);
 
         return DemandeAccesDto.builder()
                 .id(entity.getId())
@@ -590,6 +622,7 @@ public class AccederBusiness {
                 .utilisateurNom(u.getNom())
                 .utilisateurPrenom(u.getPrenom())
                 .utilisateurEmail(u.getEmail())
+                .utilisateurTelephone(u.getTelephone())
                 .typeUtilisateur(type)
                 .classeId(entity.getClasse().getId())
                 .classeNom(entity.getClasse().getNom())
@@ -598,6 +631,9 @@ public class AccederBusiness {
                 .dateDemande(entity.getDateDemande())
                 .dateTraitement(entity.getDateTraitement())
                 .motifRejet(entity.getMotifRejet())
+                .eleveAssocieId(enfant != null ? enfant.getId() : null)
+                .eleveAssocieNom(enfant != null ? enfant.getNom() : null)
+                .eleveAssociePrenom(enfant != null ? enfant.getPrenom() : null)
                 .build();
     }
 

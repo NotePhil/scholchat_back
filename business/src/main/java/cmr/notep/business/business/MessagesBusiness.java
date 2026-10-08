@@ -410,7 +410,7 @@ public class MessagesBusiness {
         try {
             String senderName = Objects.toString(expediteur.getPrenom(), "") + " " + Objects.toString(expediteur.getNom(), "");
             for (UtilisateursEntity dest : saved.getDestinatairesEntities()) {
-                notificationService.createMessageNotification(dest.getId(), expediteur.getId(), senderName.trim(), saved.getObjet());
+                notificationService.createMessageNotification(dest.getId(), expediteur.getId(), senderName.trim(), saved.getId(), saved.getObjet());
             }
         } catch (Exception e) {
             log.error("Failed to send message notifications: {}", e.getMessage());

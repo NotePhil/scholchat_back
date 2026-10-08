@@ -126,7 +126,7 @@ public class ExerciseProgrammerBusiness {
                             ? source.getNom()
                             : "Exercice";
                     notificationService.createExerciseAssignedNotification(
-                            exerciseName, prof.getId(), profName, classeIds);
+                            exerciseProgramme.getId(), exerciseName, prof.getId(), profName, classeIds);
                 }
             } catch (Exception e) {
                 log.error("Error sending exercise notifications: {}", e.getMessage());

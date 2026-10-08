@@ -222,6 +222,17 @@ public class InscriptionClasseService {
         apresCommit(() -> emailService.envoyerRefus(email, nomComplet, classeNom, motif));
     }
 
+    /**
+     * Inscription publique d'un élève majeur par code de classe (nouvelle demande ou nouveau compte) : accusé de
+     * réception SANS identifiants (envoyés à l'approbation), après commit.
+     */
+    public void envoyerAccuseInscriptionEleve(String email, String prenom, String nom, ClassesEntity classe) {
+        if (email == null || email.isBlank()) return;
+        String nomComplet = ((prenom == null ? "" : prenom) + " " + (nom == null ? "" : nom)).trim();
+        String classeNom = classe.getNom();
+        apresCommit(() -> emailService.envoyerInscriptionEleveRecue(email, nomComplet, classeNom));
+    }
+
     String genererMotDePasseTemporaire() {
         List<Character> chars = new ArrayList<>();
         chars.add(pick(MAJUSCULES));
@@ -250,7 +261,8 @@ public class InscriptionClasseService {
         return (p + " " + n).trim();
     }
 
-    private static void apresCommit(Runnable action) {
+    /** Exécute l'action après le commit de la transaction courante (immédiatement s'il n'y en a pas). */
+    static void apresCommit(Runnable action) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override

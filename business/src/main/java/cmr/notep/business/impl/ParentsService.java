@@ -21,6 +21,9 @@ public class ParentsService implements ParentsApi {
 
     private final ParentsBusiness parentsBusiness;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.services.InscriptionParentService inscriptionParentService;
+
     public ParentsService(ParentsBusiness ParentsBusiness) {
         this.parentsBusiness = ParentsBusiness;
     }
@@ -90,5 +93,22 @@ public class ParentsService implements ParentsApi {
     public List<Eleves> obtenirEnfants(String parentId) {
         currentUser.requireSelfOrAdmin(parentId);
         return parentsBusiness.obtenirEnfants(parentId);
+    }
+
+    @Override
+    public List<cmr.notep.interfaces.modeles.EnfantStatut> obtenirStatutsEnfants(String parentId) {
+        currentUser.requireSelfOrAdmin(parentId);
+        return inscriptionParentService.statuts(parentId);
+    }
+
+    @Override
+    public cmr.notep.interfaces.modeles.EnfantInscription inscrireEnfant(String parentId,
+                                                                        cmr.notep.interfaces.modeles.EnfantInscription enfant) {
+        currentUser.requireAuthenticated();
+        if (!currentUser.isSelf(parentId)) {
+            throw cmr.notep.business.security.CurrentUserService.forbidden(
+                    "Seul le parent lui-même peut inscrire un enfant depuis son compte.");
+        }
+        return inscriptionParentService.inscrireNouvelEnfant(parentId, enfant);
     }
 }

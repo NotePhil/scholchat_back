@@ -23,6 +23,10 @@ public class MediaExceptionHandler {
         body.put("timestamp", LocalDateTime.now());
         body.put("message", ex.getMessage());
         body.put("code", ex.getCode().name());
+        if (ex.getEnfantIndex() != null) {
+            // Inscription parent : index (0-based) de l'enfant concerné dans la liste envoyée
+            body.put("enfantIndex", ex.getEnfantIndex());
+        }
 
         HttpStatus status = mapErrorCodeToHttpStatus(ex.getCode());
 
@@ -58,6 +62,11 @@ public class MediaExceptionHandler {
             case CODE_VERIFICATION_INVALIDE:
             case CODE_VERIFICATION_EXPIRE:
             case COMPTE_NON_ELIGIBLE:
+            // Inscription parent avec ses enfants
+            case ENFANTS_REQUIS:
+            case ENFANTS_TROP_NOMBREUX:
+            case ENFANT_INVALIDE:
+            case ENFANT_EN_DOUBLE:
                 return HttpStatus.BAD_REQUEST;
             case TROP_DE_TENTATIVES:
                 return HttpStatus.TOO_MANY_REQUESTS;
@@ -82,6 +91,7 @@ public class MediaExceptionHandler {
             case COMPTE_EN_ATTENTE_APPROBATION:
             case MOT_DE_PASSE_A_CHANGER:
             case CHANGEMENT_PROFIL_INTERDIT_ELEVE:
+            case PARENT_SANS_ENFANT_VALIDE:
                 return HttpStatus.FORBIDDEN;
             case OPERATION_FAILURE:
             case INIT_ERROR:

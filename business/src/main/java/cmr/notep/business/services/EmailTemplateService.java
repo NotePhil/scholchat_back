@@ -174,6 +174,53 @@ public class EmailTemplateService {
         return templateEngine.process("email/inscription-classe-refusee", context);
     }
 
+    /**
+     * Inscription publique d'un parent avec ses enfants : identifiants (e-mail + mot de passe temporaire) et liste
+     * des enfants avec leur classe, chacun en attente de validation par le professeur.
+     *
+     * @param enfants lignes {nom: "Prénom Nom", classe: "Nom de la classe"}
+     */
+    public String generateInscriptionParentRecueEmail(String email, String nomComplet, String motDePasseTemporaire,
+                                                      List<java.util.Map<String, String>> enfants) {
+        Context context = new Context();
+        context.setVariable("userName", nomComplet);
+        context.setVariable("userEmail", email);
+        context.setVariable("motDePasse", motDePasseTemporaire);
+        context.setVariable("enfants", enfants);
+        context.setVariable("loginUrl", loginUrl());
+        return templateEngine.process("email/inscription-parent-recue", context);
+    }
+
+    /** Inscription publique d'un élève majeur par code de classe : accusé de réception (sans identifiants). */
+    public String generateInscriptionEleveRecueEmail(String email, String nomComplet, String classeNom) {
+        Context context = new Context();
+        context.setVariable("userName", nomComplet);
+        context.setVariable("userEmail", email);
+        context.setVariable("classeNom", classeNom);
+        return templateEngine.process("email/inscription-eleve-recue", context);
+    }
+
+    /** Demande d'un parent pour son enfant approuvée (enfant accepté dans la classe). */
+    public String generateEnfantAccesApprouveEmail(String nomCompletParent, String enfantNom, String classeNom) {
+        Context context = new Context();
+        context.setVariable("userName", nomCompletParent);
+        context.setVariable("enfantNom", enfantNom);
+        context.setVariable("classeNom", classeNom);
+        context.setVariable("loginUrl", loginUrl());
+        return templateEngine.process("email/enfant-acces-approuve", context);
+    }
+
+    /** Demande d'un parent pour son enfant refusée (avec le motif). */
+    public String generateEnfantAccesRefuseEmail(String nomCompletParent, String enfantNom, String classeNom, String motif) {
+        Context context = new Context();
+        context.setVariable("userName", nomCompletParent);
+        context.setVariable("enfantNom", enfantNom);
+        context.setVariable("classeNom", classeNom);
+        context.setVariable("motif", motif != null && !motif.isBlank() ? motif.trim() : null);
+        context.setVariable("loginUrl", loginUrl());
+        return templateEngine.process("email/enfant-acces-refuse", context);
+    }
+
     public String generateClassCreationNotificationEmail(Classes classe, Professeurs professeur, String validationUrl) {
         Context context = new Context();
         context.setVariable("classe", classe);

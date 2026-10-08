@@ -38,6 +38,9 @@ import java.util.stream.Collectors;
  * Mot de passe temporaire (must_change_password) : 403 MOT_DE_PASSE_A_CHANGER hors de la liste blanche
  * de {@link MotDePasseAChanger}.
  *
+ * Parent sans enfant accepté dans une classe (session PARENT) : 403 PARENT_SANS_ENFANT_VALIDE hors de la liste
+ * blanche de {@link ParentSansEnfantValide}.
+ *
  * Profil professeur : ROLE_PROFESSOR n'est accordé que si les pièces ont été validées par
  * l'administrateur (sinon ROLE_PROFESSOR_PENDING), et un professeur non validé qui agit en
  * professeur n'accède qu'à une liste blanche de routes — voir {@link ProfesseurVerificationService}.
@@ -54,14 +57,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
     private final ProfesseurVerificationService professeurVerification;
     private final UtilisateursRepository utilisateursRepository;
+    private final ParentSansEnfantValide parentSansEnfantValide;
 
     public JwtAuthenticationFilter(JwtUtil jwtUtil, UserDetailsService userDetailsService,
                                    ProfesseurVerificationService professeurVerification,
-                                   UtilisateursRepository utilisateursRepository) {
+                                   UtilisateursRepository utilisateursRepository,
+                                   ParentSansEnfantValide parentSansEnfantValide) {
         this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
         this.professeurVerification = professeurVerification;
         this.utilisateursRepository = utilisateursRepository;
+        this.parentSansEnfantValide = parentSansEnfantValide;
     }
 
     @Override
@@ -135,6 +141,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             RestAuthenticationEntryPoint.write(response, HttpServletResponse.SC_FORBIDDEN,
                                     SchoolErrorCode.PROFIL_PROFESSEUR_NON_VALIDE.name(),
                                     ProfesseurVerificationService.message(statut));
+                            return;
+                        }
+                    }
+
+                    // Session PARENT sans aucun enfant accepté dans une classe : liste blanche seulement
+                    // (profil, notifications, enfants, inscription / demande d'accès pour ses enfants…).
+                    if (ParentSansEnfantValide.agitEnParent(effectifs, sessionRole)) {
+                        if (userId == null) {
+                            userId = utilisateursRepository.findIdByEmail(userEmail).orElse(null);
+                        }
+                        if (!parentSansEnfantValide.estRouteAutorisee(request, userId)
+                                && !parentSansEnfantValide.aEnfantValide(request, userId)) {
+                            log.info("Parent sans enfant validé : accès refusé à {} {}",
+                                    request.getMethod(), request.getRequestURI());
+                            RestAuthenticationEntryPoint.write(response, HttpServletResponse.SC_FORBIDDEN,
+                                    SchoolErrorCode.PARENT_SANS_ENFANT_VALIDE.name(), ParentSansEnfantValide.MESSAGE);
                             return;
                         }
                     }

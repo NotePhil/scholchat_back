@@ -68,7 +68,7 @@ public class CoursProgrammerBusiness {
                         .map(ClassesEntity::getId)
                         .collect(Collectors.toList());
                 notificationService.createCourseScheduledNotification(
-                        cours.getTitre(), professeur.getId(), profName, classeIds);
+                        cours.getId(), cours.getTitre(), professeur.getId(), profName, classeIds);
             }
         } catch (Exception e) {
             // Don't fail the course scheduling if notifications fail

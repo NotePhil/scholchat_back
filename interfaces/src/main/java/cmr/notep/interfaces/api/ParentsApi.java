@@ -63,4 +63,17 @@ public interface ParentsApi {
     @GetMapping("/{parentId}/enfants")
     @ResponseStatus(HttpStatus.OK)
     List<Eleves> obtenirEnfants(@PathVariable String parentId);
+
+    /** Enfants du parent et état de leurs inscriptions dans les classes (APPROUVEE / EN_ATTENTE / REJETEE). */
+    @GetMapping(path = "/{parentId}/enfants/statuts", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    List<cmr.notep.interfaces.modeles.EnfantStatut> obtenirStatutsEnfants(@PathVariable String parentId);
+
+    /** Inscrit un nouvel enfant ({prenom, nom, codeClasse}) : élève créé + demande d'accès à sa classe. */
+    @PostMapping(path = "/{parentId}/enfants/inscription", produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    cmr.notep.interfaces.modeles.EnfantInscription inscrireEnfant(
+            @PathVariable String parentId,
+            @RequestBody cmr.notep.interfaces.modeles.EnfantInscription enfant);
 }

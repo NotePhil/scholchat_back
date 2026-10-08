@@ -70,15 +70,20 @@ public class NotificationService {
         log.info("Access rejected notification sent to student {}", studentId);
     }
 
+    /**
+     * Course scheduled in classes: COURSE_SCHEDULED, relatedEntityId = coursId (the course itself, so a tap opens it).
+     * Older rows were ACTIVITY_CREATED / COURSE carrying the classeId.
+     */
     @Transactional
-    public void createCourseScheduledNotification(String coursName, String professorId, String professorName, List<String> classeIds) {
+    public void createCourseScheduledNotification(String coursId, String coursName, String professorId, String professorName, List<String> classeIds) {
+        java.util.Set<String> notified = new java.util.HashSet<>();
         for (String classeId : classeIds) {
             List<String> studentIds = accederRepository.findUserIdsByClasseId(classeId);
             for (String studentId : studentIds) {
-                if (!studentId.equals(professorId)) {
-                    saveNotification(studentId, "ACTIVITY_CREATED", "Nouveau cours programmé",
+                if (!studentId.equals(professorId) && notified.add(studentId)) {
+                    saveNotification(studentId, "COURSE_SCHEDULED", "Nouveau cours programmé",
                             professorName + " a programmé le cours: " + coursName,
-                            professorId, professorName, classeId, "COURSE");
+                            professorId, professorName, coursId, "COURSE");
                 }
             }
         }
@@ -100,15 +105,20 @@ public class NotificationService {
         log.info("Live session notifications sent to {} participants for cours {}", participantIds.size(), coursId);
     }
 
+    /**
+     * Exercise/devoir programmed in classes: ASSIGNMENT_GIVEN, relatedEntityType EXERCISE, relatedEntityId =
+     * exerciseProgrammerId (the devoir itself). Older rows were ASSIGNMENT carrying the classeId.
+     */
     @Transactional
-    public void createExerciseAssignedNotification(String exerciseName, String professorId, String professorName, List<String> classeIds) {
+    public void createExerciseAssignedNotification(String exerciseProgrammerId, String exerciseName, String professorId, String professorName, List<String> classeIds) {
+        java.util.Set<String> notified = new java.util.HashSet<>();
         for (String classeId : classeIds) {
             List<String> studentIds = accederRepository.findUserIdsByClasseId(classeId);
             for (String studentId : studentIds) {
-                if (!studentId.equals(professorId)) {
+                if (!studentId.equals(professorId) && notified.add(studentId)) {
                     saveNotification(studentId, "ASSIGNMENT_GIVEN", "Nouvel exercice assigné",
                             professorName + " a assigné l'exercice: " + exerciseName,
-                            professorId, professorName, classeId, "ASSIGNMENT");
+                            professorId, professorName, exerciseProgrammerId, "EXERCISE");
                 }
             }
         }
@@ -442,11 +452,12 @@ public class NotificationService {
         notificationRepository.deleteByUserId(userId);
     }
 
+    /** New message: relatedEntityId = message id, actorId = sender (the conversation partner to open). */
     @Transactional
-    public void createMessageNotification(String recipientId, String senderId, String senderName, String messageSubject) {
+    public void createMessageNotification(String recipientId, String senderId, String senderName, String messageId, String messageSubject) {
         saveNotification(recipientId, "MESSAGE_SENT", "Nouveau message",
                 senderName + " vous a envoye un message: " + (messageSubject != null ? messageSubject : "Sans objet"),
-                senderId, senderName, null, "MESSAGE");
+                senderId, senderName, messageId, "MESSAGE");
         log.info("Message notification sent to {} from {}", recipientId, senderName);
     }
 
@@ -469,6 +480,41 @@ public class NotificationService {
         saveNotification(userId, "SUPPRESSION_IMMINENTE", "Suppression imminente",
                 "\"" + nomEntite + "\" sera définitivement supprimé(e) si l'offre n'est pas renouvelée rapidement.",
                 null, null, entiteId, entiteType);
+    }
+
+    /**
+     * Notification générique (ex. CHILD_ACCESS_APPROVED / CHILD_ACCESS_REJECTED pour un parent : relatedEntityType
+     * CLASS, relatedEntityId = classeId, actorId = id de l'enfant, actorName = nom de l'enfant).
+     */
+    @Transactional
+    public void createNotification(String userId, String type, String title, String message,
+                                   String actorId, String actorName, String relatedEntityId, String relatedEntityType) {
+        saveNotification(userId, type, title, message, actorId, actorName, relatedEntityId, relatedEntityType);
+    }
+
+    /**
+     * Demande d'accès faite par un parent pour son enfant : le modérateur (et les administrateurs) voient
+     * « <Parent> demande l'accès pour son enfant <Enfant> » ; type ACCESS_REQUEST, relatedEntity CLASS = classeId,
+     * actorId = parent.
+     */
+    @Transactional
+    public void createChildAccessRequestNotification(String classeId, String className, String parentId,
+                                                     String parentName, String enfantNom) {
+        for (String moderatorId : accederRepository.findModeratorsByClasseId(classeId)) {
+            saveNotification(moderatorId, "ACCESS_REQUEST", "Nouvelle demande d'accès",
+                    parentName + " demande l'accès pour son enfant " + enfantNom + " à votre classe " + className,
+                    parentId, parentName, classeId, "CLASS");
+        }
+        saveNotification(parentId, "ACCESS_REQUEST", "Demande d'accès envoyée",
+                "Votre demande d'inscription de " + enfantNom + " à la classe " + className
+                        + " a été envoyée. En attente de validation par le professeur.",
+                parentId, parentName, classeId, "CLASS");
+        for (String adminId : utilisateursRepository.findAdminUserIds()) {
+            saveNotification(adminId, "ACCESS_REQUEST", "Nouvelle demande d'accès",
+                    parentName + " demande l'accès pour son enfant " + enfantNom + " à la classe " + className,
+                    parentId, parentName, classeId, "CLASS");
+        }
+        log.info("Child access request notifications sent for class {} by parent {}", classeId, parentId);
     }
 
     private void saveNotification(String userId, String type, String title, String message,

@@ -42,6 +42,10 @@ public class AuthResponse {
     // authentifiées sauf POST /auth/change-password (et quelques routes de session) répondent 403
     // MOT_DE_PASSE_A_CHANGER. Le client doit afficher l'écran "choisir un nouveau mot de passe".
     private boolean mustChangePassword;
+    // Compte parent : vrai si au moins un enfant a été accepté dans une classe. Tant que faux, une session
+    // PARENT ne peut utiliser qu'une liste blanche de routes (403 PARENT_SANS_ENFANT_VALIDE sinon).
+    // null si le compte n'a pas de profil parent.
+    private Boolean parentAEnfantValide;
 
     @Data
     @Builder

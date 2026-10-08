@@ -63,7 +63,14 @@ public enum SchoolErrorCode {
     EMAIL_DEJA_UTILISE("Un compte existe deja avec cet e-mail"),
     // Inscription publique (anonyme) avec l'e-mail d'un compte NON actif : refusée sans rien modifier — HTTP 409
     COMPTE_NON_ACTIVE("Un compte non active existe deja avec cet e-mail"),
-    COMPTE_EN_ATTENTE_VALIDATION("Un compte en attente de validation existe deja avec cet e-mail");
+    COMPTE_EN_ATTENTE_VALIDATION("Un compte en attente de validation existe deja avec cet e-mail"),
+    // Inscription parent avec ses enfants (POST /utilisateurs type parent, POST /parents/{id}/enfants/inscription)
+    ENFANTS_REQUIS("Ajoutez au moins un enfant"),                                // HTTP 400
+    ENFANTS_TROP_NOMBREUX("Trop d'enfants dans la demande"),                      // HTTP 400
+    ENFANT_INVALIDE("Prenom et nom de l'enfant obligatoires"),                    // HTTP 400 (+ enfantIndex)
+    ENFANT_EN_DOUBLE("Enfant en double"),                                         // HTTP 400 (+ enfantIndex)
+    // Session PARENT dont aucun enfant n'a encore ete accepte dans une classe — HTTP 403
+    PARENT_SANS_ENFANT_VALIDE("Aucun enfant accepte dans une classe");
     private final String message;
 
     SchoolErrorCode(String message) {

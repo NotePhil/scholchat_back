@@ -43,6 +43,55 @@ public class InscriptionClasseEmailService {
         }
     }
 
+    /** Inscription publique d'un parent avec ses enfants : identifiants + liste des enfants (en attente). */
+    @Async
+    public void envoyerInscriptionParentRecue(String email, String nomComplet, String motDePasseTemporaire,
+                                              java.util.List<java.util.Map<String, String>> enfants) {
+        try {
+            String html = emailTemplateService.generateInscriptionParentRecueEmail(email, nomComplet,
+                    motDePasseTemporaire, enfants);
+            mailService.sendEmail(email, "Inscription bien reçue – vos identifiants ScholChat", html);
+            log.info("Parent sign-up e-mail (credentials + children) sent to {}", email);
+        } catch (Exception e) {
+            log.error("Parent sign-up e-mail could not be sent to {}: {}", email, e.getMessage());
+        }
+    }
+
+    /** Inscription publique d'un élève majeur : accusé de réception, SANS identifiants (envoyés à l'approbation). */
+    @Async
+    public void envoyerInscriptionEleveRecue(String email, String nomComplet, String classeNom) {
+        try {
+            String html = emailTemplateService.generateInscriptionEleveRecueEmail(email, nomComplet, classeNom);
+            mailService.sendEmail(email, "Inscription bien reçue – classe " + classeNom, html);
+            log.info("Student sign-up acknowledgement e-mail sent to {}", email);
+        } catch (Exception e) {
+            log.error("Student sign-up acknowledgement e-mail could not be sent to {}: {}", email, e.getMessage());
+        }
+    }
+
+    @Async
+    public void envoyerEnfantAccepte(String email, String nomCompletParent, String enfantNom, String classeNom) {
+        try {
+            String html = emailTemplateService.generateEnfantAccesApprouveEmail(nomCompletParent, enfantNom, classeNom);
+            mailService.sendEmail(email, "Votre enfant " + enfantNom + " a été accepté dans la classe " + classeNom, html);
+            log.info("Child access approved e-mail sent to {}", email);
+        } catch (Exception e) {
+            log.error("Child access approved e-mail could not be sent to {}: {}", email, e.getMessage());
+        }
+    }
+
+    @Async
+    public void envoyerEnfantRefuse(String email, String nomCompletParent, String enfantNom, String classeNom, String motif) {
+        try {
+            String html = emailTemplateService.generateEnfantAccesRefuseEmail(nomCompletParent, enfantNom, classeNom, motif);
+            mailService.sendEmail(email, "La demande d'inscription de " + enfantNom + " à la classe " + classeNom
+                    + " n'a pas été acceptée", html);
+            log.info("Child access rejected e-mail sent to {}", email);
+        } catch (Exception e) {
+            log.error("Child access rejected e-mail could not be sent to {}: {}", email, e.getMessage());
+        }
+    }
+
     @Async
     public void envoyerRefus(String email, String nomComplet, String classeNom, String motif) {
         try {

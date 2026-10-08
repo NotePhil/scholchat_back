@@ -344,6 +344,8 @@ public class AuthBusiness {
                 .children(children)
                 .expiredEntities(expiredEntities.isEmpty() ? null : expiredEntities)
                 .mustChangePassword(existingUser.isMustChangePassword())
+                .parentAEnfantValide(availableRoles.contains("PARENT")
+                        ? utilisateursBusiness.parentAEnfantValide(existingUser.getId()) : null)
                 .build();
     }
 

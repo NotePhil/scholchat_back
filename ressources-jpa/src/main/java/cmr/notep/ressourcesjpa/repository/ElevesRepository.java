@@ -10,7 +10,7 @@ import java.util.List;
 
 @Repository
 public interface ElevesRepository extends JpaRepository<ElevesEntity, String> {
-    @Query("SELECT e FROM ElevesEntity e JOIN e.parents p WHERE p.id = :parentId")
+    @Query("SELECT e FROM ElevesEntity e WHERE e.id IN (SELECT pe.eleveId FROM ParentEleveEntity pe WHERE pe.parentId = :parentId)")
     List<ElevesEntity> findByParentId(@Param("parentId") String parentId);
 
     @Query("""

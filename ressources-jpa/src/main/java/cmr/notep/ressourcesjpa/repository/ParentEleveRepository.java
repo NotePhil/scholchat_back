@@ -27,6 +27,16 @@ public interface ParentEleveRepository extends JpaRepository<ParentEleveEntity, 
     @Query(value = "SELECT COUNT(*) > 0 FROM ressources.parent_eleve WHERE eleve_id = :eleveId AND parent_id <> :parentId", nativeQuery = true)
     boolean existsOtherParentForEleve(@Param("eleveId") String eleveId, @Param("parentId") String parentId);
 
+    /**
+     * Le parent a-t-il au moins un enfant accepté dans une classe (ligne acceder de l'enfant) ? Les comptes parent
+     * approuvés avant l'inscription par enfants (accès du parent lui-même à une classe) comptent aussi : dans le
+     * processus actuel, le parent n'obtient un accès qu'avec l'acceptation d'un de ses enfants.
+     */
+    @Query(value = "SELECT EXISTS (SELECT 1 FROM ressources.parent_eleve pe JOIN ressources.acceder a "
+            + "ON a.utilisateur_id = pe.eleve_id WHERE pe.parent_id = :parentId) "
+            + "OR EXISTS (SELECT 1 FROM ressources.acceder a WHERE a.utilisateur_id = :parentId)", nativeQuery = true)
+    boolean parentAEnfantValide(@Param("parentId") String parentId);
+
     @Transactional
     @Modifying
     @Query(value = "INSERT INTO ressources.parent_eleve (parent_id, eleve_id) VALUES (:parentId, :eleveId) ON CONFLICT DO NOTHING", nativeQuery = true)

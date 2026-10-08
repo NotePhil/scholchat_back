@@ -24,6 +24,9 @@ public interface DemandeAccesRepository extends JpaRepository<DemandeAccesEntity
 
     List<DemandeAccesEntity> findAllByUtilisateurIdAndClasseId(String utilisateurId, String classeId);
 
+    /** Demandes faites pour ces enfants (eleve_associe_id), tous états. */
+    List<DemandeAccesEntity> findByEleveAssocieIdIn(List<String> eleveIds);
+
     void deleteAllByUtilisateurIdAndClasseId(String utilisateurId, String classeId);
 
 }
