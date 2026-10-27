@@ -88,9 +88,10 @@ public class ElevesBusiness {
             existingEleve.setNiveau(partialEleve.getNiveau());
         }
 
-        // Map back to entity and save
-        ElevesEntity updatedEntity = dozerMapperBean.map(existingEleve, ElevesEntity.class);
-        updatedEntity = repository.save(updatedEntity);
+        // Report sur l'entité gérée : sauvegarder une copie Dozer viderait ses collections (orphanRemoval
+        // des participations aux exercices et des réponses aux questions).
+        UtilisateursBusiness.copierChampsSimples(existingEleve, existingEntity, false);
+        ElevesEntity updatedEntity = repository.save(existingEntity);
 
         return dozerMapperBean.map(updatedEntity, Eleves.class);
     }

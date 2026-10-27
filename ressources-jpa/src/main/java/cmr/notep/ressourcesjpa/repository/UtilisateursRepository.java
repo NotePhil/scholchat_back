@@ -17,6 +17,8 @@ import java.util.Date;
 public interface UtilisateursRepository extends JpaRepository<UtilisateursEntity, String> {
     Optional<UtilisateursEntity> findByEmail(String email);
 
+    Optional<UtilisateursEntity> findFirstByEmailIgnoreCase(String email);
+
     @Transactional
     @Modifying
     @Query(value = "DELETE FROM utilisateurs u WHERE u.etat = :etat AND u.creation_date < :creationDate", nativeQuery = true)

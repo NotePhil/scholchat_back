@@ -164,6 +164,19 @@ public class EmailTemplateService {
         return templateEngine.process("email/notification-generique", context);
     }
 
+    /** Variante avec un bouton vers une page précise de l'application (chemin relatif au front, ex. /schoolchat/…). */
+    public String generateNotificationGeneriqueEmail(String titre, List<String> paragraphes, List<String> elements,
+                                                     String cheminFront, String boutonLibelle) {
+        Context context = new Context();
+        context.setVariable("titre", titre);
+        context.setVariable("paragraphes", paragraphes);
+        context.setVariable("elements", elements == null || elements.isEmpty() ? null : elements);
+        String base = frontEndpoint == null ? "" : frontEndpoint.replaceAll("/+$", "");
+        context.setVariable("loginUrl", cheminFront == null ? loginUrl() : base + cheminFront);
+        context.setVariable("boutonLibelle", boutonLibelle);
+        return templateEngine.process("email/notification-generique", context);
+    }
+
     /** Inscription par code de classe refusée par le responsable de la classe. */
     public String generateInscriptionClasseRefuseeEmail(String email, String nomComplet, String classeNom, String motif) {
         Context context = new Context();

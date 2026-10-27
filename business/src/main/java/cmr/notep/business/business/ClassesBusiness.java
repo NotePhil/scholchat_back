@@ -149,7 +149,7 @@ public class ClassesBusiness {
                         moderator.getId(), moderator.getNom() + " " + moderator.getPrenom(),
                         etablissement.getNom(), gestionnaireId);
             } catch (Exception e) {
-                log.warn("Could not send adhesion notification: {}", e.getMessage());
+                log.warn("Could not send class creation request notification: {}", e.getMessage());
             }
         }
         
@@ -202,7 +202,9 @@ public class ClassesBusiness {
                 savedEntity.getNom(),
                 actorId,
                 actorName,
-                etablissement
+                // Classe en attente de validation : le gestionnaire a déjà reçu « Nouvelle demande de
+                // création de classe » — pas de second « … a créé la classe » trompeur.
+                savedEntity.getEtat() == EtatClasse.EN_ATTENTE_APPROBATION ? null : etablissement
             );
         } catch (Exception e) {
             log.error("Failed to send class creation notification: {}", e.getMessage());
@@ -299,7 +301,7 @@ public class ClassesBusiness {
                         moderator.getId(), moderator.getNom() + " " + moderator.getPrenom(),
                         etablissement.getNom(), gestionnaireId);
             } catch (Exception e) {
-                log.warn("Could not send adhesion notification: {}", e.getMessage());
+                log.warn("Could not send class creation request notification: {}", e.getMessage());
             }
         }
 
@@ -314,7 +316,9 @@ public class ClassesBusiness {
                 savedEntity.getNom(),
                 actorId,
                 actorName,
-                etablissement
+                // Classe en attente de validation : le gestionnaire a déjà reçu « Nouvelle demande de
+                // création de classe » — pas de second « … a créé la classe » trompeur.
+                savedEntity.getEtat() == EtatClasse.EN_ATTENTE_APPROBATION ? null : etablissement
             );
         } catch (Exception e) {
             log.error("Failed to send class creation notification: {}", e.getMessage());

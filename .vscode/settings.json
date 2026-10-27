@@ -1,2 +1,13 @@
 {
+  // Spring Boot backend only: don't import the mobile app's Android/Gradle project
+  // (it starts several heavy Gradle/Kotlin daemons for nothing).
+  "java.import.gradle.enabled": false,
+  "java.import.exclusions": [
+    "**/node_modules/**",
+    "**/.metadata/**",
+    "**/archetype-resources/**",
+    "**/META-INF/maven/**",
+    "**/scholchat_mobile/**",
+    "**/scholchat_front/**"
+  ]
 }

@@ -69,12 +69,24 @@ public enum SchoolErrorCode {
     ENFANTS_TROP_NOMBREUX("Trop d'enfants dans la demande"),                      // HTTP 400
     ENFANT_INVALIDE("Prenom et nom de l'enfant obligatoires"),                    // HTTP 400 (+ enfantIndex)
     ENFANT_EN_DOUBLE("Enfant en double"),                                         // HTTP 400 (+ enfantIndex)
+    // Enfant mineur ajouté par son nom alors qu'un élève du même nom AVEC son propre compte est dans la classe — HTTP 409
+    ELEVE_EXISTE_AVEC_COMPTE("Un eleve du meme nom avec son propre compte existe deja dans cette classe"),
+    // Enfant majeur : l'e-mail appartient à un compte qui n'est pas élève — HTTP 400
+    COMPTE_NON_ELEVE("Ce compte n'est pas un compte eleve"),
+    // Enfant majeur : aucun compte élève avec cet e-mail (l'enfant doit d'abord créer son compte) — HTTP 404 (+ enfantIndex)
+    ELEVE_INTROUVABLE("Aucun eleve avec cette adresse e-mail"),
+    // Enfant majeur : l'élève n'est pas membre de la classe dont le code est donné — HTTP 400 (+ enfantIndex)
+    ELEVE_PAS_DANS_CLASSE("Cet eleve n'est pas inscrit dans cette classe"),
+    // Enfant majeur : demande de suivi déjà en attente — HTTP 409
+    LIEN_PARENT_DEJA_DEMANDE("Demande de suivi deja envoyee"),
     // Session PARENT dont aucun enfant n'a encore ete accepte dans une classe — HTTP 403
     PARENT_SANS_ENFANT_VALIDE("Aucun enfant accepte dans une classe"),
     // Exercice programmé rattaché à un cours qui n'est pas programmé dans la classe (ou inexistant) — HTTP 400
     COURS_NON_PROGRAMME_DANS_CLASSE("Ce cours n'est pas programme dans cette classe"),
     // Exercice / devoir programmé sans cours de rattachement (obligatoire pour chaque classe) — HTTP 400
-    COURS_REQUIS("Choisissez le cours auquel rattacher cet exercice");
+    COURS_REQUIS("Choisissez le cours auquel rattacher cet exercice"),
+    // Restriction « Élèves max » de l'offre de la classe atteinte (approbation ou nouvelle demande) — HTTP 409
+    CLASSE_COMPLETE("La classe a atteint le nombre maximum d'eleves de son offre");
     private final String message;
 
     SchoolErrorCode(String message) {

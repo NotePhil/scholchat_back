@@ -1,0 +1,24 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    
+    {
+      "type": "java",
+      "name": "BusinessApplication (backend, port 8486)",
+      "request": "launch",
+      "mainClass": "cmr.notep.business.BusinessApplication",
+      "projectName": "business",
+      "cwd": "${workspaceFolder}/business",
+      "console": "integratedTerminal"
+    },
+    {
+      "type": "java",
+      "name": "DbInitApplication (db-init, ATTENTION: profil local = drop-first)",
+      "request": "launch",
+      "mainClass": "cmr.notep.dbinit.DbInitApplication",
+      "projectName": "db-init",
+      "cwd": "${workspaceFolder}/db-init",
+      "console": "integratedTerminal"
+    }
+  ]
+}

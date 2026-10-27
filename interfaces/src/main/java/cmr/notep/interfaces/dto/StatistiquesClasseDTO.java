@@ -32,7 +32,26 @@ public class StatistiquesClasseDTO {
         private int chapitresTotal;
         /** Moyenne sur les élèves de (chapitres lus / chapitres) en % (null si cours sans chapitre ou sans élève). */
         private Double progressionMoyenne;
+        /** Temps de lecture moyen (secondes) du cours, sur les élèves ayant un temps mesuré (null si aucun). */
+        private Long tempsMoyenSecondes;
+        /** Élèves ayant un temps de lecture mesuré sur ce cours. */
+        private int nbLecteurs;
+        /** Temps moyen par chapitre (dans l'ordre des chapitres). */
+        private List<ChapitreTemps> chapitres;
         private List<Exercice> exercices;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ChapitreTemps {
+        private String chapitreId;
+        private String titre;
+        private Integer ordre;
+        /** Temps de lecture moyen (secondes) sur les élèves ayant un temps mesuré pour ce chapitre (null si aucun). */
+        private Long tempsMoyenSecondes;
+        private int nbLecteurs;
     }
 
     @Data
@@ -71,5 +90,7 @@ public class StatistiquesClasseDTO {
         private Double moyenne;
         /** Devoirs non rendus dont la date limite est dépassée. */
         private int enRetard;
+        /** Temps de lecture total (secondes) de l'élève sur les cours de la classe. */
+        private long tempsLectureSecondes;
     }
 }

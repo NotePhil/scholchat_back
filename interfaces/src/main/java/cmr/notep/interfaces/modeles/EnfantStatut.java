@@ -21,6 +21,27 @@ public class EnfantStatut implements Serializable {
     private String nom;
     private String niveau;
     private List<ClasseStatut> classes;
+    public static final String LIEN_LIE = "LIE";
+    /** Demande de suivi en attente de la décision d'un professeur (gestionnaire d'une classe de l'enfant). */
+    public static final String LIEN_EN_ATTENTE_VALIDATION_PROFESSEUR = "EN_ATTENTE_VALIDATION_PROFESSEUR";
+    public static final String LIEN_REFUSE = "REFUSE";
+
+    /** Enfant ayant son propre compte (e-mail / mot de passe) : le parent n'a qu'un accès en lecture. */
+    private boolean majeur;
+    /** Majeur uniquement. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String email;
+    /**
+     * LIE (au moins une classe suivie acceptée) | EN_ATTENTE_VALIDATION_PROFESSEUR | REFUSE (seul LIE ouvre l'espace
+     * de l'enfant). Majeur : {@code classes} = classes dont le suivi a été demandé, avec leur statut.
+     */
+    private String lienStatut;
+    /** Demande de suivi correspondante (lienStatut différent de LIE). */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String demandeLienId;
+    /** REFUSE : motif donné par le professeur (facultatif) pour la dernière classe refusée. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String motifRefusLien;
 
     @Data
     @Builder
@@ -40,5 +61,10 @@ public class EnfantStatut implements Serializable {
         private String motifRejet;
         /** Date de la demande (absente pour un accès accordé sans demande connue). */
         private Date dateDemande;
+        /**
+         * Enfant majeur : demande de suivi parental de cette classe (APPROUVEE = suivi accepté, lecture possible ;
+         * EN_ATTENTE = à valider par le professeur, annulable ; REJETEE = refusée, motifRejet).
+         */
+        private String demandeSuiviId;
     }
 }

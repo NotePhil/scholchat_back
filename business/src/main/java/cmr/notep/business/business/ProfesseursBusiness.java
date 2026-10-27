@@ -129,7 +129,10 @@ public class ProfesseursBusiness {
         existingProfesseur.setHasUploaded(hasUploaded);
 
         // Save the updated entity
-        ProfesseursEntity updatedEntity = repository.save(dozerMapperBean.map(existingProfesseur, ProfesseursEntity.class));
+        boolean wasNotUploaded = !Boolean.TRUE.equals(existingEntity.getHasUploaded());
+        // Report sur l'entité gérée : sauvegarder une copie Dozer viderait ses collections (orphanRemoval).
+        UtilisateursBusiness.copierChampsSimples(existingProfesseur, existingEntity, false);
+        ProfesseursEntity updatedEntity = repository.save(existingEntity);
 
         // Statut de vérification : pièces (re)déposées et complètes -> à examiner par l'administrateur
         // (un profil déjà VALIDE le reste).
@@ -145,7 +148,6 @@ public class ProfesseursBusiness {
         }
 
         // Check if we need to send activation email after upload
-        boolean wasNotUploaded = !existingEntity.getHasUploaded();
         boolean nowHasUploaded = hasUploaded;
 
         if (wasNotUploaded && nowHasUploaded) {

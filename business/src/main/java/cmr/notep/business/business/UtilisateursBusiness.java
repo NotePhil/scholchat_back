@@ -121,10 +121,12 @@ public class UtilisateursBusiness {
         //    professeurs, SANS toucher à l'état du compte (le passer en AWAITING_VALIDATION bloquerait
         //    aussi la connexion avec ses autres rôles). La validation admin active ensuite le rôle.
         if (partialUpdate instanceof Professeurs docs && estDemandeRoleProfesseurSupplementaire(existingEntity, existingUser)) {
+            verifierUnicite(existingEntity, partialUpdate);
             return patcherPiecesRoleProfesseur(existingEntity, existingUser, docs);
         }
 
         // 4. Update common fields with null checks
+        verifierUnicite(existingEntity, partialUpdate);
         updateCommonFields(existingUser, partialUpdate);
         // 5. Handle type-specific updates
         if (existingUser instanceof Professeurs && partialUpdate instanceof Professeurs) {
@@ -164,9 +166,9 @@ public class UtilisateursBusiness {
                 existingProf.setEtat(EtatUtilisateur.AWAITING_VALIDATION);
                 envoyerEmailAttente = true;
             }
-            // 6. Map back to entity and save
-            UtilisateursEntity updatedEntity = mapUtilisateursModeleToEntity(existingUser);
-            updatedEntity = daoAccessorService.getRepository(UtilisateursRepository.class).save(updatedEntity);
+            // 6. Report sur l'entité gérée (voir copierChampsSimples) puis sauvegarde
+            copierChampsSimples(existingUser, existingEntity, false);
+            UtilisateursEntity updatedEntity = daoAccessorService.getRepository(UtilisateursRepository.class).save(existingEntity);
             // 7. Statut de vérification du profil professeur (SQL natif, après la sauvegarde)
             boolean soumis = documentsSubmitted && appliquerStatutApresDepot(idUtilisateur, hasAllDocuments, pieceRemplacee);
             if (envoyerEmailAttente || soumis) {
@@ -185,11 +187,75 @@ public class UtilisateursBusiness {
         } else if (existingUser instanceof Eleves && partialUpdate instanceof Eleves) {
             handleStudentUpdates((Eleves) existingUser, (Eleves) partialUpdate);
         }
-        // 6. Map back to entity and save
-        UtilisateursEntity updatedEntity = mapUtilisateursModeleToEntity(existingUser);
-        updatedEntity = daoAccessorService.getRepository(UtilisateursRepository.class).save(updatedEntity);
+        // 6. Report sur l'entité gérée (voir copierChampsSimples) puis sauvegarde
+        copierChampsSimples(existingUser, existingEntity, false);
+        UtilisateursEntity updatedEntity = daoAccessorService.getRepository(UtilisateursRepository.class).save(existingEntity);
         // 7. Return updated model
         return professeurVerification.enrichir(mapUtilisateursEntityToModele(updatedEntity));
+    }
+
+    /**
+     * Recopie les champs simples (colonnes) d'un modèle sur l'entité GÉRÉE correspondante.
+     * <p>Ne JAMAIS sauvegarder une copie Dozer d'un compte existant ({@code save(map(modele))}) : le modèle ne
+     * porte pas les collections de l'entité (événements créés, exercices programmés, canaux, matières,
+     * participations, réponses…). La copie arrive avec des listes vides, le merge applique alors
+     * l'orphanRemoval : les lignes liées sont supprimées, ou la sauvegarde échoue sur une contrainte de clé
+     * étrangère (ex. « fk_interaction_event » pour un professeur dont un événement a des interactions) —
+     * c'était l'erreur à la modification des informations d'un professeur.</p>
+     *
+     * @param secrets vrai pour recopier aussi mot de passe, jetons, admin et mustChangePassword (flux internes
+     *                d'authentification) ; faux pour une modification de profil.
+     */
+    public static void copierChampsSimples(Utilisateurs src, UtilisateursEntity cible, boolean secrets) {
+        cible.setNom(src.getNom());
+        cible.setPrenom(src.getPrenom());
+        cible.setEmail(src.getEmail());
+        cible.setTelephone(src.getTelephone());
+        cible.setAdresse(src.getAdresse());
+        if (src.getEtat() != null) {
+            cible.setEtat(src.getEtat());
+        }
+        if (secrets) {
+            cible.setPasseAccess(src.getPasseAccess());
+            cible.setActivationToken(src.getActivationToken());
+            cible.setResetPasswordToken(src.getResetPasswordToken());
+            cible.setAdmin(src.isAdmin());
+            cible.setMustChangePassword(src.isMustChangePassword());
+        }
+        if (src instanceof Professeurs p && cible instanceof ProfesseursEntity pe) {
+            pe.setCniUrlRecto(p.getCniUrlRecto());
+            pe.setCniUrlVerso(p.getCniUrlVerso());
+            pe.setSelfieUrl(p.getSelfieUrl());
+            pe.setMatriculeProfesseur(p.getMatriculeProfesseur());
+            pe.setHasUploaded(p.isHasUploaded());
+        } else if (src instanceof Eleves e && cible instanceof ElevesEntity ee) {
+            ee.setNiveau(e.getNiveau());
+        }
+    }
+
+    /** Email / matricule déjà utilisés par un autre compte : 409 explicite plutôt qu'une violation de contrainte (500). */
+    private void verifierUnicite(UtilisateursEntity existant, Utilisateurs maj) {
+        String email = nonVide(maj.getEmail());
+        if (email != null && !email.equalsIgnoreCase(String.valueOf(existant.getEmail()))) {
+            daoAccessorService.getRepository(UtilisateursRepository.class).findByEmail(email.toLowerCase())
+                    .filter(autre -> !autre.getId().equals(existant.getId()))
+                    .ifPresent(autre -> {
+                        throw new SchoolException(SchoolErrorCode.EMAIL_DEJA_UTILISE,
+                                "L'adresse email " + email.toLowerCase() + " est déjà utilisée par un autre compte.");
+                    });
+        }
+        if (maj instanceof Professeurs p) {
+            String matricule = nonVide(p.getMatriculeProfesseur());
+            if (matricule != null) {
+                daoAccessorService.getRepository(cmr.notep.ressourcesjpa.repository.ProfesseursRepository.class)
+                        .findByMatriculeProfesseur(matricule)
+                        .filter(autre -> !autre.getId().equals(existant.getId()))
+                        .ifPresent(autre -> {
+                            throw new SchoolException(SchoolErrorCode.DUPLICATE_RESOURCE,
+                                    "Le matricule " + matricule + " est déjà attribué à un autre professeur.");
+                        });
+            }
+        }
     }
 
     /** Une pièce déjà déposée est-elle remplacée par un AUTRE fichier (renvoyer la même clé n'est pas un remplacement) ? */
@@ -298,7 +364,8 @@ public class UtilisateursBusiness {
                 || nonVide(docs.getEmail()) != null || docs.getEtat() != null;
         if (communsModifies) {
             updateCommonFields(existingUser, docs); // ne lit que les champs communs
-            userRepo.save(mapUtilisateursModeleToEntity(existingUser));
+            copierChampsSimples(existingUser, entity, false);
+            userRepo.save(entity);
         }
 
         boolean pieceRemplacee = piecesDifferentes(userId, recto, verso, selfie);
@@ -521,7 +588,8 @@ public class UtilisateursBusiness {
                             ? p.getEnfantsInscription() : null;
             List<ClassesEntity> classesEnfants = enfantsAjout == null ? null
                     : inscriptionParentService.validerEnfants(enfantsAjout,
-                            inscriptionParentService.nomsEnfantsExistants(existant.getId()));
+                            inscriptionParentService.nomsEnfantsExistants(existant.getId()), existant.getId(),
+                            existant.getEmail());
             if (utilisateur instanceof Parents p) p.setEnfantsInscription(null);
             ClassesEntity classeEleve = ajoutEleve ? classeDemandee : null;
             Utilisateurs vue = annulerSiErreur(() -> {
@@ -558,7 +626,8 @@ public class UtilisateursBusiness {
             // seul code de classe (sans enfants) n'est plus acceptée pour un nouveau compte.
             if (utilisateur instanceof Parents parent) {
                 List<cmr.notep.interfaces.modeles.EnfantInscription> enfants = parent.getEnfantsInscription();
-                List<ClassesEntity> classesEnfants = inscriptionParentService.validerEnfants(enfants, java.util.Set.of());
+                List<ClassesEntity> classesEnfants = inscriptionParentService.validerEnfants(enfants, java.util.Set.of(),
+                        null, parent.getEmail());
                 return annulerSiErreur(() -> creerCompteParentAvecEnfants(parent, enfants, classesEnfants));
             }
             ClassesEntity classe = inscriptionClasseService.resoudreClasse(codeClasse, utilisateur instanceof Eleves);
@@ -1024,11 +1093,9 @@ public class UtilisateursBusiness {
                 .findById(utilisateur.getId())
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable avec l'ID: " + utilisateur.getId()));
 
-        // Map the model to the entity and update the entity
-        UtilisateursEntity updatedEntity = mapUtilisateursModeleToEntity(utilisateur);
-
-        // Save the updated entity
-        updatedEntity = daoAccessorService.getRepository(UtilisateursRepository.class).save(updatedEntity);
+        // Report des champs simples sur l'entité gérée (jamais de merge d'une copie Dozer, voir copierChampsSimples)
+        copierChampsSimples(utilisateur, existingEntity, true);
+        UtilisateursEntity updatedEntity = daoAccessorService.getRepository(UtilisateursRepository.class).save(existingEntity);
 
         // Return the updated model
         return mapUtilisateursEntityToModele(updatedEntity);

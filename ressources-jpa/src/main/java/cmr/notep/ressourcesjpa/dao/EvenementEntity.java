@@ -38,6 +38,10 @@ public class EvenementEntity {
     @Column(name = "heure_fin")
     private LocalDateTime heureFin;
 
+    /** Date de publication du post dans le fil (UTC), fixée à la création — distincte de heureDebut. */
+    @Column(name = "date_publication", updatable = false)
+    private LocalDateTime datePublication;
+
 
     @ElementCollection
     @CollectionTable(name = "evenement_participants", schema = "ressources",

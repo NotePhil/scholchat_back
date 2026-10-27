@@ -8,6 +8,10 @@ import cmr.notep.business.exceptions.enums.SchoolErrorCode;
 import cmr.notep.business.services.MediaService;
 import cmr.notep.business.services.MessagePublisher;
 import cmr.notep.business.services.NotificationService;
+import cmr.notep.interfaces.dto.ChatMessageDto;
+import cmr.notep.interfaces.dto.ConversationDto;
+import cmr.notep.interfaces.dto.CreerConversationRequest;
+import cmr.notep.interfaces.dto.EnvoyerMessageChatRequest;
 import cmr.notep.interfaces.dto.GroupMessageDto;
 import cmr.notep.interfaces.dto.MessageBulkDeleteRequest;
 import cmr.notep.interfaces.dto.MessageClasseDto;
@@ -57,12 +61,15 @@ public class MessagesBusiness {
     private final NotificationService notificationService;
     private final MessagePublisher messagePublisher;
     private final MediaService mediaService;
+    private final ConversationsBusiness conversationsBusiness;
 
     public MessagesBusiness(DaoAccessorService daoAccessorService,
                             NotificationService notificationService,
                             MessagePublisher messagePublisher,
                             MediaService mediaService,
-            UserSubtypeService userSubtypeService) {
+            UserSubtypeService userSubtypeService,
+                            ConversationsBusiness conversationsBusiness) {
+        this.conversationsBusiness = conversationsBusiness;
         this.userSubtypeService = userSubtypeService;
         this.daoAccessorService = daoAccessorService;
         this.notificationService = notificationService;
@@ -264,7 +271,10 @@ public class MessagesBusiness {
 
         MessagesEntity entity = nouveauMessage(expediteur, message.getObjet(), message.getContenu(), message.getMedias());
         entity.setDestinatairesEntities(new ArrayList<>(destinataires));
-        return enregistrerEtDiffuser(entity, expediteur);
+        // keep chat clients consistent: the message joins the conversation of its participants
+        ConversationEntity conv = conversationsBusiness.rattacherEnvoi(expediteur, destinataires, message.getObjet(), null);
+        entity.setConversationId(conv.getId());
+        return mapMessageEntityToDto(enregistrerEtDiffuser(entity, expediteur, conv));
     }
 
     public Messages posterMessageGroupe(GroupMessageDto dto) {
@@ -315,7 +325,14 @@ public class MessagesBusiness {
         MessagesEntity entity = nouveauMessage(expediteur, dto.getObjet(), dto.getContent(), dto.getMedias());
         entity.setDestinatairesEntities(new ArrayList<>(destinataires.values()));
         entity.setClasses(classes);
-        return enregistrerEtDiffuser(entity, expediteur);
+        // conversation title: the subject, else the class name(s)
+        String titre = dto.getObjet() != null && !dto.getObjet().isBlank() ? dto.getObjet()
+                : classes.stream().map(ClassesEntity::getNom).filter(n -> n != null && !n.isBlank())
+                .collect(Collectors.joining(", "));
+        ConversationEntity conv = conversationsBusiness.rattacherEnvoi(expediteur, destinataires.values(), titre,
+                classes.size() == 1 ? classes.get(0).getId() : null);
+        entity.setConversationId(conv.getId());
+        return mapMessageEntityToDto(enregistrerEtDiffuser(entity, expediteur, conv));
     }
 
     private MessagesEntity nouveauMessage(UtilisateursEntity expediteur, String objet, String contenu, List<Media> medias) {
@@ -333,8 +350,10 @@ public class MessagesBusiness {
         entity.setExpediteurEntity(expediteur);
         entity.setContenu(texte);
         entity.setObjet(objetParDefaut(objet, texte));
-        // ISO-8601: parseable by every client (Date#toString() is not)
-        entity.setDateCreation(ServerDateTimes.nowIso());
+        // ISO-8601: parseable by every client (Date#toString() is not); date_envoi = same instant, typed
+        LocalDateTime dateEnvoi = ConversationsBusiness.maintenant();
+        entity.setDateEnvoi(dateEnvoi);
+        entity.setDateCreation(ServerDateTimes.format(dateEnvoi));
         entity.setEtat("envoyé");
 
         int ordre = 0;
@@ -404,12 +423,15 @@ public class MessagesBusiness {
         return "DOCUMENT";
     }
 
-    private Messages enregistrerEtDiffuser(MessagesEntity entity, UtilisateursEntity expediteur) {
+    private MessagesEntity enregistrerEtDiffuser(MessagesEntity entity, UtilisateursEntity expediteur, ConversationEntity conv) {
         MessagesEntity saved = messages().save(entity);
+        conversationsBusiness.apresEnvoi(conv, expediteur.getId(), saved.getDateEnvoi());
+        Set<String> muets = conversationsBusiness.idsMuets(conv.getId());
 
         try {
             String senderName = Objects.toString(expediteur.getPrenom(), "") + " " + Objects.toString(expediteur.getNom(), "");
             for (UtilisateursEntity dest : saved.getDestinatairesEntities()) {
+                if (dest.getId().equals(expediteur.getId()) || muets.contains(dest.getId())) continue;
                 notificationService.createMessageNotification(dest.getId(), expediteur.getId(), senderName.trim(), saved.getId(), saved.getObjet());
             }
         } catch (Exception e) {
@@ -417,12 +439,81 @@ public class MessagesBusiness {
         }
 
         try {
-            messagePublisher.pushNewMessage(mapToMessageDto(saved, null, true), expediteur.getId());
+            List<ConversationParticipantEntity> parts = conversationsBusiness.participantsDe(conv.getId());
+            Set<String> destinataires = new LinkedHashSet<>();
+            destinataires.add(expediteur.getId());
+            parts.forEach(p -> destinataires.add(p.getId().getUtilisateurId()));
+            saved.getDestinatairesEntities().forEach(d -> destinataires.add(d.getId()));
+            ChatMessageDto chat = conversationsBusiness.toChat(saved, null, parts, false);
+            chat.setStatut("SENT");
+            messagePublisher.pushChatMessage(mapToMessageDto(saved, null, true), chat, destinataires, expediteur.getId());
         } catch (Exception e) {
             log.warn("Failed to push real-time message event: {}", e.getMessage());
         }
+        return saved;
+    }
 
-        return mapMessageEntityToDto(saved);
+    // ── Conversations (chat) ─────────────────────────────────────────────────
+
+    /** Find-or-create a DIRECT conversation (one other user) or create a GROUPE (several), contact rules apply. */
+    public ConversationDto creerConversation(CreerConversationRequest request) {
+        UtilisateursEntity moi = appelant();
+        List<String> ids = request == null || request.getParticipantIds() == null ? List.of()
+                : request.getParticipantIds().stream().filter(Objects::nonNull).map(String::trim)
+                .filter(id -> !id.isEmpty() && !id.equals(moi.getId())).distinct().collect(Collectors.toList());
+        if (ids.isEmpty()) {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Au moins un participant est requis");
+        }
+        List<UtilisateursEntity> autres = users().findAllById(ids);
+        if (autres.size() != ids.size()) {
+            throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Un ou plusieurs participants sont introuvables");
+        }
+        verifierDestinataires(new Autorisations(moi), autres);
+        ConversationEntity conv = autres.size() == 1
+                ? conversationsBusiness.trouverOuCreerDirect(moi.getId(), autres.get(0).getId())
+                : conversationsBusiness.creerGroupe(moi, autres, request.getTitre(), null);
+        return conversationsBusiness.toDto(conv, moi.getId());
+    }
+
+    /** Sends a message in a conversation (participants only), optionally replying to one of its messages. */
+    public ChatMessageDto envoyerDansConversation(String conversationId, EnvoyerMessageChatRequest request) {
+        UtilisateursEntity moi = appelant();
+        ConversationEntity conv = conversationsBusiness.verifierParticipant(conversationId, moi.getId());
+        if (request == null) {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Le message doit contenir du texte ou au moins une pièce jointe");
+        }
+        List<ConversationParticipantEntity> parts = conversationsBusiness.participantsDe(conversationId);
+        List<String> autresIds = parts.stream().map(p -> p.getId().getUtilisateurId())
+                .filter(id -> !id.equals(moi.getId())).collect(Collectors.toList());
+        List<UtilisateursEntity> destinataires = autresIds.isEmpty() ? List.of(moi) : users().findAllById(autresIds);
+
+        MessagesEntity replyTo = null;
+        if (request.getReplyToId() != null && !request.getReplyToId().isBlank()) {
+            replyTo = messages().findById(request.getReplyToId().trim())
+                    .filter(r -> conversationId.equals(r.getConversationId()))
+                    .orElseThrow(() -> new SchoolException(SchoolErrorCode.INVALID_INPUT,
+                            "Le message cité n'appartient pas à cette conversation"));
+        }
+
+        String objet = ConversationEntity.GROUPE.equals(conv.getType()) ? conv.getTitre() : null;
+        MessagesEntity entity = nouveauMessage(moi, objet, request.getContenu(), request.getMedias());
+        entity.setDestinatairesEntities(new ArrayList<>(destinataires));
+        entity.setConversationId(conversationId);
+        entity.setReplyToEntity(replyTo);
+        MessagesEntity saved = enregistrerEtDiffuser(entity, moi, conv);
+        ChatMessageDto dto = conversationsBusiness.toChat(saved, moi.getId(), conversationsBusiness.participantsDe(conversationId), true);
+        return dto;
+    }
+
+    /** Deletes a message of the conversation for me, or for everyone (sender only, existing rules). */
+    public void supprimerDansConversation(String conversationId, String messageId, boolean pourTous) {
+        UtilisateursEntity moi = appelant();
+        conversationsBusiness.verifierParticipant(conversationId, moi.getId());
+        MessagesEntity m = trouverMessage(messageId);
+        if (!conversationId.equals(m.getConversationId())) {
+            throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Message introuvable dans cette conversation");
+        }
+        supprimerPour(moi, m, pourTous ? SCOPE_EVERYONE : SCOPE_ME, true);
     }
 
     // ── Suppression / corbeille (par utilisateur) ────────────────────────────
@@ -472,7 +563,7 @@ public class MessagesBusiness {
             List<String> participants = new ArrayList<>();
             participants.add(moi.getId());
             m.getDestinatairesEntities().forEach(d -> participants.add(d.getId()));
-            messagePublisher.pushDeleted(m.getId(), participants);
+            messagePublisher.pushDeleted(m.getId(), m.getConversationId(), true, participants);
             return;
         }
 
@@ -481,7 +572,7 @@ public class MessagesBusiness {
         statut.setPurge(false);
         statut.setDateSuppression(new Date());
         statuts().save(statut);
-        messagePublisher.pushDeleted(m.getId(), List.of(moi.getId()));
+        messagePublisher.pushDeleted(m.getId(), m.getConversationId(), false, List.of(moi.getId()));
     }
 
     public List<MessageDto> obtenirMessagesCorbeille(String utilisateurId) {
@@ -570,6 +661,79 @@ public class MessagesBusiness {
         }
     }
 
+    // ── Corbeille de la messagerie (chat) ────────────────────────────────────
+
+    /** Trash messages of {@code uid} as chat messages (real content: the user deleted them), newest deletion first. */
+    public List<ChatMessageDto> corbeilleChat(String uid) {
+        List<MessagesEntity> items = corbeille(uid);
+        Map<String, MessageStatutEntity> statuts = statutsDe(uid);
+        Map<String, ConversationEntity> convs = new HashMap<>();
+        Map<String, List<ConversationParticipantEntity>> parts = new HashMap<>();
+        Map<String, String> titres = new HashMap<>();
+        List<ChatMessageDto> r = new ArrayList<>();
+        for (MessagesEntity m : items) {
+            String cid = m.getConversationId();
+            ConversationEntity c = cid == null ? null
+                    : convs.computeIfAbsent(cid, id -> daoAccessorService.getRepository(ConversationRepository.class).findById(id).orElse(null));
+            List<ConversationParticipantEntity> ps = c == null ? List.of()
+                    : parts.computeIfAbsent(cid, conversationsBusiness::participantsDe);
+            MessageStatutEntity s = statuts.get(m.getId());
+            ChatMessageDto dto = conversationsBusiness.toChat(m, uid, ps, s != null && s.isLu());
+            dto.setContenu(Objects.toString(m.getContenu(), ""));
+            dto.setMedias(mapMedias(m));
+            dto.setFavori(s != null && s.isFavori());
+            if (s != null && s.isSupprime() && s.getDateSuppression() != null) {
+                dto.setSupprimeLe(ServerDateTimes.format(s.getDateSuppression()));
+            } else {
+                dto.setSupprimeLe(ServerDateTimes.normalize(m.getDateSuppression()));
+            }
+            if (c != null) {
+                dto.setConversationType(c.getType());
+                dto.setConversationTitre(titres.computeIfAbsent(cid, id -> conversationsBusiness.titrePour(c, uid)));
+            } else {
+                dto.setConversationTitre(m.getObjet());
+            }
+            r.add(dto);
+        }
+        r.sort(Comparator.comparing((ChatMessageDto d) -> Objects.toString(d.getSupprimeLe(), "")).reversed());
+        return r;
+    }
+
+    /** Permanently deletes one message of the caller's trash (for the caller only). */
+    public void purgerMessage(String messageId) {
+        UtilisateursEntity moi = appelant();
+        MessagesEntity m = trouverMessage(messageId);
+        verifierParticipant(m, moi.getId());
+        if (corbeille(moi.getId()).stream().noneMatch(x -> x.getId().equals(messageId))) {
+            throw new SchoolException(SchoolErrorCode.INVALID_INPUT, "Le message n'est pas dans votre corbeille");
+        }
+        purgerPour(moi.getId(), m);
+        supprimerDefinitivementSiPlusPersonne(m);
+        messagePublisher.pushCorbeilleUpdated(moi.getId(), m.getConversationId());
+    }
+
+    /**
+     * After a conversation was permanently deleted from the trash: the user's trashed messages of that
+     * conversation hidden by the new history floor are permanently deleted too.
+     */
+    public void purgerCorbeilleConversation(String uid, String conversationId, LocalDateTime plancher) {
+        if (plancher == null) return;
+        List<MessagesEntity> cibles = corbeille(uid).stream()
+                .filter(m -> conversationId.equals(m.getConversationId()))
+                .filter(m -> m.getDateEnvoi() == null || !m.getDateEnvoi().isAfter(plancher))
+                .collect(Collectors.toList());
+        for (MessagesEntity m : cibles) purgerPour(uid, m);
+        for (MessagesEntity m : cibles) supprimerDefinitivementSiPlusPersonne(m);
+    }
+
+    private void purgerPour(String uid, MessagesEntity m) {
+        MessageStatutEntity s = getOrCreateStatut(uid, m.getId());
+        s.setSupprime(true);
+        s.setPurge(true);
+        if (s.getDateSuppression() == null) s.setDateSuppression(new Date());
+        statuts().save(s);
+    }
+
     public void restaurerMessage(String messageId) {
         UtilisateursEntity moi = appelant();
         MessagesEntity m = trouverMessage(messageId);
@@ -626,6 +790,9 @@ public class MessagesBusiness {
         MessageStatutEntity statut = getOrCreateStatut(utilisateurId, messageId);
         statut.setFavori(favori);
         statuts().save(statut);
+        // other tabs / devices of the user: "Favoris" filter of the conversation list
+        String cid = statut.getMessage() != null ? statut.getMessage().getConversationId() : null;
+        if (cid != null) messagePublisher.pushConversationUpdated(cid, utilisateurId);
         return mapStatutToDto(statut);
     }
 
@@ -754,29 +921,13 @@ public class MessagesBusiness {
         }
         dto.setSupprimePourTous(entity.isDeleted());
         dto.setMedias(mapMedias(entity));
+        dto.setConversationId(entity.getConversationId());
+        dto.setReplyToId(entity.getReplyToEntity() != null ? entity.getReplyToEntity().getId() : null);
         return dto;
     }
 
     private List<Media> mapMedias(MessagesEntity entity) {
-        if (entity.getPiecesJointesEntities() == null) return new ArrayList<>();
-        return entity.getPiecesJointesEntities().stream().map(pj -> {
-            Media m = new Media();
-            m.setId(pj.getId());
-            m.setFileName(pj.getFileName());
-            m.setFilePath(pj.getFilePath());
-            m.setContentType(pj.getContentType());
-            m.setMediaType(pj.getMediaType());
-            m.setFileType(pj.getMediaType());
-            m.setFileSize(pj.getFileSize());
-            m.setUploadedDate(pj.getDateCreation());
-            m.setOwnerId(entity.getExpediteurEntity() != null ? entity.getExpediteurEntity().getId() : null);
-            try {
-                m.setPresignedUrl(mediaService.generateDownloadPresignedUrl(pj.getFilePath()));
-            } catch (Exception ex) {
-                log.warn("Could not generate presigned URL for message media {}: {}", pj.getId(), ex.getMessage());
-            }
-            return m;
-        }).collect(Collectors.toList());
+        return conversationsBusiness.mapMedias(entity);
     }
 
     private Messages mapMessageEntityToDto(MessagesEntity entity) {
@@ -797,6 +948,7 @@ public class MessagesBusiness {
             message.setExpediteur(mapUtilisateursEntityToModele(entity.getExpediteurEntity()));
         }
         message.setMedias(mapMedias(entity));
+        message.setConversationId(entity.getConversationId());
         return message;
     }
 

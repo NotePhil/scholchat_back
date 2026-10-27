@@ -20,6 +20,9 @@ public class Interaction {
     private LocalDateTime creationDate;
     private String niveau;
     private String createdById;
+    /** Auteur (lecture seule, renseigné par le serveur) : prénom / nom pour l'affichage des commentaires. */
+    private String createdByPrenom;
+    private String createdByNom;
     private String eventId;
     private String messageId;
 }

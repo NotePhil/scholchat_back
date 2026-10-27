@@ -79,7 +79,9 @@ public interface CoursApi {
     @ResponseStatus(HttpStatus.OK)
     void marquerChapitreComplete(@NonNull @PathVariable String coursId,
                                   @NonNull @PathVariable String chapitreId,
-                                  @NonNull @PathVariable String utilisateurId);
+                                  @NonNull @PathVariable String utilisateurId,
+                                  /** Temps de lecture mesuré par le client (secondes, optionnel ; plafonné à 4 h, cumulé). */
+                                  @RequestParam(name = "dureeSecondes", required = false) Long dureeSecondes);
 
     @GetMapping(
             path = "/{coursId}/progression/{utilisateurId}",

@@ -33,6 +33,18 @@ public class MediaExceptionHandler {
         return new ResponseEntity<>(body, status);
     }
 
+    /** Corps JSON illisible (ex. discriminant "type" manquant sur PATCH /utilisateurs/{id}) : erreur client, pas 500. */
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<Object> handleUnreadableBody(org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        log.warn("Unreadable request body: {}", ex.getMessage());
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("message", "Requête invalide : les données envoyées ne sont pas au format attendu.");
+        body.put("code", SchoolErrorCode.INVALID_INPUT.name());
+        body.put("error", ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleGenericException(Exception ex) {
         log.error("Unexpected exception: {}", ex.getMessage(), ex);
@@ -51,6 +63,7 @@ public class MediaExceptionHandler {
             case RESOURCE_NOT_FOUND:
             case CONTRAT_INTROUVABLE: // "no contract yet" — clients show an empty state on 404
             case CODE_CLASSE_INVALIDE: // inscription : aucun code de classe correspondant
+            case ELEVE_INTROUVABLE: // enfant majeur : aucun compte élève avec cet e-mail
                 return HttpStatus.NOT_FOUND;
             case INVALID_INPUT:
             case INVALID_TOKEN:
@@ -67,6 +80,8 @@ public class MediaExceptionHandler {
             case ENFANTS_TROP_NOMBREUX:
             case ENFANT_INVALIDE:
             case ENFANT_EN_DOUBLE:
+            case COMPTE_NON_ELEVE:
+            case ELEVE_PAS_DANS_CLASSE:
             // Exercice programmé : cours non programmé dans la classe
             case COURS_NON_PROGRAMME_DANS_CLASSE:
             case COURS_REQUIS:
@@ -85,6 +100,9 @@ public class MediaExceptionHandler {
             case EMAIL_DEJA_UTILISE:
             case COMPTE_NON_ACTIVE:
             case COMPTE_EN_ATTENTE_VALIDATION:
+            case ELEVE_EXISTE_AVEC_COMPTE:
+            case LIEN_PARENT_DEJA_DEMANDE:
+            case CLASSE_COMPLETE:
                 return HttpStatus.CONFLICT;
             case OPERATION_INTERDITE:
             case PROFIL_PROFESSEUR_NON_VALIDE:

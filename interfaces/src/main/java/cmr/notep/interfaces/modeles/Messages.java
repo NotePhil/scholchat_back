@@ -23,4 +23,6 @@ public class Messages implements Serializable {
     private List<Utilisateurs> destinataires;
     /** Pièces jointes (en entrée: fileName, filePath, contentType, fileSize). */
     private List<Media> medias;
+    /** Conversation (chat) du message. */
+    private String conversationId;
 }

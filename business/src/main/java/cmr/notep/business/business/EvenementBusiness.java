@@ -53,6 +53,8 @@ public class EvenementBusiness {
             // Map the event DTO to entity
             EvenementEntity entity = dozerMapperBean.map(evenement, EvenementEntity.class);
             entity.setId(UUID.randomUUID().toString());
+            // Date de publication = maintenant (UTC), jamais celle envoyée par le client.
+            entity.setDatePublication(cmr.notep.business.config.time.ServerDateTimes.nowUtc());
             
             // Set default etat to PLANIFIE if not specified
             if (entity.getEtat() == null) {
@@ -362,71 +364,7 @@ public class EvenementBusiness {
             Page<EvenementEntity> dbPage = repo.findAllOrderByHeurDebutDesc(pageRequest);
 
             List<Evenement> enriched = dbPage.getContent().stream()
-                    .map(e -> {
-                        try {
-                            Evenement ev = dozerMapperBean.map(e, Evenement.class);
-                            if (e.getCreateur() != null) {
-                                ev.setCreateurId(e.getCreateur().getId());
-                                ev.setCreateurNom(e.getCreateur().getNom());
-                                ev.setCreateurPrenom(e.getCreateur().getPrenom());
-                                String role = "Utilisateur";
-                                try {
-                                    List<cmr.notep.ressourcesjpa.dao.UserRoleEntity> userRoles =
-                                            daoAccessorService.getRepository(cmr.notep.ressourcesjpa.repository.UserRoleRepository.class)
-                                                    .findByUtilisateurIdAndIsActiveTrue(e.getCreateur().getId());
-                                    if (!userRoles.isEmpty()) {
-                                        String primaryRole = userRoles.get(0).getRoleType();
-                                        java.util.Map<String, String> roleMap = java.util.Map.of(
-                                                "PROFESSOR", "Professeur", "PARENT", "Parent",
-                                                "STUDENT", "Eleve", "ADMIN", "Admin",
-                                                "GESTIONNAIRE", "Gestionnaire", "TUTOR", "Repetiteur");
-                                        role = roleMap.getOrDefault(primaryRole, primaryRole);
-                                    } else if (Boolean.TRUE.equals(e.getCreateur().getAdmin())) {
-                                        role = "Admin";
-                                    }
-                                } catch (Exception re) {
-                                    if (Boolean.TRUE.equals(e.getCreateur().getAdmin())) role = "Admin";
-                                }
-                                ev.setCreateurRole(role);
-                            }
-                            ev.setClassesIds(e.getClasses().stream()
-                                    .map(cmr.notep.ressourcesjpa.dao.ClassesEntity::getId)
-                                    .collect(Collectors.toList()));
-                            ev.setInteractions(interactionBusiness.getInteractionsByEvent(e.getId()));
-                            if (ev.getMedias() != null) {
-                                ev.getMedias().forEach(media -> {
-                                    if (media.getFilePath() != null) {
-                                        try {
-                                            media.setPresignedUrl(mediaService.generateDownloadPresignedUrl(media.getFilePath()));
-                                        } catch (Exception ex) {
-                                            log.warn("Could not generate presigned URL for media {}: {}", media.getId(), ex.getMessage());
-                                        }
-                                    }
-                                });
-                            }
-                            return ev;
-                        } catch (Exception ex) {
-                            log.error("Error enriching event {} for paginated response: {}", e.getId(), ex.getMessage());
-                            Evenement fallback = new Evenement();
-                            fallback.setId(e.getId());
-                            fallback.setTitre(e.getTitre());
-                            fallback.setDescription(e.getDescription());
-                            fallback.setLieu(e.getLieu());
-                            fallback.setEtat(e.getEtat());
-                            fallback.setHeureDebut(e.getHeureDebut());
-                            fallback.setHeureFin(e.getHeureFin());
-                            fallback.setVisibility(e.getVisibility());
-                            if (e.getCreateur() != null) {
-                                fallback.setCreateurId(e.getCreateur().getId());
-                                fallback.setCreateurNom(e.getCreateur().getNom());
-                                fallback.setCreateurPrenom(e.getCreateur().getPrenom());
-                            }
-                            fallback.setClassesIds(e.getClasses().stream()
-                                    .map(cmr.notep.ressourcesjpa.dao.ClassesEntity::getId)
-                                    .collect(Collectors.toList()));
-                            return fallback;
-                        }
-                    })
+                    .map(this::enrichirPourFil)
                     // Apply visibility filter (mirrors EvenementService.obtenirTousEvenements)
                     .filter(ev -> {
                         if (isAdmin) return true;
@@ -454,6 +392,95 @@ public class EvenementBusiness {
             throw new SchoolException(SchoolErrorCode.INTERNAL_ERROR,
                     "Erreur lors de la récupération paginée des événements: " + e.getMessage());
         }
+    }
+
+    /** Événement du fil enrichi : auteur (nom, rôle), classes, interactions, URLs présignées des médias. */
+    private Evenement enrichirPourFil(EvenementEntity e) {
+        try {
+            Evenement ev = dozerMapperBean.map(e, Evenement.class);
+            if (e.getCreateur() != null) {
+                ev.setCreateurId(e.getCreateur().getId());
+                ev.setCreateurNom(e.getCreateur().getNom());
+                ev.setCreateurPrenom(e.getCreateur().getPrenom());
+                String role = "Utilisateur";
+                try {
+                    List<cmr.notep.ressourcesjpa.dao.UserRoleEntity> userRoles =
+                            daoAccessorService.getRepository(cmr.notep.ressourcesjpa.repository.UserRoleRepository.class)
+                                    .findByUtilisateurIdAndIsActiveTrue(e.getCreateur().getId());
+                    if (!userRoles.isEmpty()) {
+                        String primaryRole = userRoles.get(0).getRoleType();
+                        java.util.Map<String, String> roleMap = java.util.Map.of(
+                                "PROFESSOR", "Professeur", "PARENT", "Parent",
+                                "STUDENT", "Eleve", "ADMIN", "Admin",
+                                "GESTIONNAIRE", "Gestionnaire", "TUTOR", "Repetiteur");
+                        role = roleMap.getOrDefault(primaryRole, primaryRole);
+                    } else if (Boolean.TRUE.equals(e.getCreateur().getAdmin())) {
+                        role = "Admin";
+                    }
+                } catch (Exception re) {
+                    if (Boolean.TRUE.equals(e.getCreateur().getAdmin())) role = "Admin";
+                }
+                ev.setCreateurRole(role);
+            }
+            ev.setClassesIds(e.getClasses().stream()
+                    .map(cmr.notep.ressourcesjpa.dao.ClassesEntity::getId)
+                    .collect(Collectors.toList()));
+            ev.setInteractions(interactionBusiness.getInteractionsByEvent(e.getId()));
+            if (ev.getMedias() != null) {
+                ev.getMedias().forEach(media -> {
+                    if (media.getFilePath() != null) {
+                        try {
+                            media.setPresignedUrl(mediaService.generateDownloadPresignedUrl(media.getFilePath()));
+                        } catch (Exception ex) {
+                            log.warn("Could not generate presigned URL for media {}: {}", media.getId(), ex.getMessage());
+                        }
+                    }
+                });
+            }
+            return ev;
+        } catch (Exception ex) {
+            log.error("Error enriching event {} for paginated response: {}", e.getId(), ex.getMessage());
+            Evenement fallback = new Evenement();
+            fallback.setId(e.getId());
+            fallback.setTitre(e.getTitre());
+            fallback.setDescription(e.getDescription());
+            fallback.setLieu(e.getLieu());
+            fallback.setEtat(e.getEtat());
+            fallback.setHeureDebut(e.getHeureDebut());
+            fallback.setHeureFin(e.getHeureFin());
+                fallback.setDatePublication(e.getDatePublication());
+            fallback.setVisibility(e.getVisibility());
+            if (e.getCreateur() != null) {
+                fallback.setCreateurId(e.getCreateur().getId());
+                fallback.setCreateurNom(e.getCreateur().getNom());
+                fallback.setCreateurPrenom(e.getCreateur().getPrenom());
+            }
+            fallback.setClassesIds(e.getClasses().stream()
+                    .map(cmr.notep.ressourcesjpa.dao.ClassesEntity::getId)
+                    .collect(Collectors.toList()));
+            return fallback;
+        }
+    }
+
+    /**
+     * Fil restreint à des classes (élève, ou parent pour l'enfant sélectionné) : événements publics
+     * + ceux qui ciblent l'une de {@code classeIds}. Filtré et paginé en base (totaux exacts).
+     */
+    public PagedResponse<Evenement> obtenirFilPourClasses(int page, int size, java.util.Collection<String> classeIds) {
+        java.util.Collection<String> ids = (classeIds == null || classeIds.isEmpty())
+                ? List.of("__aucune_classe__") : classeIds;
+        Page<EvenementEntity> dbPage = daoAccessorService.getRepository(EvenementRepository.class)
+                .findFilPourClasses(ids, PageRequest.of(page, size));
+        List<Evenement> content = dbPage.getContent().stream().map(this::enrichirPourFil).collect(Collectors.toList());
+        return new PagedResponse<>(content, page, size, dbPage.getTotalElements(), dbPage.getTotalPages(), dbPage.isLast());
+    }
+
+    /** Actualités générales (publiques, sans classe ciblée), paginées — fil d'un parent sans enfant accepté. */
+    public PagedResponse<Evenement> obtenirPublicsGeneraux(int page, int size) {
+        Page<EvenementEntity> dbPage = daoAccessorService.getRepository(EvenementRepository.class)
+                .findPublicsGeneraux(PageRequest.of(page, size));
+        List<Evenement> content = dbPage.getContent().stream().map(this::enrichirPourFil).collect(Collectors.toList());
+        return new PagedResponse<>(content, page, size, dbPage.getTotalElements(), dbPage.getTotalPages(), dbPage.isLast());
     }
 
     public List<Evenement> obtenirTousEvenements() {
@@ -519,6 +546,7 @@ public class EvenementBusiness {
                             fallbackEvent.setEtat(e.getEtat());
                             fallbackEvent.setHeureDebut(e.getHeureDebut());
                             fallbackEvent.setHeureFin(e.getHeureFin());
+                            fallbackEvent.setDatePublication(e.getDatePublication());
                             if (e.getCreateur() != null) {
                                 fallbackEvent.setCreateurId(e.getCreateur().getId());
                                 fallbackEvent.setCreateurNom(e.getCreateur().getNom());
@@ -605,6 +633,7 @@ public class EvenementBusiness {
                             fallbackEvent.setEtat(e.getEtat());
                             fallbackEvent.setHeureDebut(e.getHeureDebut());
                             fallbackEvent.setHeureFin(e.getHeureFin());
+                            fallbackEvent.setDatePublication(e.getDatePublication());
                             if (e.getCreateur() != null) {
                                 fallbackEvent.setCreateurId(e.getCreateur().getId());
                             }

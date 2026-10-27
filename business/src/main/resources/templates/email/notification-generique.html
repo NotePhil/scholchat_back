@@ -36,7 +36,7 @@
         <ul th:if="${elements != null}">
             <li th:each="e : ${elements}" th:text="${e}">Élément</li>
         </ul>
-        <p style="text-align:center;margin:24px 0;"><a th:href="${loginUrl}" class="button">Ouvrir ScholChat</a></p>
+        <p style="text-align:center;margin:24px 0;"><a th:href="${loginUrl}" class="button" th:text="${boutonLibelle != null ? boutonLibelle : 'Ouvrir ScholChat'}">Ouvrir ScholChat</a></p>
         <p>Cordialement,<br>L'équipe ScholChat</p>
     </div>
                     </td>

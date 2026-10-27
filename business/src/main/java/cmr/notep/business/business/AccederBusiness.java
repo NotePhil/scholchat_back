@@ -41,6 +41,9 @@ public class AccederBusiness {
     private cmr.notep.business.services.InscriptionClasseService inscriptionClasseService;
 
     @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.services.CapaciteClasseService capaciteClasseService;
+
+    @org.springframework.beans.factory.annotation.Autowired
     private cmr.notep.business.services.EmailTemplateService emailTemplateService;
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -111,6 +114,12 @@ public class AccederBusiness {
         // membre de la classe, ex. compte parent inscrit avec le code de la classe, ou un autre enfant inscrit).
         boolean pourEnfant = estParent && eleveAssocieId != null && !eleveAssocieId.isBlank();
         String beneficiaireId = pourEnfant ? eleveAssocieId : utilisateurId;
+
+        // Restriction « Élèves max » de l'offre : demande pour un élève (ou un enfant) refusée si la classe est complète
+        if (eleveBeneficiaire(utilisateurId, estParent, eleveAssocieId) != null
+                && !daoAccessorService.getRepository(AccederRepository.class).existsByUtilisateurIdAndClasseId(beneficiaireId, classeId)) {
+            capaciteClasseService.verifierPlacePourDemande(classe);
+        }
 
         // Check if access already exists
         if (daoAccessorService.getRepository(AccederRepository.class)
@@ -242,6 +251,13 @@ public class AccederBusiness {
                     "La demande n'est pas en état EN_ATTENTE");
         }
 
+        // Restriction « Élèves max » de l'offre, AVANT tout effet de bord (activation du compte, rôles…)
+        String eleveConcerne = eleveBeneficiaire(demande.getUtilisateur().getId(), demande.isEstParent(),
+                demande.getEleveAssocieId());
+        if (eleveConcerne != null) {
+            capaciteClasseService.verifierPlacePourApprobation(demande.getClasse(), eleveConcerne);
+        }
+
         // 0. Compte créé par l'inscription avec code de classe (parent / élève majeur) jamais approuvé :
         //    mot de passe temporaire, activation du compte, e-mail des identifiants.
         boolean compteActive = inscriptionClasseService.activerSiInscriptionClasse(demande.getUtilisateur(), demande.getClasse());
@@ -343,6 +359,22 @@ public class AccederBusiness {
             log.error("Erreur lors de la notification d'approbation: {}", e.getMessage());
         }
     }
+    /**
+     * Élève qui deviendrait membre de la classe par cette demande (compte pour la restriction « Élèves max ») :
+     * l'enfant d'une demande parent, ou le demandeur lui-même s'il ne demande pas au titre de parent et n'est pas
+     * un professeur (un professeur qui rejoint une classe ne compte pas, sauf s'il a aussi un profil élève).
+     * Null pour la demande d'un parent pour lui-même ou d'un professeur.
+     */
+    private String eleveBeneficiaire(String utilisateurId, boolean estParent, String eleveAssocieId) {
+        if (estParent) {
+            return eleveAssocieId != null && !eleveAssocieId.isBlank() ? eleveAssocieId : null;
+        }
+        if (userSubtypeService.isEleve(utilisateurId) || !userSubtypeService.isProfesseur(utilisateurId)) {
+            return utilisateurId;
+        }
+        return null;
+    }
+
     private void accorderAcces(String utilisateurId, String classeId) {
         if (!daoAccessorService.getRepository(AccederRepository.class)
                 .existsByUtilisateurIdAndClasseId(utilisateurId, classeId)) {

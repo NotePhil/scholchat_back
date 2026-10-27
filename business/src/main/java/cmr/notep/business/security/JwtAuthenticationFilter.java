@@ -151,6 +151,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         if (userId == null) {
                             userId = utilisateursRepository.findIdByEmail(userEmail).orElse(null);
                         }
+                        if (userId != null) request.setAttribute(ParentSansEnfantValide.ATTR_SESSION_PARENT, userId);
                         if (!parentSansEnfantValide.estRouteAutorisee(request, userId)
                                 && !parentSansEnfantValide.aEnfantValide(request, userId)) {
                             log.info("Parent sans enfant validé : accès refusé à {} {}",

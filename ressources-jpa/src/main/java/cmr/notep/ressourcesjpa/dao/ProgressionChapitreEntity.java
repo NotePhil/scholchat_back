@@ -28,4 +28,8 @@ public class ProgressionChapitreEntity {
     @Column(name = "date_completion", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
     private Date dateCompletion;
+
+    /** Temps de lecture cumulé (secondes) mesuré par le client jusqu'au clic « Marquer comme terminé » (changeset 28). */
+    @Column(name = "duree_secondes", nullable = false)
+    private long dureeSecondes = 0L;
 }

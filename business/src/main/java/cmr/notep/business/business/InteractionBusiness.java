@@ -132,6 +132,8 @@ public class InteractionBusiness {
 
         // Explicitly set the IDs from the relationships
         interaction.setCreatedById(entity.getCreatedBy().getId());
+        interaction.setCreatedByPrenom(entity.getCreatedBy().getPrenom());
+        interaction.setCreatedByNom(entity.getCreatedBy().getNom());
         interaction.setEventId(entity.getEvent() != null ? entity.getEvent().getId() : null);
         interaction.setMessageId(entity.getMessage() != null ? entity.getMessage().getId() : null);
 
@@ -213,6 +215,20 @@ public class InteractionBusiness {
         createInteraction(likeInteraction); // createInteraction already handles toggle logic
     }
     
+    /** Commentaire {@code commentId} de l'événement {@code eventId} (404 s'il n'existe pas ou n'appartient pas à cet événement). */
+    public Interaction getCommentaireEvenement(String eventId, String commentId) {
+        InteractionEntity entity = daoAccessorService.getRepository(InteractionRepository.class)
+                .findById(commentId)
+                .filter(i -> i.getType() == cmr.notep.modele.InteractionType.COMMENT)
+                .filter(i -> i.getEvent() != null && eventId.equals(i.getEvent().getId()))
+                .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Commentaire introuvable"));
+        return mapEntityToInteraction(entity);
+    }
+
+    public void supprimerInteraction(String interactionId) {
+        daoAccessorService.getRepository(InteractionRepository.class).deleteById(interactionId);
+    }
+
     public List<Interaction> getInteractionsByEventId(String eventId) {
         return getInteractionsByEvent(eventId);
     }

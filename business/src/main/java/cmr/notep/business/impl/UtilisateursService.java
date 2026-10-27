@@ -83,7 +83,7 @@ public class UtilisateursService implements UtilisateursApi {
             return vueMinimale(utilisateursBusiness.patcherUtilisateur(idUtilisateur, pieces));
         }
 
-        accessControl.requireSelfOrParentOrAdmin(idUtilisateur);
+        accessControl.requireSelfOrMinorChildOrAdmin(idUtilisateur); // parent d'un enfant majeur : lecture seule
         if (!currentUser.isAdmin()) {
             Utilisateurs existant = utilisateursBusiness.avoirUtilisateur(idUtilisateur);
             if (partialUpdate.getEtat() != null && partialUpdate.getEtat() != existant.getEtat()) {

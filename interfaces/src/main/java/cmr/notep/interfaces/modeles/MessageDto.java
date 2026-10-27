@@ -25,4 +25,7 @@ public class MessageDto {
     // corbeille
     private boolean supprimePourTous;
     private String dateSuppression;
+    // chat
+    private String conversationId;
+    private String replyToId;
 }

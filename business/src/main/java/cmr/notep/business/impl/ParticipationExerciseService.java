@@ -24,9 +24,7 @@ public class ParticipationExerciseService implements ParticipationExerciseApi {
 
     @Override
     public ParticipationExerciseResponseDTO participerAExercise(ParticipationExerciseRequestDTO participation) {
-        if (!accessControl.canActForMinorChild(participation.getUtilisateurId())) {
-            currentUser.requireSelfOrAdmin(participation.getUtilisateurId());
-        }
+        accessControl.requireSelfOrMinorChild(participation.getUtilisateurId());
         log.info("Demande de participation à un exercice programmé");
         return participationExerciseBusiness.participerAExercise(participation);
     }
@@ -42,7 +40,12 @@ public class ParticipationExerciseService implements ParticipationExerciseApi {
     public List<ParticipationExerciseResponseDTO> obtenirParticipationsParUtilisateur(String utilisateurId) {
         accessControl.requireSelfParentOrTeacher(utilisateurId);
         log.info("Récupération des participations pour l'utilisateur: {}", utilisateurId);
-        return participationExerciseBusiness.obtenirParticipationsParUtilisateur(utilisateurId);
+        java.util.Set<String> lisibles = accessControl.classesLisiblesParParent(utilisateurId);
+        List<ParticipationExerciseResponseDTO> participations = participationExerciseBusiness.obtenirParticipationsParUtilisateur(utilisateurId);
+        if (lisibles == null) return participations;
+        // Parent d'un enfant majeur : devoirs des classes dont le suivi est accepté
+        java.util.Set<String> eps = accessControl.exercicesProgrammesDesClasses(lisibles);
+        return participations.stream().filter(p -> eps.contains(p.getExerciseProgrammerId())).toList();
     }
 
     @Override

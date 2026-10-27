@@ -79,6 +79,14 @@ public class ParentsService implements ParentsApi {
 
     @Override
     public void retirerEnfant(String parentId, String eleveId) {
+        currentUser.requireAuthenticated();
+        // Élève majeur (avec son propre compte) : seul un professeur gestionnaire d'une de ses classes (suivis de ses
+        // classes) ou un administrateur (tous) peut retirer le suivi, ni le parent ni l'élève. Enfant mineur : inchangé.
+        if (eleveId != null && !accessControl.isMinorChildAccount(eleveId)
+                && accessControl.userExists(eleveId)) {
+            lienParentService.retirerSuivisParentEleve(parentId, eleveId);
+            return;
+        }
         currentUser.requireSelfOrAdmin(parentId);
         parentsBusiness.retirerEnfant(parentId, eleveId);
     }
@@ -110,5 +118,19 @@ public class ParentsService implements ParentsApi {
                     "Seul le parent lui-même peut inscrire un enfant depuis son compte.");
         }
         return inscriptionParentService.inscrireNouvelEnfant(parentId, enfant);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.services.LienParentService lienParentService;
+
+    @Override
+    public cmr.notep.interfaces.modeles.EnfantInscription ajouterEnfantMajeur(String parentId,
+                                                                             cmr.notep.interfaces.modeles.EnfantInscription enfant) {
+        currentUser.requireAuthenticated();
+        if (!currentUser.isSelf(parentId)) {
+            throw cmr.notep.business.security.CurrentUserService.forbidden(
+                    "Seul le parent lui-même peut ajouter un enfant depuis son compte.");
+        }
+        return lienParentService.ajouterEnfantMajeur(parentId, enfant);
     }
 }

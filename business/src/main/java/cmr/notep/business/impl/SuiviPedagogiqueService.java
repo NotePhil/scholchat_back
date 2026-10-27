@@ -53,7 +53,10 @@ public class SuiviPedagogiqueService implements SuiviPedagogiqueApi {
     @Override
     public List<ClasseResumeEleveDTO> resumeClassesEleve(String eleveId) {
         accessControl.requireSelfOrParentOrAdmin(eleveId);
-        return business.resumeClassesEleve(eleveId);
+        java.util.Set<String> lisibles = accessControl.classesLisiblesParParent(eleveId);
+        List<ClasseResumeEleveDTO> resume = business.resumeClassesEleve(eleveId);
+        // Parent d'un enfant majeur : seulement les classes dont le suivi est accepté
+        return lisibles == null ? resume : resume.stream().filter(c -> lisibles.contains(c.getClasseId())).toList();
     }
 
     @Override
@@ -65,7 +68,9 @@ public class SuiviPedagogiqueService implements SuiviPedagogiqueApi {
         } else {
             accessControl.requireSelfOrParentOrAdmin(eleveId);
         }
-        return business.progressionEleve(eleveId, classe);
+        // Parent d'un enfant majeur : progression limitée aux classes dont le suivi est accepté
+        java.util.Set<String> lisibles = classe == null ? accessControl.classesLisiblesParParent(eleveId) : null;
+        return business.progressionEleve(eleveId, classe, lisibles);
     }
 
     @Override
@@ -78,8 +83,12 @@ public class SuiviPedagogiqueService implements SuiviPedagogiqueApi {
     /** L'élève lui-même, son parent, un enseignant/gestionnaire de la classe, ou un administrateur. */
     private void requireEleveOuParentOuEnseignant(String eleveId, String classeId) {
         String me = currentUser.requireUserId();
-        if (currentUser.isAdmin() || me.equals(eleveId) || accessControl.isParentOf(me, eleveId)
-                || accessControl.canPublishInClass(classeId, me)) {
+        if (currentUser.isAdmin() || me.equals(eleveId) || accessControl.canPublishInClass(classeId, me)) {
+            return;
+        }
+        if (accessControl.isParentOf(me, eleveId)) {
+            // Enfant majeur : seulement une classe dont le suivi est accepté
+            accessControl.requireParentPeutLireClasse(eleveId, classeId);
             return;
         }
         throw CurrentUserService.forbidden("Vous ne pouvez consulter que vos propres résultats (ou ceux de vos enfants).");

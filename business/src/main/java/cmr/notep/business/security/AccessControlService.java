@@ -41,6 +41,7 @@ public class AccessControlService {
     private final CanalRepository canalRepository;
     private final ParticiperExoRepository participerExoRepository;
     private final UserRoleRepository userRoleRepository;
+    private final DemandeLienParentRepository demandeLienParentRepository;
     private final cmr.notep.business.utils.JwtUtil jwtUtil;
 
     // ─── Utilisateurs / parents ───────────────────────────────────────────────
@@ -58,9 +59,107 @@ public class AccessControlService {
     public boolean canActForMinorChild(String eleveId) {
         String me = currentUser.currentUserIdOpt().orElse(null);
         if (me == null || !isParentOf(me, eleveId)) return false;
+        return isMinorChildAccount(eleveId);
+    }
+
+    /** Enfant sans compte personnel : ni e-mail ni mot de passe (un majeur a l'un ou l'autre, même en attente). */
+    public boolean isMinorChildAccount(String eleveId) {
         return utilisateursRepository.findById(eleveId)
-                .map(u -> u.getPasseAccess() == null || u.getPasseAccess().isBlank())
+                .map(u -> (u.getPasseAccess() == null || u.getPasseAccess().isBlank())
+                        && (u.getEmail() == null || u.getEmail().isBlank()))
                 .orElse(false);
+    }
+
+    // ─── Suivi parental d'un enfant majeur, par classe ────────────────────────
+
+    /**
+     * Le parent peut-il lire les données de l'enfant dans cette classe ? Enfant mineur : oui (dès qu'il est rattaché) ;
+     * enfant majeur : seulement pour une classe dont le suivi a été ACCEPTE (voir LienParentService).
+     */
+    public boolean parentPeutLireClasse(String parentId, String eleveId, String classeId) {
+        if (!isParentOf(parentId, eleveId)) return false;
+        if (isMinorChildAccount(eleveId)) return true;
+        return classeId != null && demandeLienParentRepository.findClassesSuivies(parentId, eleveId).contains(classeId);
+    }
+
+    /**
+     * Restriction de lecture de l'appelant sur les données de l'élève : {@code null} = aucune restriction (l'élève
+     * lui-même, un administrateur, le parent d'un mineur, ou quelqu'un qui n'est pas son parent — les autres règles
+     * s'appliquent) ; sinon (parent d'un enfant majeur) les classes dont le suivi est accepté, seules lisibles.
+     */
+    public java.util.Set<String> classesLisiblesParParent(String eleveId) {
+        String me = currentUser.currentUserIdOpt().orElse(null);
+        if (me == null || eleveId == null || me.equals(eleveId) || currentUser.isAdmin()) return null;
+        if (!isParentOf(me, eleveId) || isMinorChildAccount(eleveId)) return null;
+        return new java.util.HashSet<>(demandeLienParentRepository.findClassesSuivies(me, eleveId));
+    }
+
+    /** Parent d'un enfant majeur : 403 si la classe n'est pas suivie (acceptée). */
+    public void requireParentPeutLireClasse(String eleveId, String classeId) {
+        java.util.Set<String> lisibles = classesLisiblesParParent(eleveId);
+        if (lisibles != null && (classeId == null || !lisibles.contains(classeId))) {
+            throw forbidden(MSG_CLASSE_NON_SUIVIE);
+        }
+    }
+
+    /** Cours lisibles dans les classes données (cours programmés dans ces classes). */
+    public java.util.Set<String> coursDesClasses(java.util.Set<String> classeIds) {
+        if (classeIds == null || classeIds.isEmpty()) return java.util.Set.of();
+        return new java.util.HashSet<>(coursProgrammerRepository.findCoursIdsProgrammesDansClasses(classeIds));
+    }
+
+    /** Exercices programmés diffusés dans les classes données. */
+    public java.util.Set<String> exercicesProgrammesDesClasses(java.util.Set<String> classeIds) {
+        if (classeIds == null || classeIds.isEmpty()) return java.util.Set.of();
+        return new java.util.HashSet<>(exerciseProgrammerRepository.findIdsDansClasses(classeIds));
+    }
+
+    /** Exercices (sources) programmés dans les classes données. */
+    public java.util.Set<String> exercicesSourcesDesClasses(java.util.Set<String> classeIds) {
+        if (classeIds == null || classeIds.isEmpty()) return java.util.Set.of();
+        return new java.util.HashSet<>(exerciseProgrammerRepository.findSourceExerciseIdsDansClasses(classeIds));
+    }
+
+    /** Programmation de cours visible : au moins une de ses classes est lisible. */
+    public boolean programmationDansClasses(String coursProgrammerId, java.util.Set<String> classeIds) {
+        if (coursProgrammerId == null || classeIds == null || classeIds.isEmpty()) return false;
+        for (String c : coursProgrammerRepository.findClasseIdsDeProgrammation(coursProgrammerId)) {
+            if (classeIds.contains(c)) return true;
+        }
+        return false;
+    }
+
+    /** Exercice (source) d'une question. */
+    public String exerciceDeQuestion(String questionId) {
+        if (questionId == null) return null;
+        return questionReponseRepository.findById(questionId)
+                .map(q -> q.getExercise() != null ? q.getExercise().getId() : null).orElse(null);
+    }
+
+    public static final String MSG_CLASSE_NON_SUIVIE = "Vous ne suivez pas votre enfant dans cette classe : le professeur "
+            + "de la classe doit d'abord accepter votre demande de suivi.";
+
+    /** Modification d'un profil : l'utilisateur lui-même, un admin, ou le parent d'un enfant mineur (pas d'un majeur). */
+    public void requireSelfOrMinorChildOrAdmin(String userId) {
+        requireSelfOrMinorChild(userId);
+    }
+
+    public static final String MSG_ENFANT_MAJEUR_LECTURE_SEULE =
+            "Votre enfant a son propre compte : vous pouvez suivre sa scolarité en lecture seule, mais c'est à lui "
+                    + "d'agir (rendre ses devoirs, répondre, demander l'accès à une classe) depuis son compte.";
+
+    /**
+     * L'utilisateur lui-même (ou un admin), ou le parent d'un enfant mineur sans compte. Le parent d'un enfant
+     * majeur reçoit un 403 explicite (lecture seule).
+     */
+    public void requireSelfOrMinorChild(String eleveId) {
+        String me = currentUser.requireUserId();
+        if (currentUser.isAdmin() || me.equals(eleveId)) return;
+        if (isParentOf(me, eleveId)) {
+            if (isMinorChildAccount(eleveId)) return;
+            throw forbidden(MSG_ENFANT_MAJEUR_LECTURE_SEULE);
+        }
+        throw forbidden("Vous ne pouvez agir que pour vous-même.");
     }
 
     /** L'utilisateur lui-même, un de ses parents, ou un administrateur. */
@@ -125,6 +224,25 @@ public class AccessControlService {
                 .orElse(false);
     }
 
+    /**
+     * Gestionnaire (voir {@link #isClassManager}) d'au moins une classe dont l'élève est membre : c'est lui qui
+     * décide des demandes de suivi parental d'un élève majeur et peut retirer un suivi.
+     */
+    public boolean isManagerOfStudent(String eleveId, String userId) {
+        if (eleveId == null || userId == null) return false;
+        for (AccederEntity a : accederRepository.findByUtilisateurId(eleveId)) {
+            if (isClassManager(a.getClasseId(), userId)) return true;
+        }
+        return false;
+    }
+
+    /** Administrateur, ou gestionnaire d'une classe de l'élève. */
+    public void requireManagerOfStudentOrAdmin(String eleveId, String message) {
+        String me = currentUser.requireUserId();
+        if (currentUser.isAdmin() || isManagerOfStudent(eleveId, me)) return;
+        throw forbidden(message);
+    }
+
     public void requireClassManager(String classeId) {
         String me = currentUser.requireUserId();
         if (currentUser.isAdmin() || isClassManager(classeId, me)) return;
@@ -137,9 +255,10 @@ public class AccessControlService {
         if (accederRepository.existsByUtilisateurIdAndClasseId(userId, classeId)) return true;
         if (droitPublicationRepository.existsByUtilisateurIdAndClasseId(userId, classeId)) return true;
         if (isClassManager(classeId, userId)) return true;
-        // Parent d'un élève membre de la classe
+        // Parent d'un élève membre de la classe (enfant majeur : seulement si le suivi de cette classe est accepté)
         for (String enfantId : parentEleveRepository.findEleveIdsByParentId(userId)) {
-            if (accederRepository.existsByUtilisateurIdAndClasseId(enfantId, classeId)) return true;
+            if (accederRepository.existsByUtilisateurIdAndClasseId(enfantId, classeId)
+                    && parentPeutLireClasse(userId, enfantId, classeId)) return true;
         }
         return false;
     }
@@ -194,8 +313,11 @@ public class AccessControlService {
     /** Retrait d'un accès : la personne elle-même (ou son parent), le gestionnaire de la classe, ou un admin. */
     public void requireCanRemoveAccess(String utilisateurId, String classeId) {
         String me = currentUser.requireUserId();
-        if (currentUser.isAdmin() || me.equals(utilisateurId) || isParentOf(me, utilisateurId)
-                || isClassManager(classeId, me)) return;
+        if (currentUser.isAdmin() || me.equals(utilisateurId) || isClassManager(classeId, me)) return;
+        if (isParentOf(me, utilisateurId)) {
+            if (isMinorChildAccount(utilisateurId)) return;
+            throw forbidden(MSG_ENFANT_MAJEUR_LECTURE_SEULE);
+        }
         throw forbidden("Seuls le modérateur de la classe ou l'utilisateur concerné peuvent retirer cet accès.");
     }
 
@@ -374,6 +496,9 @@ public class AccessControlService {
         ExerciseProgrammerEntity ep = getExerciseProgramme(exerciseProgrammerId);
         if (isExerciseProgrammeTeacher(ep, me)) return;
         // L'élève lui-même, ou le parent d'un mineur sans compte qui rend le devoir à sa place.
+        if (!me.equals(utilisateurId) && isParentOf(me, utilisateurId) && !isMinorChildAccount(utilisateurId)) {
+            throw forbidden(MSG_ENFANT_MAJEUR_LECTURE_SEULE);
+        }
         if (me.equals(utilisateurId) || canActForMinorChild(utilisateurId)) {
             boolean dejaCorrigee = participerExoRepository
                     .findByUtilisateurIdAndExerciseProgrammerId(utilisateurId, exerciseProgrammerId)
@@ -399,7 +524,9 @@ public class AccessControlService {
         java.util.Set<String> enfants = new java.util.HashSet<>();
         enfants.addAll(parentEleveRepository.findEleveIdsByParentId(me));
         for (String enfant : enfants) {
-            accederRepository.findByUtilisateurId(enfant).forEach(a -> classeIds.add(a.getClasseId()));
+            accederRepository.findByUtilisateurId(enfant).forEach(a -> {
+                if (parentPeutLireClasse(me, enfant, a.getClasseId())) classeIds.add(a.getClasseId());
+            });
         }
         for (ClassesEntity c : classesRepository.findAll()) {
             boolean gere = (c.getModerator() != null && me.equals(c.getModerator().getId()))
@@ -449,6 +576,10 @@ public class AccessControlService {
         }
         UtilisateursEntity eleve = utilisateursRepository.findById(required(eleveId, "élève"))
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Élève introuvable"));
+        if (!isMinorChildAccount(eleveId)) {
+            // Élève ayant son propre compte : demande de suivi validée par un professeur (POST /parents/{id}/enfants/majeur)
+            throw forbidden("Cet élève a son propre compte : envoyez une demande de suivi, elle sera validée par son professeur.");
+        }
         boolean dejaRattache = parentEleveRepository.existsOtherParentForEleve(eleveId, me);
         boolean recent = eleve.getCreationDate() != null
                 && eleve.getCreationDate().isAfter(java.time.LocalDateTime.now().minusHours(SIGNUP_WINDOW_HOURS));

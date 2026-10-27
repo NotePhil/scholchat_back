@@ -20,7 +20,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -186,28 +189,7 @@ public class CoursBusiness {
 
 
         if (cours.getChapitres() != null) {
-
-            existingEntity.getChapitres().clear();
-
-            List<ChapitreEntity> chapitreEntities = new ArrayList<>();
-            StringBuilder contentBuilder = new StringBuilder();
-
-            for (Chapitre chapitre : cours.getChapitres()) {
-                ChapitreEntity chapitreEntity = dozerMapperBean.map(chapitre, ChapitreEntity.class);
-                // Generate UUID for new chapters
-                if (chapitreEntity.getId() == null) {
-                    chapitreEntity.setId(UUID.randomUUID().toString());
-                }
-                chapitreEntity.setCours(existingEntity);
-                chapitreEntities.add(chapitreEntity);
-
-                contentBuilder.append("=== ").append(chapitre.getTitre()).append(" ===\n");
-                contentBuilder.append(chapitre.getContenu()).append("\n\n");
-            }
-
-
-            existingEntity.getChapitres().addAll(chapitreEntities);
-            existingEntity.setContenu(contentBuilder.toString());
+            existingEntity.setContenu(fusionnerChapitres(existingEntity, cours.getChapitres()));
         }
 
         // Save the updated course
@@ -222,6 +204,57 @@ public class CoursBusiness {
         return result;
     }
 
+
+    /**
+     * Updates the course's chapters in place and returns the aggregated content.
+     * Recreating them would give new ids, and the ON DELETE CASCADE on
+     * progression_chapitre would erase students' progress. Chapters are matched by
+     * id; when no id is sent at all (older clients), chapters are matched by
+     * position instead. Extras are new chapters, missing ones are removed.
+     */
+    static String fusionnerChapitres(CoursEntity existingEntity, List<Chapitre> chapitres) {
+        List<ChapitreEntity> existants = new ArrayList<>(existingEntity.getChapitres());
+        existants.sort(java.util.Comparator.comparing(
+                (ChapitreEntity c) -> c.getOrdre() == null ? Integer.MAX_VALUE : c.getOrdre()));
+        java.util.Map<String, ChapitreEntity> parId = new java.util.HashMap<>();
+        existants.forEach(c -> parId.put(c.getId(), c));
+        java.util.Set<String> conserves = new java.util.HashSet<>();
+        java.util.Set<String> idsDemandes = new java.util.HashSet<>();
+        for (Chapitre chapitre : chapitres) {
+            if (chapitre.getId() != null) idsDemandes.add(chapitre.getId());
+        }
+
+        StringBuilder contentBuilder = new StringBuilder();
+
+        for (Chapitre chapitre : chapitres) {
+            ChapitreEntity chapitreEntity = chapitre.getId() != null ? parId.get(chapitre.getId()) : null;
+            if (chapitreEntity == null && idsDemandes.isEmpty()) {
+                chapitreEntity = existants.stream()
+                        .filter(c -> !conserves.contains(c.getId()))
+                        .findFirst().orElse(null);
+            }
+            if (chapitreEntity == null) {
+                chapitreEntity = new ChapitreEntity();
+                chapitreEntity.setId(UUID.randomUUID().toString());
+                chapitreEntity.setCours(existingEntity);
+                existingEntity.getChapitres().add(chapitreEntity);
+            }
+            chapitreEntity.setTitre(chapitre.getTitre());
+            chapitreEntity.setDescription(chapitre.getDescription());
+            chapitreEntity.setOrdre(chapitre.getOrdre());
+            chapitreEntity.setContenu(chapitre.getContenu());
+            if (chapitre.getImageUrl() != null) {
+                chapitreEntity.setImageUrl(chapitre.getImageUrl());
+            }
+            conserves.add(chapitreEntity.getId());
+
+            contentBuilder.append("=== ").append(chapitre.getTitre()).append(" ===\n");
+            contentBuilder.append(chapitre.getContenu()).append("\n\n");
+        }
+
+        existingEntity.getChapitres().removeIf(c -> !conserves.contains(c.getId()));
+        return contentBuilder.toString();
+    }
 
     public void supprimerCours(String coursId) {
         // Check if course exists
@@ -366,7 +399,35 @@ public class CoursBusiness {
                 .collect(Collectors.toList());
     }
 
-    public void marquerChapitreComplete(String utilisateurId, String chapitreId) {
+    /** Plafond d'une mesure de temps de lecture envoyée par le client (4 h). */
+    public static final long DUREE_LECTURE_MAX_SECONDES = 4 * 3600L;
+
+    /** Durée envoyée par le client ramenée dans [0, 4 h] (null / négative = 0). */
+    public static long dureeLectureValide(Long dureeSecondes) {
+        if (dureeSecondes == null || dureeSecondes < 0) return 0L;
+        return Math.min(dureeSecondes, DUREE_LECTURE_MAX_SECONDES);
+    }
+
+    /**
+     * Marque un chapitre comme terminé. {@code dureeSecondes} : temps de lecture mesuré par le client depuis
+     * l'ouverture du chapitre (ou la complétion précédente) ; plafonné à 4 h et cumulé si le chapitre est
+     * de nouveau marqué terminé.
+     */
+    public void marquerChapitreComplete(String utilisateurId, String chapitreId, Long dureeSecondes) {
+        long duree = dureeLectureValide(dureeSecondes);
+        ProgressionChapitreRepository repo = daoAccessorService.getRepository(ProgressionChapitreRepository.class);
+        ProgressionChapitreId id = new ProgressionChapitreId(utilisateurId, chapitreId);
+        Optional<ProgressionChapitreEntity> existante = repo.findById(id);
+        if (existante.isPresent()) {
+            if (duree > 0) {
+                ProgressionChapitreEntity p = existante.get();
+                p.setDureeSecondes(p.getDureeSecondes() + duree);
+                repo.save(p);
+                log.info("Chapitre {} déjà complété par {} : +{} s de lecture", chapitreId, utilisateurId, duree);
+            }
+            return;
+        }
+
         UtilisateursEntity utilisateur = daoAccessorService.getRepository(UtilisateursRepository.class)
                 .findById(utilisateurId)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Utilisateur introuvable"));
@@ -375,30 +436,36 @@ public class CoursBusiness {
                 .findById(chapitreId)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Chapitre introuvable"));
 
-        ProgressionChapitreId id = new ProgressionChapitreId(utilisateurId, chapitreId);
-        if (daoAccessorService.getRepository(ProgressionChapitreRepository.class).existsById(id)) {
-            return; // déjà complété
-        }
-
         ProgressionChapitreEntity progression = new ProgressionChapitreEntity();
         progression.setId(id);
         progression.setUtilisateur(utilisateur);
         progression.setChapitre(chapitre);
         progression.setDateCompletion(new Date());
-        daoAccessorService.getRepository(ProgressionChapitreRepository.class).save(progression);
-        log.info("Chapitre {} marqué complété par {}", chapitreId, utilisateurId);
+        progression.setDureeSecondes(duree);
+        repo.save(progression);
+        log.info("Chapitre {} marqué complété par {} ({} s)", chapitreId, utilisateurId, duree);
     }
 
     public CoursProgressionDTO obtenirProgression(String utilisateurId, String coursId) {
         List<ChapitreEntity> tousChapitres = daoAccessorService.getRepository(ChapitreRepository.class)
                 .findByCoursIdOrderByOrdre(coursId);
 
-        List<ProgressionChapitreEntity> completions = daoAccessorService.getRepository(ProgressionChapitreRepository.class)
-                .findByUtilisateurIdAndCoursId(utilisateurId, coursId);
+        Map<String, ProgressionChapitreEntity> completions = daoAccessorService.getRepository(ProgressionChapitreRepository.class)
+                .findByUtilisateurIdAndCoursId(utilisateurId, coursId).stream()
+                .collect(Collectors.toMap(p -> p.getId().getChapitreId(), p -> p, (a, b) -> a, LinkedHashMap::new));
 
-        List<String> completesIds = completions.stream()
-                .map(p -> p.getId().getChapitreId())
-                .collect(Collectors.toList());
+        List<String> completesIds = new ArrayList<>(completions.keySet());
+        long tempsTotal = completions.values().stream().mapToLong(ProgressionChapitreEntity::getDureeSecondes).sum();
+        List<CoursProgressionDTO.Chapitre> chapitres = tousChapitres.stream().map(ch -> {
+            ProgressionChapitreEntity p = completions.get(ch.getId());
+            return CoursProgressionDTO.Chapitre.builder()
+                    .chapitreId(ch.getId())
+                    .titre(ch.getTitre())
+                    .complete(p != null)
+                    .dateCompletion(p == null ? null : p.getDateCompletion())
+                    .dureeSecondes(p == null ? 0L : p.getDureeSecondes())
+                    .build();
+        }).collect(Collectors.toList());
 
         int total = tousChapitres.size();
         int completes = completesIds.size();
@@ -411,6 +478,8 @@ public class CoursBusiness {
                 .chapitresCompletes(completes)
                 .pourcentage(pourcentage)
                 .chapitresCompletesIds(completesIds)
+                .tempsTotalSecondes(tempsTotal)
+                .chapitres(chapitres)
                 .build();
     }
 

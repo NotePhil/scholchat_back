@@ -55,7 +55,12 @@ public class CoursService implements CoursApi {
     public List<Cours> obtenirCoursAccessibles(@NonNull String userId) {
         accessControl.requireSelfOrParentOrAdmin(userId);
         log.info("Récupération des cours accessibles pour l'utilisateur: {}", userId);
-        return coursBusiness.obtenirCoursAccessibles(userId);
+        java.util.Set<String> lisibles = accessControl.classesLisiblesParParent(userId);
+        List<Cours> cours = coursBusiness.obtenirCoursAccessibles(userId);
+        if (lisibles == null) return cours;
+        // Parent d'un enfant majeur : cours programmés dans les classes suivies (acceptées)
+        java.util.Set<String> coursLisibles = accessControl.coursDesClasses(lisibles);
+        return cours.stream().filter(c -> coursLisibles.contains(c.getId())).toList();
     }
     @Override
     public Cours mettreAJourCours(@NonNull String coursId, @NonNull Cours cours) {
@@ -79,16 +84,22 @@ public class CoursService implements CoursApi {
     }
 
     @Override
-    public void marquerChapitreComplete(@NonNull String coursId, @NonNull String chapitreId, @NonNull String utilisateurId) {
+    public void marquerChapitreComplete(@NonNull String coursId, @NonNull String chapitreId, @NonNull String utilisateurId,
+                                        Long dureeSecondes) {
         currentUser.requireSelfOrAdmin(utilisateurId);
-        log.info("Chapitre {} marqué complété par {}", chapitreId, utilisateurId);
-        coursBusiness.marquerChapitreComplete(utilisateurId, chapitreId);
+        log.info("Chapitre {} marqué complété par {} ({} s)", chapitreId, utilisateurId, dureeSecondes);
+        coursBusiness.marquerChapitreComplete(utilisateurId, chapitreId, dureeSecondes);
     }
 
     @Override
     public CoursProgressionDTO obtenirProgression(@NonNull String coursId, @NonNull String utilisateurId) {
         if (!currentUser.isAdmin() && !currentUser.isSelf(utilisateurId) && !accessControl.isParentOf(currentUser.requireUserId(), utilisateurId)) {
             accessControl.requireCoursAuthor(coursId);
+        }
+        java.util.Set<String> lisibles = accessControl.classesLisiblesParParent(utilisateurId);
+        if (lisibles != null && !accessControl.coursDesClasses(lisibles).contains(coursId)) {
+            throw cmr.notep.business.security.CurrentUserService.forbidden(
+                    cmr.notep.business.security.AccessControlService.MSG_CLASSE_NON_SUIVIE);
         }
         log.info("Progression du cours {} pour l'utilisateur {}", coursId, utilisateurId);
         return coursBusiness.obtenirProgression(utilisateurId, coursId);

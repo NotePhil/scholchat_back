@@ -46,12 +46,16 @@ public interface EvenementApi {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @ResponseStatus(HttpStatus.OK)
-    List<Evenement> obtenirTousEvenements();
+    List<Evenement> obtenirTousEvenements(@RequestParam(name = "eleveId", required = false) String eleveId);
 
     /**
      * Paginated fetch. Returns page metadata + the events for that page.
      * Reuses the generic {@link PagedResponse} wrapper so other modules
      * (courses, exercises…) can adopt the same contract.
+     *
+     * <p>{@code eleveId} (optionnel) : fil vu pour cet élève — l'élève lui-même ou l'un de ses
+     * parents (enfant sélectionné). Ne renvoie alors que les événements publics et ceux qui ciblent
+     * les classes de l'élève.
      */
     @GetMapping(
             path = "/pagines",
@@ -60,7 +64,8 @@ public interface EvenementApi {
     @ResponseStatus(HttpStatus.OK)
     PagedResponse<Evenement> obtenirEvenementsPagines(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(name = "eleveId", required = false) String eleveId
     );
 
     @GetMapping(
@@ -87,6 +92,18 @@ public interface EvenementApi {
     Interaction commenterEvenement(
             @NonNull @PathVariable("eventId") String eventId,
             @NonNull @RequestBody CommentRequest commentRequest
+    );
+
+    /**
+     * Suppression d'un commentaire : par son auteur, par l'auteur de la publication, par un administrateur ou par
+     * un gestionnaire d'une classe ciblée par la publication (403 sinon, 404 si le commentaire n'appartient pas à
+     * cet événement).
+     */
+    @DeleteMapping(path = {"/{eventId}/comment/{commentId}", "/{eventId}/commentaires/{commentId}"})
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void supprimerCommentaire(
+            @NonNull @PathVariable("eventId") String eventId,
+            @NonNull @PathVariable("commentId") String commentId
     );
 
     @PostMapping(

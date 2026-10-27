@@ -184,3 +184,46 @@ databaseChangeLog:
             path: sql/migration-seed-exercises-cours.sql
             relativeToChangelogFile: false
             splitStatements: false
+  - changeSet:
+      id: 27-evenements-date-publication
+      author: db-init
+      changes:
+        - sqlFile:
+            path: sql/migration-evenements-date-publication.sql
+            relativeToChangelogFile: false
+  - changeSet:
+      id: 28-progression-chapitre-duree
+      author: db-init
+      changes:
+        - sqlFile:
+            path: sql/migration-progression-chapitre-duree.sql
+            relativeToChangelogFile: false
+  - changeSet:
+      id: 29-demandes-lien-parent
+      author: db-init
+      changes:
+        - sqlFile:
+            path: sql/migration-demandes-lien-parent.sql
+            relativeToChangelogFile: false
+  - changeSet:
+      id: 30-conversations
+      author: db-init
+      changes:
+        - sqlFile:
+            path: sql/migration-conversations.sql
+            relativeToChangelogFile: false
+            splitStatements: false
+  - changeSet:
+      id: 31-demandes-suivi-professeur
+      author: db-init
+      changes:
+        - sqlFile:
+            path: sql/migration-demandes-suivi-professeur.sql
+            relativeToChangelogFile: false
+  - changeSet:
+      id: 32-conversations-favoris-corbeille
+      author: db-init
+      changes:
+        - sqlFile:
+            path: sql/migration-conversations-favoris-corbeille.sql
+            relativeToChangelogFile: false

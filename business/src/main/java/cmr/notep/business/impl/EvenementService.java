@@ -2,6 +2,7 @@
 package cmr.notep.business.impl;
 
 import cmr.notep.business.business.EvenementBusiness;
+import cmr.notep.business.business.EvenementStatut;
 import cmr.notep.business.business.InteractionBusiness;
 import cmr.notep.interfaces.api.EvenementApi;
 import cmr.notep.interfaces.modeles.Evenement;
@@ -29,6 +30,23 @@ public class EvenementService implements EvenementApi {
     private cmr.notep.business.security.CurrentUserService currentUser;
     @org.springframework.beans.factory.annotation.Autowired
     private cmr.notep.business.security.AccessControlService accessControl;
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.security.ParentSansEnfantValide parentSansEnfantValide;
+
+    /**
+     * Session parent dont aucun enfant n'est encore accepté dans une classe : le fil ne contient que les
+     * actualités générales (événements publics sans classe ciblée), quel que soit {@code eleveId}.
+     */
+    private boolean parentLimite() {
+        org.springframework.web.context.request.RequestAttributes attrs =
+                org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+        return attrs instanceof org.springframework.web.context.request.ServletRequestAttributes sra
+                && parentSansEnfantValide.estParentLimite(sra.getRequest());
+    }
+
+    private static boolean estPublicGeneral(Evenement e) {
+        return !"PRIVATE".equals(e.getVisibility()) && (e.getClassesIds() == null || e.getClassesIds().isEmpty());
+    }
 
     /** Visibilité d'un événement : PUBLIC pour tous ; PRIVATE pour l'auteur, les admins et les membres des classes ciblées. */
     private boolean peutVoir(Evenement e) {
@@ -87,23 +105,63 @@ public class EvenementService implements EvenementApi {
             if (evenement.getClassesIds() != null) evenement.getClassesIds().forEach(accessControl::requireClassTeacher);
         }
         log.info("Création d'un nouvel événement: {}", evenement.getTitre());
-        return evenementBusiness.creerEvenement(evenement);
+        return EvenementStatut.appliquer(evenementBusiness.creerEvenement(evenement));
     }
     
-    @Override
-    public PagedResponse<Evenement> obtenirEvenementsPagines(int page, int size) {
-        log.info("Récupération paginée des événements (page={}, size={})", page, size);
-        String userId = getCurrentUserId();
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        boolean isAdmin = auth != null && auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-        List<String> userClasses = isAdmin ? java.util.Collections.emptyList() : getUserClasses(userId);
-        return evenementBusiness.obtenirEvenementsPagines(page, size, userClasses, isAdmin);
+    /**
+     * Classes de l'élève dont on affiche le fil : l'élève lui-même ou l'un de ses parents (enfant
+     * sélectionné, mineur ou majeur), ou un administrateur. 403 sinon.
+     */
+    private List<String> classesDuFilEleve(String eleveId) {
+        String me = getCurrentUserId();
+        if (!me.equals(eleveId) && !currentUser.isAdmin() && !accessControl.isParentOf(me, eleveId)) {
+            throw cmr.notep.business.security.CurrentUserService.forbidden(
+                    "Vous ne pouvez consulter que votre fil ou celui de vos enfants.");
+        }
+        java.util.Set<String> lisibles = accessControl.classesLisiblesParParent(eleveId);
+        List<String> classes = getUserClasses(eleveId);
+        // Parent d'un enfant majeur : fil des classes dont le suivi est accepté
+        return lisibles == null ? classes : classes.stream().filter(lisibles::contains).toList();
     }
 
     @Override
-    public List<Evenement> obtenirTousEvenements() {
-        log.info("Récupération de tous les événements");
+    public PagedResponse<Evenement> obtenirEvenementsPagines(int page, int size, String eleveId) {
+        log.info("Récupération paginée des événements (page={}, size={}, eleveId={})", page, size, eleveId);
+        PagedResponse<Evenement> res;
+        if (parentLimite()) {
+            res = evenementBusiness.obtenirPublicsGeneraux(page, size);
+        } else if (eleveId != null && !eleveId.isBlank()) {
+            res = evenementBusiness.obtenirFilPourClasses(page, size, classesDuFilEleve(eleveId));
+        } else {
+            String userId = getCurrentUserId();
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            boolean isAdmin = auth != null && auth.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+            List<String> userClasses = isAdmin ? java.util.Collections.emptyList() : getUserClasses(userId);
+            res = evenementBusiness.obtenirEvenementsPagines(page, size, userClasses, isAdmin);
+        }
+        EvenementStatut.appliquer(res.getContent());
+        return res;
+    }
+
+    @Override
+    public List<Evenement> obtenirTousEvenements(String eleveId) {
+        log.info("Récupération de tous les événements (eleveId={})", eleveId);
+        if (parentLimite()) {
+            List<Evenement> publics = evenementBusiness.obtenirTousEvenements().stream()
+                    .filter(EvenementService::estPublicGeneral)
+                    .collect(java.util.stream.Collectors.toList());
+            publics.forEach(ev -> ev.setInteractions(interactionBusiness.getInteractionsByEventId(ev.getId())));
+            return EvenementStatut.appliquer(publics);
+        }
+        if (eleveId != null && !eleveId.isBlank()) {
+            // Même règle que le fil paginé : publics + ceux qui ciblent les classes de l'élève.
+            List<String> classes = classesDuFilEleve(eleveId);
+            return EvenementStatut.appliquer(evenementBusiness.obtenirTousEvenements().stream()
+                    .filter(ev -> !"PRIVATE".equals(ev.getVisibility())
+                            || (ev.getClassesIds() != null && ev.getClassesIds().stream().anyMatch(classes::contains)))
+                    .collect(java.util.stream.Collectors.toList()));
+        }
         String userId = getCurrentUserId();
         List<Evenement> evenements = evenementBusiness.obtenirTousEvenements();
         
@@ -146,7 +204,7 @@ public class EvenementService implements EvenementApi {
             evenement.setInteractions(interactions);
         }
         
-        return filteredEvents;
+        return EvenementStatut.appliquer(filteredEvents);
     }
     
     // Helper method to get user's classes
@@ -173,7 +231,7 @@ public class EvenementService implements EvenementApi {
             if (evenement.getClassesIds() != null) evenement.getClassesIds().forEach(accessControl::requireClassTeacher);
         }
         log.info("Mise à jour de l'événement avec ID: {}", id);
-        return evenementBusiness.mettreAJourEvenement(id, evenement);
+        return EvenementStatut.appliquer(evenementBusiness.mettreAJourEvenement(id, evenement));
     }
 
     @Override
@@ -187,15 +245,15 @@ public class EvenementService implements EvenementApi {
     public Evenement obtenirEvenementParId(@NonNull String id) {
         exigerVisible(id);
         log.info("Récupération de l'événement avec ID: {}", id);
-        return evenementBusiness.obtenirEvenementParId(id);
+        return EvenementStatut.appliquer(evenementBusiness.obtenirEvenementParId(id));
     }
 
     @Override
     public List<Evenement> obtenirEvenementsParProfesseur(@NonNull String professeurId) {
         log.info("Récupération des événements pour le professeur avec ID: {}", professeurId);
-        return evenementBusiness.obtenirEvenementsParProfesseur(professeurId).stream()
+        return EvenementStatut.appliquer(evenementBusiness.obtenirEvenementsParProfesseur(professeurId).stream()
                 .filter(this::peutVoir)
-                .collect(java.util.stream.Collectors.toList());
+                .collect(java.util.stream.Collectors.toList()));
     }
 
     // Nouveaux endpoints pour les interactions
@@ -225,6 +283,23 @@ public class EvenementService implements EvenementApi {
                 .build();
         
         return interactionBusiness.createInteraction(commentInteraction);
+    }
+
+    @Override
+    public void supprimerCommentaire(@NonNull String eventId, @NonNull String commentId) {
+        String me = currentUser.requireUserId();
+        Evenement e = evenementBusiness.obtenirEvenementParId(eventId);
+        Interaction commentaire = interactionBusiness.getCommentaireEvenement(eventId, commentId);
+        boolean autorise = currentUser.isAdmin()
+                || me.equals(commentaire.getCreatedById())
+                || me.equals(e.getCreateurId())
+                || (e.getClassesIds() != null && e.getClassesIds().stream().anyMatch(c -> accessControl.isClassManager(c, me)));
+        if (!autorise) {
+            throw cmr.notep.business.security.CurrentUserService.forbidden(
+                    "Seuls l'auteur du commentaire, l'auteur de la publication et les modérateurs peuvent supprimer ce commentaire.");
+        }
+        log.info("Utilisateur {} supprime le commentaire {} de l'événement {}", me, commentId, eventId);
+        interactionBusiness.supprimerInteraction(commentId);
     }
 
     @Override

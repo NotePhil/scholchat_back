@@ -37,4 +37,16 @@ public interface CoursProgrammerRepository extends JpaRepository<CoursProgrammer
 """, nativeQuery = true)
     long countProgrammationsDansClasse(@Param("coursId") String coursId, @Param("classeId") String classeId);
 
+
+    /** Cours programmés dans l'une des classes (table de liaison ou ancienne colonne classe_id). */
+    @Query(value = "SELECT DISTINCT cp.cours_id FROM ressources.cours_programmer cp "
+            + "LEFT JOIN ressources.cours_programmer_classes cpc ON cpc.cours_programmer_id = cp.id "
+            + "WHERE cpc.classe_id IN (:classeIds) OR cp.classe_id IN (:classeIds)", nativeQuery = true)
+    List<String> findCoursIdsProgrammesDansClasses(@Param("classeIds") java.util.Collection<String> classeIds);
+
+    /** Classes d'une programmation de cours (table de liaison ou ancienne colonne classe_id). */
+    @Query(value = "SELECT cpc.classe_id FROM ressources.cours_programmer_classes cpc WHERE cpc.cours_programmer_id = :id "
+            + "UNION SELECT cp.classe_id FROM ressources.cours_programmer cp WHERE cp.id = :id AND cp.classe_id IS NOT NULL",
+            nativeQuery = true)
+    List<String> findClasseIdsDeProgrammation(@Param("id") String coursProgrammerId);
 }

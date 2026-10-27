@@ -122,7 +122,8 @@ CREATE TABLE IF NOT EXISTS ressources.evenements (
     etat VARCHAR(50) NOT NULL,
     heure_debut TIMESTAMP NOT NULL,
     heure_fin TIMESTAMP,
-    createur_id VARCHAR(255) NOT NULL
+    createur_id VARCHAR(255) NOT NULL,
+    date_publication TIMESTAMP
 );
 
 -- 3. Create join tables
@@ -648,6 +649,7 @@ CREATE TABLE IF NOT EXISTS ressources.progression_chapitre (
     utilisateur_id VARCHAR(255) NOT NULL REFERENCES ressources.utilisateurs(id) ON DELETE CASCADE,
     chapitre_id    VARCHAR(255) NOT NULL REFERENCES ressources.chapitres(id) ON DELETE CASCADE,
     date_completion TIMESTAMP NOT NULL DEFAULT NOW(),
+    duree_secondes BIGINT NOT NULL DEFAULT 0,
     PRIMARY KEY (utilisateur_id, chapitre_id)
 );
 
@@ -717,3 +719,49 @@ ALTER TABLE ressources.exercises_programmer ADD CONSTRAINT IF NOT EXISTS fk_exer
 CREATE INDEX IF NOT EXISTS idx_exercises_programmer_cours ON ressources.exercises_programmer (cours_id);
 CREATE INDEX IF NOT EXISTS idx_cours_programmer_classes_classe ON ressources.cours_programmer_classes (classe_id);
 CREATE INDEX IF NOT EXISTS idx_questions_reponses_exercise ON ressources.questions_reponses (exercise_id);
+
+CREATE TABLE IF NOT EXISTS ressources.demandes_lien_parent (
+    id           VARCHAR(255) NOT NULL PRIMARY KEY,
+    parent_id    VARCHAR(255) NOT NULL,
+    eleve_id     VARCHAR(255) NOT NULL,
+    etat         VARCHAR(30)  NOT NULL DEFAULT 'EN_ATTENTE',
+    date_demande TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    date_reponse TIMESTAMP,
+    motif        VARCHAR(500),
+    traite_par   VARCHAR(255),
+    classe_id    VARCHAR(255)
+);
+
+-- Messagerie de type chat (changeset 30-conversations)
+CREATE TABLE IF NOT EXISTS ressources.conversations (
+    id               VARCHAR(36)  NOT NULL PRIMARY KEY,
+    type             VARCHAR(10)  NOT NULL,
+    titre            VARCHAR(255),
+    classe_id        VARCHAR(255),
+    created_by       VARCHAR(255),
+    created_at       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_message_at  TIMESTAMP,
+    direct_key       VARCHAR(520) UNIQUE,
+    participants_key VARCHAR(32)
+);
+CREATE INDEX IF NOT EXISTS idx_conversations_participants_key ON ressources.conversations (participants_key);
+
+CREATE TABLE IF NOT EXISTS ressources.conversation_participants (
+    conversation_id VARCHAR(36)  NOT NULL REFERENCES ressources.conversations (id) ON DELETE CASCADE,
+    utilisateur_id  VARCHAR(255) NOT NULL REFERENCES ressources.utilisateurs (id) ON DELETE CASCADE,
+    joined_at       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_read_at    TIMESTAMP,
+    muted           BOOLEAN      NOT NULL DEFAULT FALSE,
+    deleted_at      TIMESTAMP,
+    PRIMARY KEY (conversation_id, utilisateur_id)
+);
+CREATE INDEX IF NOT EXISTS idx_conversation_participants_user ON ressources.conversation_participants (utilisateur_id);
+-- Favori, « marquer comme non lu », suppression définitive depuis la corbeille (changeset 32-conversations-favoris-corbeille)
+ALTER TABLE ressources.conversation_participants ADD COLUMN IF NOT EXISTS favori BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE ressources.conversation_participants ADD COLUMN IF NOT EXISTS marque_non_lu BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE ressources.conversation_participants ADD COLUMN IF NOT EXISTS historique_depuis TIMESTAMP;
+
+ALTER TABLE ressources.messages ADD COLUMN IF NOT EXISTS conversation_id VARCHAR(36);
+ALTER TABLE ressources.messages ADD COLUMN IF NOT EXISTS reply_to_id VARCHAR(255);
+ALTER TABLE ressources.messages ADD COLUMN IF NOT EXISTS date_envoi TIMESTAMP;
+CREATE INDEX IF NOT EXISTS idx_messages_conversation_date ON ressources.messages (conversation_id, date_envoi);

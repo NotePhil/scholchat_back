@@ -309,21 +309,24 @@ public class NotificationService {
     public void createClasseDemandeAdhesionNotification(String classeId, String classeNom,
                                                         String professorId, String professorNom,
                                                         String etablissementNom, String gestionnaireId) {
-        // Notify the gestionnaire: new pending request
+        // Appelé à la CRÉATION d'une classe par un professeur dans un établissement (classe en
+        // EN_ATTENTE_APPROBATION) : c'est une demande de création, pas d'adhésion. Le type reste
+        // CLASSE_ADHESION_DEMANDE (routage des notifications côté web/mobile).
+        // Gestionnaire : nouvelle demande à traiter
         if (gestionnaireId != null) {
             saveNotification(gestionnaireId, "CLASSE_ADHESION_DEMANDE",
-                    "Demande d'adhésion à votre établissement",
-                    professorNom + " demande que la classe '" + classeNom + "' rejoigne l'établissement '" + etablissementNom + "'",
+                    "Nouvelle demande de création de classe",
+                    professorNom + " demande la création de la classe '" + classeNom + "' dans l'établissement '" + etablissementNom + "'.",
                     professorId, professorNom, classeId, "CLASS");
         }
-        // Notify the professor: confirmation
+        // Professeur : accusé de réception
         if (professorId != null) {
             saveNotification(professorId, "CLASSE_ADHESION_DEMANDE",
-                    "Demande d'adhésion envoyée",
-                    "Votre demande d'adhésion de la classe '" + classeNom + "' à l'établissement '" + etablissementNom + "' est en attente de validation.",
+                    "Demande de création envoyée",
+                    "Votre demande de création de la classe '" + classeNom + "' à l'établissement '" + etablissementNom + "' est en attente de validation.",
                     null, null, classeId, "CLASS");
         }
-        log.info("Adhesion demand notifications sent for class {} to etablissement {}", classeId, etablissementNom);
+        log.info("Class creation request notifications sent for class {} to etablissement {}", classeId, etablissementNom);
     }
 
     @Transactional

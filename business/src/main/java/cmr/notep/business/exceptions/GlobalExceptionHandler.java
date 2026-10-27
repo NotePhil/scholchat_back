@@ -57,7 +57,7 @@ public class GlobalExceptionHandler {
     private HttpStatus mapSchoolExceptionToHttpStatus(SchoolErrorCode code) {
         return switch (code) {
             // CONTRAT_INTROUVABLE : "pas encore de contrat" est un état normal côté clients (404, pas 500)
-            case NOT_FOUND, RESOURCE_NOT_FOUND, CODE_CLASSE_INVALIDE, CONTRAT_INTROUVABLE -> HttpStatus.NOT_FOUND;
+            case NOT_FOUND, RESOURCE_NOT_FOUND, CODE_CLASSE_INVALIDE, CONTRAT_INTROUVABLE, ELEVE_INTROUVABLE -> HttpStatus.NOT_FOUND;
             case OPERATION_INTERDITE, FORBIDDEN, INVALID_STATE, INACTIVE_USER, PROFIL_PROFESSEUR_NON_VALIDE,
                  MOT_DE_PASSE_A_CHANGER, COMPTE_EN_ATTENTE_APPROBATION,
                  CHANGEMENT_PROFIL_INTERDIT_ELEVE, PARENT_SANS_ENFANT_VALIDE -> HttpStatus.FORBIDDEN;
@@ -66,9 +66,10 @@ public class GlobalExceptionHandler {
             case INTERFACE_NON_RESPECTEE, INVALID_INPUT, CODE_CLASSE_REQUIS, CLASSE_NON_ACTIVE,
                  CLASSE_RESERVEE_MINEURS, CODE_VERIFICATION_INVALIDE, CODE_VERIFICATION_EXPIRE,
                  COMPTE_NON_ELIGIBLE, ENFANTS_REQUIS, ENFANTS_TROP_NOMBREUX, ENFANT_INVALIDE,
-                 ENFANT_EN_DOUBLE, COURS_NON_PROGRAMME_DANS_CLASSE, COURS_REQUIS -> HttpStatus.BAD_REQUEST;
+                 ENFANT_EN_DOUBLE, COMPTE_NON_ELEVE, ELEVE_PAS_DANS_CLASSE, COURS_NON_PROGRAMME_DANS_CLASSE, COURS_REQUIS -> HttpStatus.BAD_REQUEST;
             case DUPLICATE_RESOURCE, ROLE_INCOMPATIBLE, EMAIL_DEJA_UTILISE, COMPTE_NON_ACTIVE,
-                 COMPTE_EN_ATTENTE_VALIDATION -> HttpStatus.CONFLICT;
+                 COMPTE_EN_ATTENTE_VALIDATION, ELEVE_EXISTE_AVEC_COMPTE, LIEN_PARENT_DEJA_DEMANDE,
+                 CONFLICT, ALREADY_EXISTS, CLASSE_COMPLETE -> HttpStatus.CONFLICT;
             // Inscription refusée : un compte en attente d'approbation existe déjà pour cet e-mail
             case INSCRIPTION_EN_ATTENTE -> HttpStatus.CONFLICT;
             // Jeton (activation / réinitialisation) invalide ou expiré : erreur client, pas 500

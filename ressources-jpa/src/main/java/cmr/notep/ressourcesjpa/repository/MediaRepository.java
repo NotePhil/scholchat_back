@@ -15,11 +15,21 @@ public interface MediaRepository extends JpaRepository<MediaEntity, String> {
 
     List<MediaEntity> findByCoursId(String coursId);
 
-    Optional<MediaEntity> findByFilePath(String filePath);
+    // Several rows can share a path or name (re-uploads): the single-result lookups
+    // below return the most recent one instead of failing on a non-unique result.
+    Optional<MediaEntity> findFirstByFilePathOrderByUploadedDateDesc(String filePath);
+
+    default Optional<MediaEntity> findByFilePath(String filePath) {
+        return findFirstByFilePathOrderByUploadedDateDesc(filePath);
+    }
 
     List<MediaEntity> findByMediaType(String mediaType);
 
-    Optional<MediaEntity> findByFileNameAndOwnerId(String fileName, String ownerId);
+    Optional<MediaEntity> findFirstByFileNameAndOwnerIdOrderByUploadedDateDesc(String fileName, String ownerId);
+
+    default Optional<MediaEntity> findByFileNameAndOwnerId(String fileName, String ownerId) {
+        return findFirstByFileNameAndOwnerIdOrderByUploadedDateDesc(fileName, ownerId);
+    }
 
     @Query("SELECT m FROM MediaEntity m WHERE m.ownerId = :ownerId AND m.fileName LIKE %:fileNamePart% ORDER BY m.uploadedDate DESC")
     List<MediaEntity> findByOwnerIdAndFileNameContaining(@Param("ownerId") String ownerId, @Param("fileNamePart") String fileNamePart);
@@ -28,10 +38,16 @@ public interface MediaRepository extends JpaRepository<MediaEntity, String> {
     List<MediaEntity> findByFileName(String fileName);
 
     // New method to get unique result by file name with owner ID
-    @Query("SELECT m FROM MediaEntity m WHERE m.fileName = :fileName AND m.ownerId IS NOT NULL ORDER BY m.uploadedDate DESC")
-    Optional<MediaEntity> findLatestByFileName(@Param("fileName") String fileName);
+    Optional<MediaEntity> findFirstByFileNameAndOwnerIdIsNotNullOrderByUploadedDateDesc(String fileName);
+
+    default Optional<MediaEntity> findLatestByFileName(String fileName) {
+        return findFirstByFileNameAndOwnerIdIsNotNullOrderByUploadedDateDesc(fileName);
+    }
 
     // New method to get unique result by file path with additional validation
-    @Query("SELECT m FROM MediaEntity m WHERE m.filePath = :filePath AND m.ownerId IS NOT NULL")
-    Optional<MediaEntity> findByFilePathWithOwner(@Param("filePath") String filePath);
+    Optional<MediaEntity> findFirstByFilePathAndOwnerIdIsNotNullOrderByUploadedDateDesc(String filePath);
+
+    default Optional<MediaEntity> findByFilePathWithOwner(String filePath) {
+        return findFirstByFilePathAndOwnerIdIsNotNullOrderByUploadedDateDesc(filePath);
+    }
 }

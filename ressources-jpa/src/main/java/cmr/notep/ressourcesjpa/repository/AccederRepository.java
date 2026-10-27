@@ -26,4 +26,12 @@ public interface AccederRepository extends JpaRepository<AccederEntity, Long> {
 
     @Query("SELECT c.moderator.id FROM ClassesEntity c WHERE c.id = :classeId AND c.moderator IS NOT NULL")
     List<String> findModeratorsByClasseId(@Param("classeId") String classeId);
+
+    /**
+     * Nombre d'ÉLÈVES membres de la classe (comptes ayant un profil élève, enfants gérés par un parent compris) ;
+     * les parents, professeurs et modérateurs ne comptent pas (restriction « élèves max » de l'offre).
+     */
+    @Query(value = "SELECT COUNT(*) FROM ressources.acceder a JOIN ressources.eleves e ON e.eleves_id = a.utilisateur_id "
+            + "WHERE a.classe_id = :classeId", nativeQuery = true)
+    long countElevesByClasseId(@Param("classeId") String classeId);
 }

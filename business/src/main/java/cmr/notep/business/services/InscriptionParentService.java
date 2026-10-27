@@ -69,6 +69,10 @@ public class InscriptionParentService {
     @Lazy
     private NotificationService notificationService;
 
+    @Autowired
+    @Lazy
+    private LienParentService lienParentService;
+
     public InscriptionParentService(DaoAccessorService daoAccessorService,
                                     InscriptionClasseService inscriptionClasseService,
                                     InscriptionClasseEmailService emailService) {
@@ -88,6 +92,16 @@ public class InscriptionParentService {
      * @return la classe de chaque enfant, dans l'ordre de la liste
      */
     public List<ClassesEntity> validerEnfants(List<EnfantInscription> enfants, Set<String> nomsExistants) {
+        return validerEnfants(enfants, nomsExistants, null, null);
+    }
+
+    /**
+     * @param parentId    compte parent existant (null pour un nouveau compte)
+     * @param emailParent e-mail du parent (un enfant majeur ne peut pas avoir le même)
+     * @return pour chaque enfant : sa classe ; null pour un enfant majeur qui a déjà un compte
+     */
+    public List<ClassesEntity> validerEnfants(List<EnfantInscription> enfants, Set<String> nomsExistants,
+                                              String parentId, String emailParent) {
         if (enfants == null || enfants.isEmpty()) {
             throw new SchoolException(SchoolErrorCode.ENFANTS_REQUIS,
                     "Ajoutez au moins un enfant (prénom, nom et code de sa classe) pour créer votre compte parent.");
@@ -98,8 +112,12 @@ public class InscriptionParentService {
         }
         List<ClassesEntity> classes = new ArrayList<>();
         Set<String> vus = new HashSet<>();
+        Set<String> emailsVus = new HashSet<>();
         for (int i = 0; i < enfants.size(); i++) {
-            classes.add(validerEnfant(enfants.get(i), i, vus, nomsExistants));
+            EnfantInscription e = enfants.get(i);
+            classes.add(e != null && e.estMajeur()
+                    ? lienParentService.validerEnfantMajeur(parentId, emailParent, e, i, emailsVus)
+                    : validerEnfant(e, i, vus, nomsExistants));
         }
         return classes;
     }
@@ -126,12 +144,55 @@ public class InscriptionParentService {
             throw new SchoolException(SchoolErrorCode.ENFANT_EN_DOUBLE,
                     "L'enfant " + libelle + " apparaît plusieurs fois dans la liste.").avecEnfantIndex(index);
         }
+        ClassesEntity classe;
         try {
             // Enfant (mineur ou non) : toute classe ACTIF non expirée, sans restriction majeurs / mineurs.
-            return inscriptionClasseService.resoudreClasse(e.getCodeClasse(), false);
+            classe = inscriptionClasseService.resoudreClasse(e.getCodeClasse(), false);
         } catch (SchoolException ex) {
             throw new SchoolException(ex.getCode(), ex.getMessage()).avecEnfantIndex(index);
         }
+        verifierPasDElevePorteurDeCompte(classe, cle, libelle, index);
+        return classe;
+    }
+
+    /**
+     * Doublon : un élève du même nom (prénom + nom normalisés) AYANT son propre compte (e-mail ou mot de passe)
+     * est déjà membre de la classe ou y a une demande en attente. Il s'agit très probablement de l'enfant majeur du
+     * parent : il doit être ajouté avec son e-mail, pas recréé comme mineur sans compte (409 ELEVE_EXISTE_AVEC_COMPTE).
+     */
+    private void verifierPasDElevePorteurDeCompte(ClassesEntity classe, String cle, String libelle, Integer index) {
+        Set<String> ids = new HashSet<>();
+        for (AccederEntity a : daoAccessorService.getRepository(AccederRepository.class).findByClasseId(classe.getId())) {
+            ids.add(a.getUtilisateurId());
+        }
+        for (DemandeAccesEntity d : daoAccessorService.getRepository(DemandeAccesRepository.class)
+                .findByClasseIdAndEtat(classe.getId(), EtatDemandeAcces.EN_ATTENTE)) {
+            if (d.getUtilisateur() != null && !d.isEstParent()) ids.add(d.getUtilisateur().getId());
+        }
+        if (ids.isEmpty()) return;
+        UtilisateursRepository repo = daoAccessorService.getRepository(UtilisateursRepository.class);
+        for (UtilisateursEntity u : repo.findAllById(ids)) {
+            if (!cle.equals(cleNom(u.getPrenom(), u.getNom())) || !aSonPropreCompte(u)) continue;
+            if (!repo.hasEleveRow(u.getId())) continue;
+            throw new SchoolException(SchoolErrorCode.ELEVE_EXISTE_AVEC_COMPTE,
+                    "Un élève « " + libelle + " » avec son propre compte existe déjà dans cette classe. S'il s'agit "
+                            + "de votre enfant majeur, ajoutez-le avec son adresse e-mail.").avecEnfantIndex(index);
+        }
+    }
+
+    /** Même contrôle pour l'ancien flux /parent-access (enfants saisis par nom). */
+    public void verifierPasDElevePorteurDeCompte(String classeId, String prenom, String nom) {
+        ClassesEntity classe = daoAccessorService.getRepository(ClassesRepository.class).findById(classeId).orElse(null);
+        if (classe == null || estVide(prenom) && estVide(nom)) return;
+        String libelle = ((prenom == null ? "" : prenom.trim()) + " " + (nom == null ? "" : nom.trim())).trim();
+        verifierPasDElevePorteurDeCompte(classe, cleNom(prenom, nom), libelle, null);
+        verifierPasDElevePorteurDeCompte(classe, cleNom(nom, prenom), libelle, null);
+    }
+
+    /** Élève ayant son propre compte (majeur) : e-mail ou mot de passe renseigné. Un mineur n'a ni l'un ni l'autre. */
+    public static boolean aSonPropreCompte(UtilisateursEntity u) {
+        return u != null && ((u.getEmail() != null && !u.getEmail().isBlank())
+                || (u.getPasseAccess() != null && !u.getPasseAccess().isBlank()));
     }
 
     /** Clé de comparaison prénom + nom (casse, accents et espaces ignorés). */
@@ -166,6 +227,9 @@ public class InscriptionParentService {
      * (le modérateur est notifié). À appeler dans la transaction de l'inscription, après validation.
      */
     public EnfantInscription inscrireEnfant(String parentId, EnfantInscription demande, ClassesEntity classe) {
+        if (demande.estMajeur()) {
+            return lienParentService.inscrireEnfantMajeur(parentId, demande);
+        }
         ElevesEntity eleve = new ElevesEntity();
         eleve.setId(UUID.randomUUID().toString());
         eleve.setPrenom(demande.getPrenom().trim());
@@ -193,6 +257,7 @@ public class InscriptionParentService {
                 .niveau(cree.getNiveau())
                 .classeId(classe.getId())
                 .classeNom(classe.getNom())
+                .type(EnfantInscription.TYPE_MINEUR)
                 .statut(EnfantStatut.ClasseStatut.EN_ATTENTE)
                 .build();
     }
@@ -211,8 +276,13 @@ public class InscriptionParentService {
         List<Map<String, String>> lignes = new ArrayList<>();
         for (EnfantInscription e : enfants) {
             Map<String, String> l = new LinkedHashMap<>();
-            l.put("nom", (e.getPrenom() + " " + e.getNom()).trim());
-            l.put("classe", e.getClasseNom());
+            l.put("nom", ((e.getPrenom() == null ? "" : e.getPrenom()) + " " + (e.getNom() == null ? "" : e.getNom())).trim()
+                    + (e.getEmail() != null ? " (" + e.getEmail() + ")" : ""));
+            String suivi = e.getClassesSuivi() == null || e.getClassesSuivi().isEmpty() ? null
+                    : String.join(", ", e.getClassesSuivi().stream().map(EnfantStatut.ClasseStatut::getClasseNom).toList());
+            l.put("classe", e.getClasseNom() != null ? e.getClasseNom()
+                    : "Suivi demandé" + (suivi != null ? " (" + suivi + ")" : "")
+                    + " : en attente de validation par le professeur de la classe");
             lignes.add(l);
         }
         InscriptionClasseService.apresCommit(() -> emailService.envoyerInscriptionParentRecue(email, nomComplet, motDePasse, lignes));
@@ -230,31 +300,50 @@ public class InscriptionParentService {
         if (demande == null) {
             throw new SchoolException(SchoolErrorCode.ENFANT_INVALIDE, "Indiquez le prénom et le nom de l'enfant.");
         }
+        if (demande.estMajeur()) {
+            return lienParentService.ajouterEnfantMajeur(parentId, demande);
+        }
         ClassesEntity classe = validerEnfant(demande, null, new HashSet<>(), nomsEnfantsExistants(parentId));
         return inscrireEnfant(parentId, demande, classe);
     }
 
     // ─── Statuts ──────────────────────────────────────────────────────────────
 
-    /** GET /parents/{id}/enfants/statuts : chaque enfant et l'état de ses inscriptions (accès + demandes). */
+    /**
+     * GET /parents/{id}/enfants/statuts : chaque enfant et l'état de ses inscriptions. Enfant mineur : accès et
+     * demandes d'accès à ses classes. Enfant majeur : classes dont le parent a demandé le suivi, avec le statut de
+     * chaque demande (APPROUVEE = suivi accepté, EN_ATTENTE, REJETEE + motif) ; lienStatut LIE dès qu'une classe est
+     * acceptée.
+     */
     @Transactional(readOnly = true)
     public List<EnfantStatut> statuts(String parentId) {
         if (parentId == null || !daoAccessorService.getRepository(UtilisateursRepository.class).hasParentRow(parentId)) {
             throw new SchoolException(SchoolErrorCode.NOT_FOUND, "Parent introuvable");
         }
         List<ElevesEntity> enfants = enfantsDe(parentId);
-        if (enfants.isEmpty()) return Collections.emptyList();
+        Map<String, List<cmr.notep.ressourcesjpa.dao.DemandeLienParentEntity>> suivisParEleve = new LinkedHashMap<>();
+        for (cmr.notep.ressourcesjpa.dao.DemandeLienParentEntity d : lienParentService.demandesSuiviDuParent(parentId)) {
+            suivisParEleve.computeIfAbsent(d.getEleveId(), k -> new ArrayList<>()).add(d);
+        }
+        if (enfants.isEmpty() && suivisParEleve.isEmpty()) return Collections.emptyList();
 
-        List<String> ids = enfants.stream().map(ElevesEntity::getId).toList();
+        List<String> ids = enfants.stream().filter(e -> !aSonPropreCompte(e)).map(ElevesEntity::getId).toList();
         Map<String, List<DemandeAccesEntity>> demandesParEnfant = new HashMap<>();
-        for (DemandeAccesEntity d : daoAccessorService.getRepository(DemandeAccesRepository.class).findByEleveAssocieIdIn(ids)) {
-            demandesParEnfant.computeIfAbsent(d.getEleveAssocieId(), k -> new ArrayList<>()).add(d);
+        DemandeAccesRepository demandeRepo = daoAccessorService.getRepository(DemandeAccesRepository.class);
+        if (!ids.isEmpty()) {
+            for (DemandeAccesEntity d : demandeRepo.findByEleveAssocieIdIn(ids)) {
+                demandesParEnfant.computeIfAbsent(d.getEleveAssocieId(), k -> new ArrayList<>()).add(d);
+            }
         }
         AccederRepository accederRepo = daoAccessorService.getRepository(AccederRepository.class);
         ClassesRepository classesRepo = daoAccessorService.getRepository(ClassesRepository.class);
 
         List<EnfantStatut> resultat = new ArrayList<>();
         for (ElevesEntity enfant : enfants) {
+            if (aSonPropreCompte(enfant)) {
+                resultat.add(statutMajeur(enfant, suivisParEleve.remove(enfant.getId()), true));
+                continue;
+            }
             List<DemandeAccesEntity> demandes = new ArrayList<>(demandesParEnfant.getOrDefault(enfant.getId(), List.of()));
             // Plus récente d'abord
             demandes.sort(Comparator.comparing(DemandeAccesEntity::getDateDemande,
@@ -288,9 +377,55 @@ public class InscriptionParentService {
                     .nom(enfant.getNom())
                     .niveau(enfant.getNiveau())
                     .classes(new ArrayList<>(parClasse.values()))
+                    .majeur(false)
+                    .lienStatut(EnfantStatut.LIEN_LIE)
                     .build());
         }
+        // Enfants majeurs pas encore rattachés : demandes de suivi en attente / refusées récemment.
+        UtilisateursRepository urepo = daoAccessorService.getRepository(UtilisateursRepository.class);
+        for (Map.Entry<String, List<cmr.notep.ressourcesjpa.dao.DemandeLienParentEntity>> e : suivisParEleve.entrySet()) {
+            urepo.findById(e.getKey()).ifPresent(eleve -> resultat.add(statutMajeur(eleve, e.getValue(), false)));
+        }
         return resultat;
+    }
+
+    private EnfantStatut statutMajeur(UtilisateursEntity eleve, List<cmr.notep.ressourcesjpa.dao.DemandeLienParentEntity> suivis,
+                                      boolean lie) {
+        List<EnfantStatut.ClasseStatut> classes = new ArrayList<>();
+        String premiereEnAttente = null;
+        String motifRefus = null;
+        for (cmr.notep.ressourcesjpa.dao.DemandeLienParentEntity d : suivis == null
+                ? List.<cmr.notep.ressourcesjpa.dao.DemandeLienParentEntity>of() : suivis) {
+            String statut = switch (d.getEtat()) {
+                case cmr.notep.ressourcesjpa.dao.DemandeLienParentEntity.ACCEPTEE -> EnfantStatut.ClasseStatut.APPROUVEE;
+                case cmr.notep.ressourcesjpa.dao.DemandeLienParentEntity.REFUSEE -> EnfantStatut.ClasseStatut.REJETEE;
+                default -> EnfantStatut.ClasseStatut.EN_ATTENTE;
+            };
+            if (EnfantStatut.ClasseStatut.EN_ATTENTE.equals(statut) && premiereEnAttente == null) premiereEnAttente = d.getId();
+            if (EnfantStatut.ClasseStatut.REJETEE.equals(statut) && motifRefus == null) motifRefus = d.getMotif();
+            classes.add(EnfantStatut.ClasseStatut.builder()
+                    .classeId(d.getClasseId()).classeNom(lienParentService.nomClasse(d.getClasseId()))
+                    .statut(statut)
+                    .motifRejet(EnfantStatut.ClasseStatut.REJETEE.equals(statut) ? d.getMotif() : null)
+                    .dateDemande(d.getDateDemande() == null ? null
+                            : Date.from(d.getDateDemande().atZone(java.time.ZoneId.systemDefault()).toInstant()))
+                    .demandeSuiviId(d.getId())
+                    .build());
+        }
+        String lienStatut = lie ? EnfantStatut.LIEN_LIE
+                : premiereEnAttente != null ? EnfantStatut.LIEN_EN_ATTENTE_VALIDATION_PROFESSEUR : EnfantStatut.LIEN_REFUSE;
+        return EnfantStatut.builder()
+                .enfantId(eleve.getId())
+                .prenom(eleve.getPrenom())
+                .nom(eleve.getNom())
+                .niveau(eleve instanceof ElevesEntity ee ? ee.getNiveau() : null)
+                .classes(classes)
+                .majeur(true)
+                .email(eleve.getEmail())
+                .lienStatut(lienStatut)
+                .demandeLienId(lie ? null : premiereEnAttente)
+                .motifRefusLien(lie || premiereEnAttente != null ? null : motifRefus)
+                .build();
     }
 
     /** Au moins un enfant accepté dans une classe (voir ParentEleveRepository#parentAEnfantValide). */

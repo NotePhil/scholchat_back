@@ -27,6 +27,17 @@ public class AccederService implements AccederApi {
     @Override
     public void demanderAcces(String utilisateurId, String classeId, String codeActivation, boolean estParent, String eleveAssocieId) {
         currentUser.requireSelfOrAdmin(utilisateurId);
+        // Demande pour un enfant : seulement un enfant rattaché ET mineur (sans compte) ; un enfant majeur
+        // demande lui-même l'accès depuis son compte.
+        if (estParent && eleveAssocieId != null && !eleveAssocieId.isBlank() && !currentUser.isAdmin()) {
+            if (!accessControl.isParentOf(utilisateurId, eleveAssocieId)) {
+                throw cmr.notep.business.security.CurrentUserService.forbidden("Cet élève n'est pas rattaché à votre compte.");
+            }
+            if (!accessControl.isMinorChildAccount(eleveAssocieId)) {
+                throw cmr.notep.business.security.CurrentUserService.forbidden(
+                        cmr.notep.business.security.AccessControlService.MSG_ENFANT_MAJEUR_LECTURE_SEULE);
+            }
+        }
         log.info("API - Demande d'accès de l'utilisateur {} à la classe {} (Parent: {}, Enfant: {})", 
                 utilisateurId, classeId, estParent, eleveAssocieId);
         accederBusiness.demanderAcces(utilisateurId, classeId, codeActivation, estParent, eleveAssocieId);
@@ -72,7 +83,10 @@ public class AccederService implements AccederApi {
     public List<Classes> obtenirClassesAccessibles(String utilisateurId) {
         accessControl.requireSelfOrParentOrAdmin(utilisateurId);
         log.info("API - Obtenir les classes accessibles par l'utilisateur {}", utilisateurId);
-        return accederBusiness.obtenirClassesAccessibles(utilisateurId);
+        java.util.Set<String> lisibles = accessControl.classesLisiblesParParent(utilisateurId);
+        List<Classes> classes = accederBusiness.obtenirClassesAccessibles(utilisateurId);
+        // Parent d'un enfant majeur : seulement les classes dont le suivi est accepté
+        return lisibles == null ? classes : classes.stream().filter(c -> lisibles.contains(c.getId())).toList();
     }
 
     @Override
@@ -86,7 +100,9 @@ public class AccederService implements AccederApi {
     public List<DemandeAccesDto> obtenirDemandesAccesDeUtilisateur(String utilisateurId) {
         accessControl.requireSelfOrParentOrAdmin(utilisateurId);
         log.info("API - Obtenir les demandes d'accès de l'utilisateur {}", utilisateurId);
-        return accederBusiness.obtenirDemandesAccesDeUtilisateur(utilisateurId);
+        java.util.Set<String> lisibles = accessControl.classesLisiblesParParent(utilisateurId);
+        List<DemandeAccesDto> demandes = accederBusiness.obtenirDemandesAccesDeUtilisateur(utilisateurId);
+        return lisibles == null ? demandes : demandes.stream().filter(d -> lisibles.contains(d.getClasseId())).toList();
     }
 
     @Override

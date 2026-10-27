@@ -105,7 +105,10 @@ public class ExerciseService implements ExerciseApi {
     public List<ExerciseResponseDTO> obtenirExercisesAccessibles(@NonNull String userId) {
         accessControl.requireSelfOrParentOrAdmin(userId);
         log.info("Récupération des exercices accessibles pour l'utilisateur: {}", userId);
+        java.util.Set<String> lisibles = accessControl.classesLisiblesParParent(userId);
+        java.util.Set<String> exercicesLisibles = lisibles == null ? null : accessControl.exercicesSourcesDesClasses(lisibles);
         return exerciseBusiness.obtenirExercisesEntityAccessibles(userId).stream()
+                .filter(e -> exercicesLisibles == null || exercicesLisibles.contains(e.getId()))
                 .map(exerciseMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }

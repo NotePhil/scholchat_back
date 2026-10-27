@@ -73,7 +73,11 @@ public class SuiviPedagogiqueBusiness {
 
     record Eleve(String id, String nom, String prenom) {}
 
-    record Lecture(int lus, Timestamp derniere) {}
+    record Lecture(int lus, Timestamp derniere, long secondes) {}
+
+    record ChapitreInfo(String id, String coursId, String titre, Integer ordre) {}
+
+    record TempsChapitre(String userId, String coursId, String chapitreId, long secondes) {}
 
     record Classe(String id, String nom, String niveau, String etat) {}
 
@@ -190,7 +194,15 @@ public class SuiviPedagogiqueBusiness {
     }
 
     public ProgressionEleveDTO progressionEleve(String eleveId, String classeId) {
+        return progressionEleve(eleveId, classeId, null);
+    }
+
+    /** @param classesAutorisees null = toutes les classes de l'élève ; sinon seulement celles-ci (parent d'un majeur). */
+    public ProgressionEleveDTO progressionEleve(String eleveId, String classeId, Set<String> classesAutorisees) {
         List<Classe> classes = classesDeLEleve(eleveId);
+        if (classesAutorisees != null) {
+            classes = classes.stream().filter(c -> classesAutorisees.contains(c.id())).toList();
+        }
         if (classeId != null) {
             classes = classes.stream().filter(c -> c.id().equals(classeId)).toList();
             if (classes.isEmpty()) {
@@ -226,6 +238,7 @@ public class SuiviPedagogiqueBusiness {
             List<Exo> duCours = exos.stream().filter(e -> c.getKey().equals(e.coursId())).toList();
             ProgressionEleveDTO.Cours ligne = ligneProgression(c.getKey(), c.getValue(), nbLus, total, duCours, parts,
                     l == null ? null : l.derniere());
+            ligne.setTempsLectureSecondes(l == null ? 0L : l.secondes());
             lignes.add(ligne);
         }
         for (ProgressionEleveDTO.Cours ligne : lignes) {
@@ -306,6 +319,8 @@ public class SuiviPedagogiqueBusiness {
         LinkedHashMap<String, String> cours = coursDeLaClasse(classeId, cps, exos);
         Map<String, Integer> totalChapitres = chapitresTotal(cours.keySet());
         Map<String, Map<String, Lecture>> lus = chapitresLus(eleveIds, cours.keySet());
+        Map<String, List<ChapitreInfo>> chapitres = chapitresDesCours(cours.keySet());
+        List<TempsChapitre> temps = tempsDeLecture(eleveIds, cours.keySet());
         // participations des élèves de la classe seulement, indexées par exercice puis par élève
         Map<String, Map<String, Part>> parts = new HashMap<>();
         for (Part p : participations(ids(exos), eleveIds)) {
@@ -326,10 +341,29 @@ public class SuiviPedagogiqueBusiness {
                 }
                 progression = round1(somme / effectif);
             }
+            // Temps de lecture : moyenne sur les élèves ayant un temps mesuré (> 0), par cours et par chapitre.
+            Map<String, Long> parEleve = new HashMap<>();
+            Map<String, List<Long>> parChapitre = new HashMap<>();
+            for (TempsChapitre t : temps) {
+                if (!c.getKey().equals(t.coursId())) continue;
+                parEleve.merge(t.userId(), t.secondes(), Long::sum);
+                parChapitre.computeIfAbsent(t.chapitreId(), k -> new ArrayList<>()).add(t.secondes());
+            }
+            List<StatistiquesClasseDTO.ChapitreTemps> lignesChapitres = new ArrayList<>();
+            for (ChapitreInfo ch : chapitres.getOrDefault(c.getKey(), List.of())) {
+                List<Long> v = parChapitre.getOrDefault(ch.id(), List.of());
+                lignesChapitres.add(StatistiquesClasseDTO.ChapitreTemps.builder()
+                        .chapitreId(ch.id()).titre(ch.titre()).ordre(ch.ordre())
+                        .tempsMoyenSecondes(moyenneSecondes(v)).nbLecteurs(v.size())
+                        .build());
+            }
             List<Exo> duCours = exos.stream().filter(e -> c.getKey().equals(e.coursId())).toList();
             lignesCours.add(StatistiquesClasseDTO.Cours.builder()
                     .coursId(c.getKey()).titre(c.getValue()).chapitresTotal(total)
                     .progressionMoyenne(progression)
+                    .tempsMoyenSecondes(moyenneSecondes(parEleve.values()))
+                    .nbLecteurs(parEleve.size())
+                    .chapitres(lignesChapitres)
                     .exercices(statsExercices(duCours, parts, effectif))
                     .build());
         }
@@ -360,6 +394,7 @@ public class SuiviPedagogiqueBusiness {
                     .devoirsRendus(devoirsRendus).devoirsTotal(devoirsTotal)
                     .moyenne(round2(moyenne(notes)))
                     .enRetard(enRetard)
+                    .tempsLectureSecondes(lecture.values().stream().mapToLong(Lecture::secondes).sum())
                     .build());
         }
 
@@ -449,11 +484,12 @@ public class SuiviPedagogiqueBusiness {
 
     /** Chapitres lus par élève et par cours (les deux tables de progression, sans doublon), avec la dernière lecture. */
     private static final String SQL_CHAPITRES_LUS = """
-            SELECT x.uid, ch.cours_id, COUNT(DISTINCT x.chapitre_id), MAX(x.dt)
-            FROM (SELECT pc.utilisateur_id AS uid, pc.chapitre_id AS chapitre_id, pc.date_completion AS dt
+            SELECT x.uid, ch.cours_id, COUNT(DISTINCT x.chapitre_id), MAX(x.dt), COALESCE(SUM(x.duree), 0)
+            FROM (SELECT pc.utilisateur_id AS uid, pc.chapitre_id AS chapitre_id, pc.date_completion AS dt,
+                         pc.duree_secondes AS duree
                   FROM ressources.progression_chapitre pc WHERE pc.utilisateur_id IN (:uids)
                   UNION ALL
-                  SELECT cpr.user_id, cpr.chapitre_id, cpr.completed_at
+                  SELECT cpr.user_id, cpr.chapitre_id, cpr.completed_at, 0
                   FROM ressources.chapitre_progress cpr WHERE cpr.completed = TRUE AND cpr.user_id IN (:uids)) x
             JOIN ressources.chapitres ch ON ch.id = x.chapitre_id
             WHERE ch.cours_id IN (:coursIds)
@@ -466,9 +502,37 @@ public class SuiviPedagogiqueBusiness {
         jdbc.query(SQL_CHAPITRES_LUS, new MapSqlParameterSource("uids", userIds).addValue("coursIds", coursIds),
                 rs -> {
                     out.computeIfAbsent(rs.getString(1), k -> new HashMap<>())
-                            .put(rs.getString(2), new Lecture(rs.getInt(3), rs.getTimestamp(4)));
+                            .put(rs.getString(2), new Lecture(rs.getInt(3), rs.getTimestamp(4), rs.getLong(5)));
                 });
         return out;
+    }
+
+    /** Chapitres des cours, dans l'ordre : coursId -> chapitres. */
+    Map<String, List<ChapitreInfo>> chapitresDesCours(Collection<String> coursIds) {
+        if (coursIds.isEmpty()) return Map.of();
+        Map<String, List<ChapitreInfo>> out = new HashMap<>();
+        jdbc.query("SELECT id, cours_id, titre, ordre FROM ressources.chapitres WHERE cours_id IN (:ids) ORDER BY cours_id, ordre",
+                new MapSqlParameterSource("ids", coursIds),
+                rs -> {
+                    Object ordre = rs.getObject(4);
+                    ChapitreInfo ch = new ChapitreInfo(rs.getString(1), rs.getString(2), rs.getString(3),
+                            ordre == null ? null : ((Number) ordre).intValue());
+                    out.computeIfAbsent(ch.coursId(), k -> new ArrayList<>()).add(ch);
+                });
+        return out;
+    }
+
+    /** Temps de lecture mesurés (> 0) par élève et par chapitre (progression_chapitre.duree_secondes). */
+    List<TempsChapitre> tempsDeLecture(Collection<String> userIds, Collection<String> coursIds) {
+        if (userIds.isEmpty() || coursIds.isEmpty()) return List.of();
+        return jdbc.query("""
+                        SELECT pc.utilisateur_id, ch.cours_id, pc.chapitre_id, pc.duree_secondes
+                        FROM ressources.progression_chapitre pc
+                        JOIN ressources.chapitres ch ON ch.id = pc.chapitre_id
+                        WHERE pc.utilisateur_id IN (:uids) AND ch.cours_id IN (:coursIds) AND pc.duree_secondes > 0
+                        """,
+                new MapSqlParameterSource("uids", userIds).addValue("coursIds", coursIds),
+                (rs, i) -> new TempsChapitre(rs.getString(1), rs.getString(2), rs.getString(3), rs.getLong(4)));
     }
 
     List<Part> participations(Collection<String> epIds, Collection<String> userIds) {
@@ -601,6 +665,11 @@ public class SuiviPedagogiqueBusiness {
 
     private static Double moyenne(List<Double> valeurs) {
         return valeurs.isEmpty() ? null : valeurs.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+    }
+
+    private static Long moyenneSecondes(Collection<Long> valeurs) {
+        return valeurs.isEmpty() ? null
+                : Math.round(valeurs.stream().mapToLong(Long::longValue).average().orElse(0));
     }
 
     private static Double round2(Double v) {

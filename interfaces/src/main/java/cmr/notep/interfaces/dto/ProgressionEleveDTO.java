@@ -55,6 +55,8 @@ public class ProgressionEleveDTO {
         private int exercicesTotal;
         private Double moyenne;
         private LocalDateTime derniereActivite;
+        /** Temps de lecture cumulé (secondes) sur les chapitres terminés du cours. */
+        private long tempsLectureSecondes;
     }
 
     @Data

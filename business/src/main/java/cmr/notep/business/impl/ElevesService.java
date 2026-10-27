@@ -61,7 +61,7 @@ public class ElevesService implements ElevesApi {
 
     @Override
     public Eleves modifierElevePartiellement(@NonNull String idEleve, @NonNull Eleves partialEleve) {
-        accessControl.requireSelfOrParentOrAdmin(idEleve);
+        accessControl.requireSelfOrMinorChildOrAdmin(idEleve); // parent d'un enfant majeur : lecture seule
         if (!currentUser.isAdmin()) {
             cmr.notep.interfaces.modeles.Utilisateurs existant = elevesBusiness.avoirEleve(idEleve);
             if (partialEleve.getEtat() != null && partialEleve.getEtat() != existant.getEtat()) {

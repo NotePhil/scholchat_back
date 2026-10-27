@@ -76,4 +76,15 @@ public interface ParentsApi {
     cmr.notep.interfaces.modeles.EnfantInscription inscrireEnfant(
             @PathVariable String parentId,
             @RequestBody cmr.notep.interfaces.modeles.EnfantInscription enfant);
+
+    /**
+     * Ajoute un enfant MAJEUR ({email, prenom?, nom?, codeClasse?}) : demande de suivi à un compte élève existant,
+     * ou compte élève créé (en attente de validation) avec le code de classe si l'e-mail n'a pas de compte.
+     */
+    @PostMapping(path = "/{parentId}/enfants/majeur", produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    cmr.notep.interfaces.modeles.EnfantInscription ajouterEnfantMajeur(
+            @PathVariable String parentId,
+            @RequestBody cmr.notep.interfaces.modeles.EnfantInscription enfant);
 }

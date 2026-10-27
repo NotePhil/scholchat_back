@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.dozer.Mapping;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -69,4 +70,17 @@ public class MessagesEntity {
     @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @OrderBy("ordre ASC")
     private List<MessageMediaEntity> piecesJointesEntities = new ArrayList<>();
+
+    /** Conversation (chat) du message. */
+    @Column(name = "conversation_id", length = 36)
+    private String conversationId;
+
+    /** Message auquel celui-ci répond (ON DELETE SET NULL). Nommé pour ne pas être mappé par Dozer. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reply_to_id")
+    private MessagesEntity replyToEntity;
+
+    /** Date d'envoi typée (UTC) : tri et pagination des conversations. */
+    @Column(name = "date_envoi")
+    private LocalDateTime dateEnvoi;
 }

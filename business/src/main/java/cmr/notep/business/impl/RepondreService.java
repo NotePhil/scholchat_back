@@ -30,9 +30,7 @@ public class RepondreService implements RepondreApi {
 
     @Override
     public RepondreResponseDTO repondreQuestion(RepondreRequestDTO repondreRequestDTO) {
-        if (!accessControl.canActForMinorChild(repondreRequestDTO.getUtilisateurId())) {
-            currentUser.requireSelfOrAdmin(repondreRequestDTO.getUtilisateurId());
-        }
+        accessControl.requireSelfOrMinorChild(repondreRequestDTO.getUtilisateurId());
         log.info("Enregistrement d'une nouvelle réponse");
         Repondre repondre = repondreMapper.toModel(repondreRequestDTO);
         Repondre createdRepondre = repondreBusiness.repondreQuestion(repondre);
@@ -48,6 +46,11 @@ public class RepondreService implements RepondreApi {
             boolean notation = repondreRequestDTO.getNote() != null || repondreRequestDTO.getAppreciation() != null;
             boolean pourSoi = currentUser.isSelf(repondreRequestDTO.getUtilisateurId())
                     || accessControl.canActForMinorChild(repondreRequestDTO.getUtilisateurId());
+            String me = currentUser.requireUserId();
+            if (!notation && !pourSoi && accessControl.isParentOf(me, repondreRequestDTO.getUtilisateurId())) {
+                throw cmr.notep.business.security.CurrentUserService.forbidden(
+                        cmr.notep.business.security.AccessControlService.MSG_ENFANT_MAJEUR_LECTURE_SEULE);
+            }
             if (notation || !pourSoi) {
                 // corriger (note / appréciation) ou modifier la réponse d'un autre : professeur responsable uniquement
                 accessControl.requireTeacherOfQuestion(repondreRequestDTO.getQuestionId());
@@ -65,8 +68,12 @@ public class RepondreService implements RepondreApi {
     public List<RepondreResponseDTO> obtenirReponsesParUtilisateur(String utilisateurId) {
         accessControl.requireSelfParentOrTeacher(utilisateurId);
         log.info("Récupération des réponses de l'utilisateur: {}", utilisateurId);
+        java.util.Set<String> lisibles = accessControl.classesLisiblesParParent(utilisateurId);
+        java.util.Set<String> exercicesLisibles = lisibles == null ? null : accessControl.exercicesSourcesDesClasses(lisibles);
         return repondreBusiness.obtenirReponsesParUtilisateur(utilisateurId)
                 .stream()
+                .filter(r -> exercicesLisibles == null
+                        || exercicesLisibles.contains(accessControl.exerciceDeQuestion(r.getQuestionId())))
                 .map(r -> repondreMapper.toResponseDTO(
                         dozerMapperBean.map(r, cmr.notep.ressourcesjpa.dao.RepondreEntity.class)
                 ))
@@ -101,6 +108,11 @@ public class RepondreService implements RepondreApi {
     @Override
     public RepondreResponseDTO obtenirReponse(String utilisateurId, String questionId) {
         if (!currentUser.isSelf(utilisateurId)) { if (!currentUser.isAdmin() && !accessControl.isParentOf(currentUser.requireUserId(), utilisateurId)) accessControl.requireTeacherOfQuestion(questionId); }
+        java.util.Set<String> lisibles = accessControl.classesLisiblesParParent(utilisateurId);
+        if (lisibles != null && !accessControl.exercicesSourcesDesClasses(lisibles).contains(accessControl.exerciceDeQuestion(questionId))) {
+            throw cmr.notep.business.security.CurrentUserService.forbidden(
+                    cmr.notep.business.security.AccessControlService.MSG_CLASSE_NON_SUIVIE);
+        }
         log.info("Récupération de la réponse de l'utilisateur {} à la question {}", utilisateurId, questionId);
         Repondre repondre = repondreBusiness.obtenirReponse(utilisateurId, questionId);
         return repondreMapper.toResponseDTO(

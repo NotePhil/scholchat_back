@@ -27,6 +27,9 @@ import static cmr.notep.business.config.BusinessConfig.dozerMapperBean;
 @Component
 @Slf4j
 public class ParentAccessBusiness {
+    @org.springframework.beans.factory.annotation.Autowired
+    private cmr.notep.business.services.CapaciteClasseService capaciteClasseService;
+
 
     private final UserSubtypeService userSubtypeService;
     private final DaoAccessorService daoAccessorService;
@@ -113,6 +116,9 @@ public class ParentAccessBusiness {
             }
             // Use the user entity directly - create demande with user ID
         }
+
+        // Restriction « Élèves max » de l'offre : la classe complète n'accepte plus de demande pour un enfant
+        capaciteClasseService.verifierPlacePourDemande(classe);
 
         // If elevesIds are provided (parent selected their children), use majeur flow regardless
         if (request.getElevesIds() != null && !request.getElevesIds().isEmpty()) {

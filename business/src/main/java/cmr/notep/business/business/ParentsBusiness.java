@@ -109,7 +109,9 @@ public class ParentsBusiness {
         }
 
         // Save the updated entity
-        ParentsEntity updatedEntity = repository.save(dozerMapperBean.map(existingParent, ParentsEntity.class));
+        // Report sur l'entité gérée : sauvegarder une copie Dozer viderait ses collections (orphanRemoval).
+        UtilisateursBusiness.copierChampsSimples(existingParent, existingEntity, false);
+        ParentsEntity updatedEntity = repository.save(existingEntity);
         return dozerMapperBean.map(updatedEntity, Parents.class);
     }
 

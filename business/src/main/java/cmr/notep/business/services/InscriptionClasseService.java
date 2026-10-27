@@ -62,6 +62,9 @@ public class InscriptionClasseService {
     @org.springframework.context.annotation.Lazy
     private NotificationService notificationService;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private CapaciteClasseService capaciteClasseService;
+
     public InscriptionClasseService(DaoAccessorService daoAccessorService, PasswordEncoder passwordEncoder,
                                     InscriptionClasseEmailService emailService) {
         this.daoAccessorService = daoAccessorService;
@@ -96,6 +99,11 @@ public class InscriptionClasseService {
             throw new SchoolException(SchoolErrorCode.CLASSE_RESERVEE_MINEURS,
                     "Cette classe est réservée aux élèves mineurs : l'inscription se fait par un parent, "
                             + "qui crée un compte parent avec ce code puis ajoute son enfant.");
+        }
+        // Restriction « Élèves max » de l'offre : refus dès la saisie du code (aperçu, inscription), avant
+        // toute création de compte
+        if (capaciteClasseService != null) {
+            capaciteClasseService.verifierPlacePourDemande(classe);
         }
         return classe;
     }

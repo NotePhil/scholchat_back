@@ -34,7 +34,7 @@ public class CoursProgrammerService implements CoursProgrammerApi {
     public List<CoursProgrammer> obtenirProgrammationAccessible(@NonNull String userId) {
         accessControl.requireSelfOrParentOrAdmin(userId);
         log.info("Récupération de la programmation accessible pour l'utilisateur: {}", userId);
-        return coursProgrammerBusiness.obtenirProgrammationAccessible(userId);
+        return filtrerPourParent(userId, coursProgrammerBusiness.obtenirProgrammationAccessible(userId));
     }
     @Override
     public CoursProgrammer programmerCours(@NonNull CoursProgrammer coursProgrammer) {
@@ -142,7 +142,8 @@ public class CoursProgrammerService implements CoursProgrammerApi {
         accessControl.requireSelfOrParentOrAdmin(participantId);
         log.info("Fetching programming for participant: {}", participantId);
         try {
-            List<CoursProgrammer> results = coursProgrammerBusiness.obtenirProgrammationParParticipant(participantId);
+            List<CoursProgrammer> results = filtrerPourParent(participantId,
+                    coursProgrammerBusiness.obtenirProgrammationParParticipant(participantId));
             log.info("Found {} programming entries for participant: {}", results.size(), participantId);
             return results;
         } catch (Exception e) {
@@ -150,8 +151,11 @@ public class CoursProgrammerService implements CoursProgrammerApi {
             throw e;
         }
     }
+
+    /** Parent d'un enfant majeur : seulement les programmations des classes dont le suivi est accepté. */
+    private List<CoursProgrammer> filtrerPourParent(String eleveId, List<CoursProgrammer> programmations) {
+        java.util.Set<String> lisibles = accessControl.classesLisiblesParParent(eleveId);
+        if (lisibles == null) return programmations;
+        return programmations.stream().filter(cp -> accessControl.programmationDansClasses(cp.getId(), lisibles)).toList();
+    }
 }
-
-
-
-

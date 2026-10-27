@@ -27,4 +27,15 @@ public interface ExerciseProgrammerRepository extends JpaRepository<ExerciseProg
     
     @Query("SELECT ep FROM ExerciseProgrammerEntity ep WHERE ep.dateExoPrevue < :currentDate AND ep.etat = 'PUBLIE'")
     List<ExerciseProgrammerEntity> findExercisesToStart(@Param("currentDate") Date currentDate);
+
+    /** Exercices programmés diffusés dans l'une des classes. */
+    @Query(value = "SELECT DISTINCT epc.exercise_programmer_id FROM ressources.exercise_programmer_classes epc "
+            + "WHERE epc.classe_id IN (:classeIds)", nativeQuery = true)
+    List<String> findIdsDansClasses(@Param("classeIds") java.util.Collection<String> classeIds);
+
+    /** Exercices (sources) programmés dans l'une des classes. */
+    @Query(value = "SELECT DISTINCT ep.source_exercise_id FROM ressources.exercises_programmer ep "
+            + "JOIN ressources.exercise_programmer_classes epc ON epc.exercise_programmer_id = ep.id "
+            + "WHERE epc.classe_id IN (:classeIds)", nativeQuery = true)
+    List<String> findSourceExerciseIdsDansClasses(@Param("classeIds") java.util.Collection<String> classeIds);
 }
