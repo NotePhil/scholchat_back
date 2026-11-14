@@ -198,9 +198,21 @@ public class MessagesBusiness {
         UtilisateursEntity moi = appelant();
         List<ClassesEntity> classes = estAdmin(moi)
                 ? daoAccessorService.getRepository(ClassesRepository.class).findAll()
-                : daoAccessorService.getRepository(ClassesRepository.class).findAllById(messages().findLinkedClasseIds(moi.getId()));
+                // classes de l'appelant et celles de ses enfants (parent d'un élève majeur suivi compris)
+                : daoAccessorService.getRepository(ClassesRepository.class).findAllById(messages().findEffectiveClasseIds(moi.getId()));
+        List<String> enfants = daoAccessorService.getRepository(cmr.notep.ressourcesjpa.repository.ParentEleveRepository.class)
+                .findEleveIdsByParentId(moi.getId());
         return classes.stream()
-                .map(c -> new MessageClasseDto(c.getId(), c.getNom(), c.getNiveau()))
+                .map(c -> {
+                    MessageClasseDto dto = new MessageClasseDto(c.getId(), c.getNom(), c.getNiveau());
+                    if (!enfants.isEmpty()) {
+                        dto.setEleveIds(daoAccessorService.getRepository(AccederRepository.class).findByClasseId(c.getId()).stream()
+                                .map(AccederEntity::getUtilisateur).filter(Objects::nonNull)
+                                .map(UtilisateursEntity::getId).filter(enfants::contains)
+                                .distinct().collect(Collectors.toList()));
+                    }
+                    return dto;
+                })
                 .sorted(Comparator.comparing(c -> Objects.toString(c.getNom(), "").toLowerCase()))
                 .collect(Collectors.toList());
     }

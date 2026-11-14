@@ -9,6 +9,8 @@ import cmr.notep.interfaces.modeles.Eleves;
 import cmr.notep.interfaces.modeles.Parents;
 import cmr.notep.ressourcesjpa.commun.DaoAccessorService;
 import cmr.notep.ressourcesjpa.dao.ElevesEntity;
+import cmr.notep.ressourcesjpa.dao.DemandeLienParentEntity;
+import cmr.notep.ressourcesjpa.repository.DemandeLienParentRepository;
 import cmr.notep.ressourcesjpa.dao.ParentsEntity;
 import cmr.notep.ressourcesjpa.repository.ElevesRepository;
 import cmr.notep.ressourcesjpa.repository.ParentEleveRepository;
@@ -169,8 +171,28 @@ public class ParentsBusiness {
         daoAccessorService.getRepository(ParentEleveRepository.class).deleteLien(parentId, eleveId);
     }
 
+    /** Id du suivi parental accepté (élève majeur) de ce parent pour cet élève dans cette classe, sinon null. */
+    private String suiviId(String parentId, String eleveId, String classeId) {
+        return daoAccessorService.getRepository(DemandeLienParentRepository.class)
+                .findByParentIdAndEleveIdAndEtat(parentId, eleveId, DemandeLienParentEntity.ACCEPTEE).stream()
+                .filter(d -> classeId != null && classeId.equals(d.getClasseId()))
+                .map(DemandeLienParentEntity::getId)
+                .findFirst().orElse(null);
+    }
+
     public List<ParentSummaryDto> avoirParentsPourProfesseur(String professeurId) {
-        return daoAccessorService.getRepository(ParentsRepository.class)
+        ParentsRepository parentsRepository = daoAccessorService.getRepository(ParentsRepository.class);
+        // Enfants de chaque parent dans les classes du professeur (à quel élève le parent est rattaché).
+        java.util.Map<String, List<ParentSummaryDto.Enfant>> enfantsParParent = new java.util.HashMap<>();
+        for (Object[] row : parentsRepository.findEnfantsParProfesseurId(professeurId)) {
+            enfantsParParent.computeIfAbsent((String) row[0], k -> new java.util.ArrayList<>())
+                    .add(ParentSummaryDto.Enfant.builder()
+                            .id((String) row[1]).nom((String) row[2]).prenom((String) row[3])
+                            .classeId((String) row[4]).classeNom((String) row[5])
+                            .suiviId(suiviId((String) row[0], (String) row[1], (String) row[4]))
+                            .build());
+        }
+        return parentsRepository
                 .findParentsByProfesseurId(professeurId)
                 .stream()
                 .map(p -> ParentSummaryDto.builder()
@@ -183,6 +205,7 @@ public class ParentsBusiness {
                         .etat(p.getEtat())
                         .creationDate(p.getCreationDate())
                         .admin(p.getAdmin() != null && p.getAdmin())
+                        .enfants(enfantsParParent.getOrDefault(p.getId(), new java.util.ArrayList<>()))
                         .build())
                 .collect(Collectors.toList());
     }

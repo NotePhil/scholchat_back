@@ -345,6 +345,14 @@ public class ContratBusiness {
     // ---------------------------------------------------------------------
 
     public void verifierQuotaEtablissement(String etablissementId) {
+        verifierQuotaEtablissement(etablissementId, false);
+    }
+
+    /**
+     * @param inclureEnAttente true à la création d'une classe : les classes en attente d'approbation
+     *                         réservent déjà une place ; false pour l'activation d'une classe existante.
+     */
+    public void verifierQuotaEtablissement(String etablissementId, boolean inclureEnAttente) {
         ContratEntity contrat = trouverDernierContrat(null, etablissementId);
         if (contrat == null || contrat.getStatut() != StatutContrat.ACTIF) {
             // Pas de forfait actif associe : pas de restriction imposee par ce module.
@@ -355,12 +363,16 @@ public class ContratBusiness {
             return; // offre sans limite explicite
         }
         int max = offre.getNombreClassesInclues() + (offre.getClassesBonus() != null ? offre.getClassesBonus() : 0);
-        long actuelles = daoAccessorService.getRepository(ClassesRepository.class)
-                .countByEtablissementIdAndEtat(etablissementId, EtatClasse.ACTIF);
+        ClassesRepository classesRepository = daoAccessorService.getRepository(ClassesRepository.class);
+        long actuelles = inclureEnAttente
+                ? classesRepository.countByEtablissementIdAndEtatIn(etablissementId,
+                        java.util.List.of(EtatClasse.ACTIF, EtatClasse.EN_ATTENTE_APPROBATION))
+                : classesRepository.countByEtablissementIdAndEtat(etablissementId, EtatClasse.ACTIF);
         if (actuelles >= max) {
             throw new SchoolException(SchoolErrorCode.QUOTA_CLASSES_ATTEINT,
                     "Le forfait de votre établissement autorise au maximum " + max +
-                            " classe(s) actives. Renouvelez ou changez d'offre pour en créer davantage.");
+                            " classe(s)" + (inclureEnAttente ? " (actives ou en attente d'approbation)" : " actives") +
+                            ". Renouvelez ou changez d'offre pour en " + (inclureEnAttente ? "créer" : "activer") + " davantage.");
         }
     }
 

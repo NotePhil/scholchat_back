@@ -42,6 +42,18 @@ public interface ConversationRepository extends JpaRepository<ConversationEntity
             "JOIN ressources.message_classes mc ON mc.message_id = f.id GROUP BY f.conversation_id", nativeQuery = true)
     List<Object[]> countClassesParConversation(@Param("cids") java.util.Collection<String> conversationIds);
 
+    /**
+     * Names of the classes the FIRST message of each conversation was sent to: rows [conversation_id, nom, classe_id]
+     * (one row per class), only conversations started by a class message.
+     */
+    @Query(value = "SELECT f.conversation_id, c.nom, c.id FROM (" +
+            "SELECT x.conversation_id, x.id FROM (" +
+            "SELECT m.conversation_id, m.id, ROW_NUMBER() OVER (PARTITION BY m.conversation_id ORDER BY m.date_envoi ASC, m.id ASC) AS rn " +
+            "FROM ressources.messages m WHERE m.conversation_id IN (:cids)) x WHERE x.rn = 1) f " +
+            "JOIN ressources.message_classes mc ON mc.message_id = f.id " +
+            "JOIN ressources.classes c ON c.id = mc.classe_id ORDER BY c.nom", nativeQuery = true)
+    List<Object[]> findNomsClassesParConversation(@Param("cids") java.util.Collection<String> conversationIds);
+
     /** Race-safe creation of a DIRECT conversation (unique direct_key). */
     @Modifying
     @Query(value = "INSERT INTO ressources.conversations (id, type, created_by, created_at, direct_key, participants_key) " +

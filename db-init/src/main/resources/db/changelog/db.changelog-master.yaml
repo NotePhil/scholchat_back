@@ -220,10 +220,18 @@ databaseChangeLog:
         - sqlFile:
             path: sql/migration-demandes-suivi-professeur.sql
             relativeToChangelogFile: false
+            splitStatements: false
   - changeSet:
       id: 32-conversations-favoris-corbeille
       author: db-init
       changes:
         - sqlFile:
             path: sql/migration-conversations-favoris-corbeille.sql
+            relativeToChangelogFile: false
+  - changeSet:
+      id: 33-classes-code-etablissement-utilise
+      author: db-init
+      changes:
+        - sqlFile:
+            path: sql/migration-classes-code-etablissement-utilise.sql
             relativeToChangelogFile: false

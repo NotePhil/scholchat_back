@@ -100,8 +100,11 @@ public class ClassesBusiness {
                 }
             }
             
-            // Verifie le quota de classes actives du forfait de l'etablissement avant de rattacher la classe
-            contratBusiness.verifierQuotaEtablissement(etablissement.getId());
+            classesEntity.setCodeEtablissementUtilise(codeEtablissementFourni(etablissement, classeDto.getCodeUnique()));
+
+            // Verifie le quota de classes du forfait de l'etablissement avant de rattacher la classe
+            // (les classes en attente d'approbation comptent : elles occuperont une place une fois approuvees)
+            contratBusiness.verifierQuotaEtablissement(etablissement.getId(), true);
 
             classesEntity.setEtablissement(etablissement);
             // Only professors need approval, others get ACTIF directly
@@ -241,14 +244,17 @@ public class ClassesBusiness {
             if (etablissement.isOptionTokenGeneral()) {
                 validateEtablissementToken(etablissement, classes.getEtablissementToken());
             }
-            
+            contratBusiness.verifierQuotaEtablissement(etablissement.getId(), true);
+
             classesEntity.setEtablissement(etablissement);
+            classesEntity.setCodeEtablissementUtilise(codeEtablissementFourni(etablissement, classes.getEtablissementToken()));
             classesEntity.setPaymentRequired(false);
         } else {
             // Les clients envoient parfois "etablissement": {"id": null} pour "aucun établissement" :
             // Dozer en fait une EtablissementEntity vide (transiente) qui faisait échouer la sauvegarde
             // ("unsaved transient instance ClassesEntity.etablissement"). Pas d'id = pas d'établissement.
             classesEntity.setEtablissement(null);
+            classesEntity.setCodeEtablissementUtilise(null);
             classesEntity.setPaymentRequired(true);
         }
 
@@ -358,6 +364,9 @@ public class ClassesBusiness {
             classeExistante.setNiveau(classeModifiee.getNiveau());
         }
         if (classeModifiee.getEtat() != null) {
+            if (classeModifiee.getEtat() == EtatClasse.ACTIF) {
+                verifierQuotaAvantActivation(classeExistante);
+            }
             classeExistante.setEtat(classeModifiee.getEtat());
         }
         if (classeModifiee.getDateCreation() != null) {
@@ -509,6 +518,7 @@ public class ClassesBusiness {
                     "Seules les classes en attente peuvent être approuvées");
         }
 
+        verifierQuotaAvantActivation(classe);
         classe.setEtat(EtatClasse.ACTIF);
         ClassesEntity saved = classesRepository.save(classe);
 
@@ -669,6 +679,29 @@ public class ClassesBusiness {
         return String.format("%06d", new java.util.Random().nextInt(999999));
     }
 
+    /**
+     * Passage d'une classe à ACTIF (approbation, réactivation) : le forfait de l'établissement doit
+     * encore avoir une place libre parmi ses classes actives.
+     */
+    private void verifierQuotaAvantActivation(ClassesEntity classe) {
+        if (classe.getEtablissement() != null && classe.getEtat() != EtatClasse.ACTIF) {
+            contratBusiness.verifierQuotaEtablissement(classe.getEtablissement().getId(), false);
+        }
+    }
+
+    /**
+     * Trace à conserver sur la classe : le code d'établissement fourni à la création s'il est bien celui
+     * de l'établissement, sinon "" (classe créée sans code — l'option « Token général » était désactivée).
+     * null reste réservé aux classes créées avant cette trace (information inconnue).
+     */
+    private String codeEtablissementFourni(EtablissementEntity etablissement, String codeFourni) {
+        if (codeFourni == null || codeFourni.trim().isEmpty() || etablissement.getCodeUnique() == null) {
+            return "";
+        }
+        String code = codeFourni.trim();
+        return etablissement.getCodeUnique().equals(code) ? code : "";
+    }
+
     private void validateEtablissementToken(EtablissementEntity etablissement, String providedToken) {
         if (providedToken == null || providedToken.trim().isEmpty()) {
             throw new SchoolException(SchoolErrorCode.INVALID_INPUT, 
@@ -757,7 +790,8 @@ public class ClassesBusiness {
                 throw new SchoolException(SchoolErrorCode.INVALID_STATE, 
                     "Cette classe n'est pas en attente d'approbation");
             }
-            
+
+            verifierQuotaAvantActivation(classe);
             classe.setEtat(EtatClasse.ACTIF);
             daoAccessorService.getRepository(ClassesRepository.class).save(classe);
 

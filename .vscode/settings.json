@@ -9,5 +9,7 @@
     "**/META-INF/maven/**",
     "**/scholchat_mobile/**",
     "**/scholchat_front/**"
-  ]
+  ],
+  "java.configuration.updateBuildConfiguration": "interactive",
+  "java.compile.nullAnalysis.mode": "automatic"
 }

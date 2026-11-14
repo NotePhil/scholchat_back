@@ -43,6 +43,16 @@ public class QuestionReponseBusiness {
                 .findById(exerciseId)
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Exercice introuvable"));
 
+        // Des copies ont déjà été rendues : une nouvelle question ne faisait pas partie de ce que les élèves
+        // ont traité et fausserait les corrections. On peut encore corriger une réponse ou retirer une question.
+        if (!daoAccessorService.getRepository(cmr.notep.ressourcesjpa.repository.RepondreRepository.class)
+                .findByExerciseId(exerciseId).isEmpty()) {
+            throw new SchoolException(SchoolErrorCode.INVALID_STATE,
+                    "Des élèves ont déjà répondu à cet exercice : vous ne pouvez plus y ajouter de question. "
+                            + "Vous pouvez modifier la réponse attendue ou retirer une question ; pour de nouvelles "
+                            + "questions, créez un nouvel exercice.");
+        }
+
         QuestionReponseEntity entity = new QuestionReponseEntity();
         entity.setId(UUID.randomUUID().toString());
         entity.setIntitule(question.getIntitule());
@@ -206,6 +216,9 @@ public class QuestionReponseBusiness {
             existingEntity.setPoints(question.getPoints());
         }
         if (question.getChoixReponses() != null) {
+            // Les choix sont recréés (nouveaux ids) : les réponses déjà rendues qui portent l'id d'un
+            // ancien choix sont d'abord converties en son libellé, sinon elles deviendraient illisibles.
+            convertirReponsesIdEnTexte(existingEntity);
             existingEntity.getChoixReponses().clear();
             for (cmr.notep.interfaces.dto.ChoixReponseDTO choixDTO : question.getChoixReponses()) {
                 ChoixReponseEntity choix = new ChoixReponseEntity();
@@ -233,7 +246,71 @@ public class QuestionReponseBusiness {
         }
 
         QuestionReponseEntity updatedEntity = daoAccessorService.getRepository(QuestionReponseRepository.class).save(existingEntity);
+        recorrigerReponses(updatedEntity);
         return embedPresignedUrls(mapToQuestionReponse(updatedEntity));
+    }
+
+    private void convertirReponsesIdEnTexte(QuestionReponseEntity question) {
+        try {
+            if (question.getChoixReponses() == null || question.getChoixReponses().isEmpty()) return;
+            cmr.notep.ressourcesjpa.repository.RepondreRepository repo =
+                    daoAccessorService.getRepository(cmr.notep.ressourcesjpa.repository.RepondreRepository.class);
+            for (cmr.notep.ressourcesjpa.dao.RepondreEntity r : repo.findByQuestionId(question.getId())) {
+                for (ChoixReponseEntity c : question.getChoixReponses()) {
+                    if (c.getId() != null && c.getId().equals(r.getReponseUtilisateur()) && c.getTexte() != null) {
+                        r.setReponseUtilisateur(c.getTexte());
+                        repo.save(r);
+                        break;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Conversion des réponses de la question {} impossible : {}", question.getId(), e.getMessage());
+        }
+    }
+
+    /**
+     * Question à réponse fermée (QCM, Vrai/Faux) modifiée après des copies rendues : les réponses déjà
+     * corrigées automatiquement sont recorrigées avec le nouveau corrigé. Une réponse portant une
+     * appréciation du professeur (correction manuelle) n'est pas touchée.
+     */
+    private void recorrigerReponses(QuestionReponseEntity question) {
+        try {
+            if (question.getTypeQuestion() != cmr.notep.modele.TypeQuestion.QCM
+                    && question.getTypeQuestion() != cmr.notep.modele.TypeQuestion.VRAI_FAUX) return;
+            Set<String> attendues = new java.util.HashSet<>();
+            if (question.getChoixReponses() != null) {
+                for (ChoixReponseEntity c : question.getChoixReponses()) {
+                    if (Boolean.TRUE.equals(c.getEstCorrect())) attendues.add(normaliserReponse(c.getTexte()));
+                }
+            }
+            if (attendues.isEmpty() && question.getReponse() != null && !question.getReponse().isBlank()) {
+                attendues.add(normaliserReponse(question.getReponse()));
+            }
+            if (attendues.isEmpty()) return;
+            int max = question.getPoints() != null && question.getPoints() > 0 ? question.getPoints() : 1;
+            cmr.notep.ressourcesjpa.repository.RepondreRepository repo =
+                    daoAccessorService.getRepository(cmr.notep.ressourcesjpa.repository.RepondreRepository.class);
+            for (cmr.notep.ressourcesjpa.dao.RepondreEntity r : repo.findByQuestionId(question.getId())) {
+                if (r.getEstCorrecte() == null) continue; // pas encore corrigée : le sera à la remise de la copie
+                if (r.getAppreciation() != null && !r.getAppreciation().isBlank()) continue; // correction manuelle
+                boolean correcte = attendues.contains(normaliserReponse(r.getReponseUtilisateur()));
+                r.setEstCorrecte(correcte);
+                r.setNote((correcte ? max : 0) + "/" + max);
+                repo.save(r);
+            }
+        } catch (Exception e) {
+            log.warn("Recorrection des réponses de la question {} impossible : {}", question.getId(), e.getMessage());
+        }
+    }
+
+    private static String normaliserReponse(String v) {
+        if (v == null) return "";
+        String n = java.text.Normalizer.normalize(v.trim().toLowerCase(), java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");
+        if (n.equals("true") || n.equals("vrai")) return "vrai";
+        if (n.equals("false") || n.equals("faux")) return "faux";
+        return n;
     }
 
     public void supprimerQuestion(String questionId) {

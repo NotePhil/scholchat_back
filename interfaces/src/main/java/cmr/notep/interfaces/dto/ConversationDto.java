@@ -13,6 +13,10 @@ public class ConversationDto {
     private String type;
     private String titre;
     private String classeId;
+    /** Nom de la ou des classes concernées (catégories CLASSE / GENERAL), séparés par « , » ; null sinon. */
+    private String classeNom;
+    /** Ids de la ou des classes concernées (catégories CLASSE / GENERAL) ; vide sinon. */
+    private List<String> classeIds = new ArrayList<>();
     private String createdBy;
     private String createdAt;
     private String lastMessageAt;

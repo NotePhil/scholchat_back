@@ -224,6 +224,13 @@ public class ParticipationExerciseBusiness {
                 if (q.getTypeQuestion() != TypeQuestion.QCM && q.getTypeQuestion() != TypeQuestion.VRAI_FAUX) continue;
                 java.util.Set<String> attendues = new java.util.HashSet<>();
                 if (q.getChoixReponses() != null) {
+                    // Un client peut avoir envoyé l'id du choix : on conserve son libellé (lisible par le professeur).
+                    for (ChoixReponseEntity c : q.getChoixReponses()) {
+                        if (c.getId() != null && c.getId().equals(r.getReponseUtilisateur()) && c.getTexte() != null) {
+                            r.setReponseUtilisateur(c.getTexte());
+                            break;
+                        }
+                    }
                     for (ChoixReponseEntity c : q.getChoixReponses()) {
                         if (Boolean.TRUE.equals(c.getEstCorrect())) {
                             attendues.add(normaliser(c.getTexte()));

@@ -103,6 +103,8 @@ public class MediaExceptionHandler {
             case ELEVE_EXISTE_AVEC_COMPTE:
             case LIEN_PARENT_DEJA_DEMANDE:
             case CLASSE_COMPLETE:
+            // Quota de classes du forfait atteint : refus métier (409), pas une erreur serveur
+            case QUOTA_CLASSES_ATTEINT:
                 return HttpStatus.CONFLICT;
             case OPERATION_INTERDITE:
             case PROFIL_PROFESSEUR_NON_VALIDE:

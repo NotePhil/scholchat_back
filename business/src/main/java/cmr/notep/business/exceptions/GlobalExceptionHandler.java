@@ -69,7 +69,7 @@ public class GlobalExceptionHandler {
                  ENFANT_EN_DOUBLE, COMPTE_NON_ELEVE, ELEVE_PAS_DANS_CLASSE, COURS_NON_PROGRAMME_DANS_CLASSE, COURS_REQUIS -> HttpStatus.BAD_REQUEST;
             case DUPLICATE_RESOURCE, ROLE_INCOMPATIBLE, EMAIL_DEJA_UTILISE, COMPTE_NON_ACTIVE,
                  COMPTE_EN_ATTENTE_VALIDATION, ELEVE_EXISTE_AVEC_COMPTE, LIEN_PARENT_DEJA_DEMANDE,
-                 CONFLICT, ALREADY_EXISTS, CLASSE_COMPLETE -> HttpStatus.CONFLICT;
+                 CONFLICT, ALREADY_EXISTS, CLASSE_COMPLETE, QUOTA_CLASSES_ATTEINT -> HttpStatus.CONFLICT;
             // Inscription refusée : un compte en attente d'approbation existe déjà pour cet e-mail
             case INSCRIPTION_EN_ATTENTE -> HttpStatus.CONFLICT;
             // Jeton (activation / réinitialisation) invalide ou expiré : erreur client, pas 500

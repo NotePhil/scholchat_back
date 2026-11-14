@@ -285,13 +285,35 @@ public class ConversationsBusiness {
 
     /** Per-viewer data of a batch of conversations (unread, starred messages, class origin, user types). */
     private record Contexte(Map<String, Long> nonLus, Map<String, Long> favoris, Map<String, Long> classes,
-                            Map<String, String> types) {}
+                            Map<String, String> types, Map<String, String> nomsClasses) {}
 
     private Contexte contexte(String viewerId, Collection<String> ids) {
         return new Contexte(nonLusParConversation(viewerId),
                 compteParConversation(messages().countFavorisParConversation(viewerId, ids)),
                 compteParConversation(conversations().countClassesParConversation(ids)),
-                new HashMap<>());
+                new HashMap<>(), nomsClassesParConversation(ids));
+    }
+
+    /** Conversation id → names of the classes its first message was sent to ("6ème A, 5ème B"). */
+    private Map<String, String> nomsClassesParConversation(Collection<String> ids) {
+        Map<String, String> r = new HashMap<>();
+        if (ids == null || ids.isEmpty()) return r;
+        for (Object[] row : conversations().findNomsClassesParConversation(ids)) {
+            if (row[1] == null) continue;
+            r.merge((String) row[0], (String) row[1], (a, b) -> a + ", " + b);
+            if (row[2] != null) r.merge("ids:" + row[0], (String) row[2], (a, b) -> a + "," + b);
+        }
+        return r;
+    }
+
+    /** Class name shown on the conversation: the class conversation's own class, else the first message's class(es). */
+    private String nomClasse(ConversationEntity c, Contexte ctx) {
+        if (c.getClasseId() != null) {
+            return ctx.nomsClasses().computeIfAbsent("classe:" + c.getClasseId(), k ->
+                    daoAccessorService.getRepository(ClassesRepository.class).findById(c.getClasseId())
+                            .map(ClassesEntity::getNom).orElse(null));
+        }
+        return ctx.nomsClasses().get(c.getId());
     }
 
     private static Map<String, Long> compteParConversation(List<Object[]> rows) {
@@ -337,6 +359,14 @@ public class ConversationsBusiness {
         dto.setContientFavori(ctx.favoris().getOrDefault(c.getId(), 0L) > 0);
         dto.setCategorie(categorie(c.getType(), c.getClasseId(), ctx.classes().getOrDefault(c.getId(), 0L)));
         dto.setGeneral(dto.getCategorie() != null);
+        if ("CLASSE".equals(dto.getCategorie()) || "GENERAL".equals(dto.getCategorie())) {
+            dto.setClasseNom(nomClasse(c, ctx));
+            if (c.getClasseId() != null) {
+                dto.setClasseIds(List.of(c.getClasseId()));
+            } else if (ctx.nomsClasses().get("ids:" + c.getId()) != null) {
+                dto.setClasseIds(List.of(ctx.nomsClasses().get("ids:" + c.getId()).split(",")));
+            }
+        }
         for (ConversationParticipantEntity p : parts) {
             UtilisateursEntity u = p.getUtilisateur();
             ConversationDto.Participant pd = new ConversationDto.Participant();
@@ -590,7 +620,8 @@ public class ConversationsBusiness {
         Map<String, MessagesEntity> derniers = messages().findAllById(dernierParConv.values()).stream()
                 .collect(Collectors.toMap(MessagesEntity::getId, Function.identity()));
         Contexte ctx = new Contexte(new HashMap<>(), new HashMap<>(),
-                compteParConversation(conversations().countClassesParConversation(ids)), new HashMap<>());
+                compteParConversation(conversations().countClassesParConversation(ids)), new HashMap<>(),
+                nomsClassesParConversation(ids));
         return conversations().findAllById(ids).stream()
                 .map(c -> {
                     ConversationDto d = toDto(c, uid, parConv.getOrDefault(c.getId(), List.of()),

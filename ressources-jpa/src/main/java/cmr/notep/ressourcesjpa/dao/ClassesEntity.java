@@ -78,6 +78,10 @@ public class ClassesEntity {
     @Column(name = "expire_par_offre")
     private boolean expireParOffre;
 
+    /** Code d'établissement fourni à la création ; "" : créée sans code ; null : inconnu (classe antérieure à cette trace). */
+    @Column(name = "code_etablissement_utilise")
+    private String codeEtablissementUtilise;
+
     @ManyToMany(mappedBy = "classesDiffusees")
     private List<ExerciseProgrammerEntity> exercisesProgrammes = new ArrayList<>();
 

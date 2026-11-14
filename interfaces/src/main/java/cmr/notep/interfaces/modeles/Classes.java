@@ -27,6 +27,8 @@ public class Classes implements Serializable {
     private EtatClasse etat;
     private Etablissement etablissement;
     private String etablissementToken; // For token validation during creation
+    /** Code d'établissement fourni à la création ; "" : créée sans code (option désactivée) ; null : inconnu (classe antérieure à cette trace). */
+    private String codeEtablissementUtilise;
     private boolean paymentRequired; // True when no establishment is provided
     private boolean accesMajeur;
     private boolean expireParOffre; // True si la classe a ete desactivee automatiquement (offre/contrat expire)
