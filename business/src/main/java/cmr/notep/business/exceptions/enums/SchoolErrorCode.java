@@ -33,6 +33,7 @@ public enum SchoolErrorCode {
     CONTRAT_INTROUVABLE("Contrat introuvable"),
     CIBLE_OFFRE_INVALIDE("Cette offre ne correspond pas au type de cible demande (classe/etablissement)"),
     QUOTA_CLASSES_ATTEINT("Le quota de classes de votre forfait est atteint"),
+    DATE_LIMITE_DEPASSEE("La date limite est dépassée"),
     ABONNEMENT_EXPIRE("Votre offre a expire, veuillez la renouveler pour continuer"),
     RENOUVELLEMENT_TOKEN_INVALIDE("Lien de renouvellement invalide ou expire"),
 

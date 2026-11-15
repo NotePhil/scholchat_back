@@ -50,6 +50,9 @@ public class ParticipationExerciseBusiness {
                 .findById(requestDTO.getExerciseProgrammerId())
                 .orElseThrow(() -> new SchoolException(SchoolErrorCode.NOT_FOUND, "Exercice programmé introuvable"));
 
+        // Date limite dépassée : on ne commence ni ne rend plus l'exercice
+        verifierDateLimite(exerciseProgrammer);
+
         // Vérifier si la participation existe déjà
         ParticiperExoRepository repository = daoAccessorService.getRepository(ParticiperExoRepository.class);
         if (repository.existsByUtilisateurIdAndExerciseProgrammerId(
@@ -106,6 +109,11 @@ public class ParticipationExerciseBusiness {
             participation.setAppreciation(requestDTO.getAppreciation());
         }
         boolean soumission = estUneSoumission(requestDTO.getEtatSoumission());
+        // L'élève (re)commence ou rend sa copie après la date limite : refusé. La correction du professeur
+        // (CORRIGE / VALIDE, note, appréciation) reste possible à tout moment.
+        if (soumission || EtatSoumission.EN_COURS.equals(requestDTO.getEtatSoumission())) {
+            verifierDateLimite(participation.getExerciseProgrammer());
+        }
         if (soumission) {
             // L'élève rend sa copie (le web/mobile envoient SOUMIS) : les QCM / Vrai-Faux sont corrigés
             // automatiquement et la copie part dans la liste « à corriger » du professeur.
@@ -189,6 +197,15 @@ public class ParticipationExerciseBusiness {
 
         repository.delete(participation);
         log.info("Participation supprimée avec succès");
+    }
+
+    /** Refuse de commencer ou de rendre un exercice dont la date de fin est dépassée. */
+    private static void verifierDateLimite(ExerciseProgrammerEntity prog) {
+        if (prog != null && prog.getDateFinExoEffectif() != null
+                && prog.getDateFinExoEffectif().before(new Date())) {
+            throw new SchoolException(SchoolErrorCode.DATE_LIMITE_DEPASSEE,
+                    "La date limite de cet exercice est dépassée : il ne peut plus être rendu.");
+        }
     }
 
     private static boolean estUneSoumission(EtatSoumission etat) {

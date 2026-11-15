@@ -110,6 +110,7 @@ public class MediaExceptionHandler {
             case PROFIL_PROFESSEUR_NON_VALIDE:
             // Même correspondance que GlobalExceptionHandler (ce handler-ci l'emporte pour SchoolException)
             case INVALID_STATE:
+            case DATE_LIMITE_DEPASSEE:
             case INACTIVE_USER:
             case COMPTE_EN_ATTENTE_APPROBATION:
             case MOT_DE_PASSE_A_CHANGER:
